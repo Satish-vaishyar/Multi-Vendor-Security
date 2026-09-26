@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set weak-crypto enable
+set syslog-server 10.0.0.99
+set admin-telnet enable
+set admin-telnet disable
+set strong-crypto enable
+# edge

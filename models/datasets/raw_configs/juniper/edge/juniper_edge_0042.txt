@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system ntp server 10.0.0.5
+set system services ssh protocol-version v2
+set system authentication-order tacplus
+set system services ssh protocol-version v1
+delete system services telnet
+# edge stanza

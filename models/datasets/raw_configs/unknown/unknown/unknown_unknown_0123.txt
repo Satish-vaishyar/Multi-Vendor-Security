@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+mgmt telnet permit-all
+event-sink none
+auth backend tacacs
+cipher-suite modern
+telemetry community public
+event-sink remote 10.0.0.99
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! arista secure synthetic
+ssh protocol version 2
+no telnet server
+no http server
+snmp-server group NETADMIN v3 priv
+ntp server 10.0.0.5
+aaa authentication login default group tacacs+
+generate rsa 2048

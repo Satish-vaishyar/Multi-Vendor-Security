@@ -1,0 +1,7 @@
+! arista edge synthetic
+http server enable
+snmp-server community public ro
+ntp server 10.0.0.5
+no telnet server
+telnet server enable
+! edge

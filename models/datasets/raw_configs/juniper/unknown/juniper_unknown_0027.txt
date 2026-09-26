@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system services web-management http
+set system authentication-order tacplus
+set snmp community public authorization read-only
+delete system ntp
+delete system syslog
+delete system tacplus-server
+blorp enable hyperflux-mode

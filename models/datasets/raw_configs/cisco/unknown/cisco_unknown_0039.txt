@@ -1,0 +1,9 @@
+! cisco unknown synthetic
+snmp-server group NETADMIN v3 priv
+snmp-server community public RO
+crypto key generate rsa modulus 1024
+crypto key generate rsa modulus 2048
+no aaa new-model
+no ip http server
+ip http secure-server
+blorp enable hyperflux-mode

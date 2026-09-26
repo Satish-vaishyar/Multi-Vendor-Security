@@ -1,0 +1,9 @@
+! cisco unknown synthetic
+no aaa new-model
+ip http server
+ip ssh version 1
+line vty 0 4
+ transport input ssh
+logging host 10.0.0.99
+crypto key generate rsa modulus 1024
+blorp enable hyperflux-mode

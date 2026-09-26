@@ -1,0 +1,7 @@
+! arista edge synthetic
+ssh protocol version 2
+no telnet server
+logging host 10.0.0.99
+no http server
+http server enable
+! edge

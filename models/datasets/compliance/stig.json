@@ -1,0 +1,1727 @@
+[
+ {
+  "framework": "STIG",
+  "control_id": "STIG-001",
+  "title": "device.vendor must be hardened (stig)",
+  "description": "Control for device.vendor",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "device.vendor",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "device.vendor",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "device.vendor",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix device.vendor per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-002",
+  "title": "device.platform must be hardened (stig)",
+  "description": "Control for device.platform",
+  "severity": "HIGH",
+  "condition": {
+   "property": "device.platform",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "device.platform",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "device.platform",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix device.platform per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-003",
+  "title": "device.version must be hardened (stig)",
+  "description": "Control for device.version",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "device.version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "device.version",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "device.version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix device.version per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-004",
+  "title": "device.hostname must be hardened (stig)",
+  "description": "Control for device.hostname",
+  "severity": "LOW",
+  "condition": {
+   "property": "device.hostname",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "device.hostname",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "device.hostname",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix device.hostname per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-005",
+  "title": "device.serial must be hardened (stig)",
+  "description": "Control for device.serial",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "device.serial",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "device.serial",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "device.serial",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix device.serial per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-006",
+  "title": "aaa.authentication must be hardened (stig)",
+  "description": "Control for aaa.authentication",
+  "severity": "HIGH",
+  "condition": {
+   "property": "aaa.authentication",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.authentication",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.authentication",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.authentication per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-007",
+  "title": "aaa.authorization must be hardened (stig)",
+  "description": "Control for aaa.authorization",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "aaa.authorization",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.authorization",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.authorization",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.authorization per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-008",
+  "title": "aaa.accounting must be hardened (stig)",
+  "description": "Control for aaa.accounting",
+  "severity": "LOW",
+  "condition": {
+   "property": "aaa.accounting",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.accounting",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.accounting",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.accounting per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-009",
+  "title": "aaa.mfa must be hardened (stig)",
+  "description": "Control for aaa.mfa",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "aaa.mfa",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.mfa",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.mfa",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.mfa per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-010",
+  "title": "aaa.password_policy must be hardened (stig)",
+  "description": "Control for aaa.password_policy",
+  "severity": "HIGH",
+  "condition": {
+   "property": "aaa.password_policy",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.password_policy",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.password_policy",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.password_policy per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-011",
+  "title": "aaa.lockout must be hardened (stig)",
+  "description": "Control for aaa.lockout",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "aaa.lockout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.lockout",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.lockout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.lockout per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-012",
+  "title": "aaa.tacacs must be hardened (stig)",
+  "description": "Control for aaa.tacacs",
+  "severity": "LOW",
+  "condition": {
+   "property": "aaa.tacacs",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.tacacs",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.tacacs",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.tacacs per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-013",
+  "title": "aaa.radius must be hardened (stig)",
+  "description": "Control for aaa.radius",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "aaa.radius",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "aaa.radius",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "aaa.radius",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix aaa.radius per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-014",
+  "title": "services.ssh must be hardened (stig)",
+  "description": "Control for services.ssh",
+  "severity": "HIGH",
+  "condition": {
+   "property": "services.ssh",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.ssh",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.ssh",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.ssh per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-015",
+  "title": "services.ssh.version must be hardened (stig)",
+  "description": "Control for services.ssh.version",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "services.ssh.version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.ssh.version",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.ssh.version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.ssh.version per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-016",
+  "title": "services.ssh.timeout must be hardened (stig)",
+  "description": "Control for services.ssh.timeout",
+  "severity": "LOW",
+  "condition": {
+   "property": "services.ssh.timeout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.ssh.timeout",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.ssh.timeout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.ssh.timeout per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-017",
+  "title": "services.ssh.retries must be hardened (stig)",
+  "description": "Control for services.ssh.retries",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "services.ssh.retries",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.ssh.retries",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.ssh.retries",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.ssh.retries per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-018",
+  "title": "services.ssh.ciphers must be hardened (stig)",
+  "description": "Control for services.ssh.ciphers",
+  "severity": "HIGH",
+  "condition": {
+   "property": "services.ssh.ciphers",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.ssh.ciphers",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.ssh.ciphers",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.ssh.ciphers per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-019",
+  "title": "services.telnet must be hardened (stig)",
+  "description": "Control for services.telnet",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "services.telnet",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.telnet",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.telnet",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.telnet per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-020",
+  "title": "services.http must be hardened (stig)",
+  "description": "Control for services.http",
+  "severity": "LOW",
+  "condition": {
+   "property": "services.http",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.http",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.http",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.http per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-021",
+  "title": "services.https must be hardened (stig)",
+  "description": "Control for services.https",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "services.https",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.https",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.https",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.https per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-022",
+  "title": "services.https.redirect must be hardened (stig)",
+  "description": "Control for services.https.redirect",
+  "severity": "HIGH",
+  "condition": {
+   "property": "services.https.redirect",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.https.redirect",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.https.redirect",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.https.redirect per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-023",
+  "title": "services.snmp must be hardened (stig)",
+  "description": "Control for services.snmp",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "services.snmp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.snmp",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.snmp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.snmp per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-024",
+  "title": "services.snmp.version must be hardened (stig)",
+  "description": "Control for services.snmp.version",
+  "severity": "LOW",
+  "condition": {
+   "property": "services.snmp.version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.snmp.version",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.snmp.version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.snmp.version per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-025",
+  "title": "services.snmp.community must be hardened (stig)",
+  "description": "Control for services.snmp.community",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "services.snmp.community",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.snmp.community",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.snmp.community",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.snmp.community per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-026",
+  "title": "services.ntp must be hardened (stig)",
+  "description": "Control for services.ntp",
+  "severity": "HIGH",
+  "condition": {
+   "property": "services.ntp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.ntp",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.ntp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.ntp per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-027",
+  "title": "services.ntp.auth must be hardened (stig)",
+  "description": "Control for services.ntp.auth",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "services.ntp.auth",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "services.ntp.auth",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "services.ntp.auth",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix services.ntp.auth per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-028",
+  "title": "logging.enabled must be hardened (stig)",
+  "description": "Control for logging.enabled",
+  "severity": "LOW",
+  "condition": {
+   "property": "logging.enabled",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "logging.enabled",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "logging.enabled",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix logging.enabled per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-029",
+  "title": "logging.remote_syslog must be hardened (stig)",
+  "description": "Control for logging.remote_syslog",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "logging.remote_syslog",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "logging.remote_syslog",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "logging.remote_syslog",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix logging.remote_syslog per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-030",
+  "title": "logging.timestamp must be hardened (stig)",
+  "description": "Control for logging.timestamp",
+  "severity": "HIGH",
+  "condition": {
+   "property": "logging.timestamp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "logging.timestamp",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "logging.timestamp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix logging.timestamp per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-031",
+  "title": "logging.level must be hardened (stig)",
+  "description": "Control for logging.level",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "logging.level",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "logging.level",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "logging.level",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix logging.level per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-032",
+  "title": "logging.host must be hardened (stig)",
+  "description": "Control for logging.host",
+  "severity": "LOW",
+  "condition": {
+   "property": "logging.host",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "logging.host",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "logging.host",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix logging.host per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-033",
+  "title": "logging.buffered must be hardened (stig)",
+  "description": "Control for logging.buffered",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "logging.buffered",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "logging.buffered",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "logging.buffered",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix logging.buffered per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-034",
+  "title": "acl.enabled must be hardened (stig)",
+  "description": "Control for acl.enabled",
+  "severity": "HIGH",
+  "condition": {
+   "property": "acl.enabled",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "acl.enabled",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "acl.enabled",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix acl.enabled per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-035",
+  "title": "acl.rules must be hardened (stig)",
+  "description": "Control for acl.rules",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "acl.rules",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "acl.rules",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "acl.rules",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix acl.rules per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-036",
+  "title": "acl.management must be hardened (stig)",
+  "description": "Control for acl.management",
+  "severity": "LOW",
+  "condition": {
+   "property": "acl.management",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "acl.management",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "acl.management",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix acl.management per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-037",
+  "title": "acl.default_policy must be hardened (stig)",
+  "description": "Control for acl.default_policy",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "acl.default_policy",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "acl.default_policy",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "acl.default_policy",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix acl.default_policy per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-038",
+  "title": "acl.established must be hardened (stig)",
+  "description": "Control for acl.established",
+  "severity": "HIGH",
+  "condition": {
+   "property": "acl.established",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "acl.established",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "acl.established",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix acl.established per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-039",
+  "title": "acl.log must be hardened (stig)",
+  "description": "Control for acl.log",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "acl.log",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "acl.log",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "acl.log",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix acl.log per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-040",
+  "title": "crypto.algorithm must be hardened (stig)",
+  "description": "Control for crypto.algorithm",
+  "severity": "LOW",
+  "condition": {
+   "property": "crypto.algorithm",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.algorithm",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.algorithm",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.algorithm per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-041",
+  "title": "crypto.key_size must be hardened (stig)",
+  "description": "Control for crypto.key_size",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "crypto.key_size",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.key_size",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.key_size",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.key_size per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-042",
+  "title": "crypto.tls_version must be hardened (stig)",
+  "description": "Control for crypto.tls_version",
+  "severity": "HIGH",
+  "condition": {
+   "property": "crypto.tls_version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.tls_version",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.tls_version",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.tls_version per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-043",
+  "title": "crypto.ssh_algorithm must be hardened (stig)",
+  "description": "Control for crypto.ssh_algorithm",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "crypto.ssh_algorithm",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.ssh_algorithm",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.ssh_algorithm",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.ssh_algorithm per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-044",
+  "title": "crypto.certificate must be hardened (stig)",
+  "description": "Control for crypto.certificate",
+  "severity": "LOW",
+  "condition": {
+   "property": "crypto.certificate",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.certificate",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.certificate",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.certificate per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-045",
+  "title": "crypto.dh_group must be hardened (stig)",
+  "description": "Control for crypto.dh_group",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "crypto.dh_group",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.dh_group",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.dh_group",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.dh_group per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-046",
+  "title": "crypto.ike must be hardened (stig)",
+  "description": "Control for crypto.ike",
+  "severity": "HIGH",
+  "condition": {
+   "property": "crypto.ike",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.ike",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.ike",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.ike per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-047",
+  "title": "crypto.ipsec must be hardened (stig)",
+  "description": "Control for crypto.ipsec",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "crypto.ipsec",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.ipsec",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.ipsec",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.ipsec per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-048",
+  "title": "crypto.password_encryption must be hardened (stig)",
+  "description": "Control for crypto.password_encryption",
+  "severity": "LOW",
+  "condition": {
+   "property": "crypto.password_encryption",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.password_encryption",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.password_encryption",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.password_encryption per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-049",
+  "title": "crypto.enable_secret must be hardened (stig)",
+  "description": "Control for crypto.enable_secret",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "crypto.enable_secret",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.enable_secret",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.enable_secret",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.enable_secret per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-050",
+  "title": "crypto.ssh_ciphers must be hardened (stig)",
+  "description": "Control for crypto.ssh_ciphers",
+  "severity": "HIGH",
+  "condition": {
+   "property": "crypto.ssh_ciphers",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.ssh_ciphers",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.ssh_ciphers",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.ssh_ciphers per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-051",
+  "title": "crypto.ssh_macs must be hardened (stig)",
+  "description": "Control for crypto.ssh_macs",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "crypto.ssh_macs",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "crypto.ssh_macs",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "crypto.ssh_macs",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix crypto.ssh_macs per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-052",
+  "title": "interfaces.admin must be hardened (stig)",
+  "description": "Control for interfaces.admin",
+  "severity": "LOW",
+  "condition": {
+   "property": "interfaces.admin",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.admin",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.admin",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.admin per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-053",
+  "title": "interfaces.description must be hardened (stig)",
+  "description": "Control for interfaces.description",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "interfaces.description",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.description",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.description",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.description per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-054",
+  "title": "interfaces.ip must be hardened (stig)",
+  "description": "Control for interfaces.ip",
+  "severity": "HIGH",
+  "condition": {
+   "property": "interfaces.ip",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.ip",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.ip",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.ip per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-055",
+  "title": "interfaces.shutdown must be hardened (stig)",
+  "description": "Control for interfaces.shutdown",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "interfaces.shutdown",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.shutdown",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.shutdown",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.shutdown per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-056",
+  "title": "interfaces.proxy_arp must be hardened (stig)",
+  "description": "Control for interfaces.proxy_arp",
+  "severity": "LOW",
+  "condition": {
+   "property": "interfaces.proxy_arp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.proxy_arp",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.proxy_arp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.proxy_arp per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-057",
+  "title": "interfaces.source_route must be hardened (stig)",
+  "description": "Control for interfaces.source_route",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "interfaces.source_route",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.source_route",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.source_route",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.source_route per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-058",
+  "title": "interfaces.dhcp_snoop must be hardened (stig)",
+  "description": "Control for interfaces.dhcp_snoop",
+  "severity": "HIGH",
+  "condition": {
+   "property": "interfaces.dhcp_snoop",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.dhcp_snoop",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.dhcp_snoop",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.dhcp_snoop per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-059",
+  "title": "interfaces.mtu must be hardened (stig)",
+  "description": "Control for interfaces.mtu",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "interfaces.mtu",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "interfaces.mtu",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "interfaces.mtu",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix interfaces.mtu per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-060",
+  "title": "routing.ospf must be hardened (stig)",
+  "description": "Control for routing.ospf",
+  "severity": "LOW",
+  "condition": {
+   "property": "routing.ospf",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "routing.ospf",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "routing.ospf",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix routing.ospf per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-061",
+  "title": "routing.bgp must be hardened (stig)",
+  "description": "Control for routing.bgp",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "routing.bgp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "routing.bgp",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "routing.bgp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix routing.bgp per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-062",
+  "title": "routing.static must be hardened (stig)",
+  "description": "Control for routing.static",
+  "severity": "HIGH",
+  "condition": {
+   "property": "routing.static",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "routing.static",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "routing.static",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix routing.static per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-063",
+  "title": "routing.redistribute must be hardened (stig)",
+  "description": "Control for routing.redistribute",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "routing.redistribute",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "routing.redistribute",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "routing.redistribute",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix routing.redistribute per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-064",
+  "title": "routing.auth must be hardened (stig)",
+  "description": "Control for routing.auth",
+  "severity": "LOW",
+  "condition": {
+   "property": "routing.auth",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "routing.auth",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "routing.auth",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix routing.auth per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-065",
+  "title": "routing.filter must be hardened (stig)",
+  "description": "Control for routing.filter",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "routing.filter",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "routing.filter",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "routing.filter",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix routing.filter per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-066",
+  "title": "policies.motd must be hardened (stig)",
+  "description": "Control for policies.motd",
+  "severity": "HIGH",
+  "condition": {
+   "property": "policies.motd",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.motd",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.motd",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.motd per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-067",
+  "title": "policies.exec_timeout must be hardened (stig)",
+  "description": "Control for policies.exec_timeout",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "policies.exec_timeout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.exec_timeout",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.exec_timeout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.exec_timeout per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-068",
+  "title": "policies.session_timeout must be hardened (stig)",
+  "description": "Control for policies.session_timeout",
+  "severity": "LOW",
+  "condition": {
+   "property": "policies.session_timeout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.session_timeout",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.session_timeout",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.session_timeout per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-069",
+  "title": "policies.block must be hardened (stig)",
+  "description": "Control for policies.block",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "policies.block",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.block",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.block",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.block per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-070",
+  "title": "policies.port_security must be hardened (stig)",
+  "description": "Control for policies.port_security",
+  "severity": "HIGH",
+  "condition": {
+   "property": "policies.port_security",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.port_security",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.port_security",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.port_security per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-071",
+  "title": "policies.storm_control must be hardened (stig)",
+  "description": "Control for policies.storm_control",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "policies.storm_control",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.storm_control",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.storm_control",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.storm_control per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-072",
+  "title": "policies.dai must be hardened (stig)",
+  "description": "Control for policies.dai",
+  "severity": "LOW",
+  "condition": {
+   "property": "policies.dai",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.dai",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.dai",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.dai per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-073",
+  "title": "policies.urp must be hardened (stig)",
+  "description": "Control for policies.urp",
+  "severity": "CRITICAL",
+  "condition": {
+   "property": "policies.urp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "policies.urp",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "policies.urp",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix policies.urp per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-074",
+  "title": "mgmt.plane_acl must be hardened (stig)",
+  "description": "Control for mgmt.plane_acl",
+  "severity": "HIGH",
+  "condition": {
+   "property": "mgmt.plane_acl",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "mgmt.plane_acl",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "mgmt.plane_acl",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix mgmt.plane_acl per stig guidance",
+  "references": [
+   "stig"
+  ]
+ },
+ {
+  "framework": "STIG",
+  "control_id": "STIG-075",
+  "title": "mgmt.vty_ssh_only must be hardened (stig)",
+  "description": "Control for mgmt.vty_ssh_only",
+  "severity": "MEDIUM",
+  "condition": {
+   "property": "mgmt.vty_ssh_only",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "canonical_property": "mgmt.vty_ssh_only",
+  "expected_value": true,
+  "evidence_rule": {
+   "property": "mgmt.vty_ssh_only",
+   "operator": "EQUALS",
+   "value": true
+  },
+  "remediation": "Fix mgmt.vty_ssh_only per stig guidance",
+  "references": [
+   "stig"
+  ]
+ }
+]

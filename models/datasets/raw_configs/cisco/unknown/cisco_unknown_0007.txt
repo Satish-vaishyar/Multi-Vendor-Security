@@ -1,0 +1,9 @@
+! cisco unknown synthetic
+no ip http server
+ip http secure-server
+snmp-server group NETADMIN v3 priv
+ip http server
+no ntp
+no aaa new-model
+no logging
+blorp enable hyperflux-mode

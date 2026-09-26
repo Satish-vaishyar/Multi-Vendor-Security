@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite legacy
+auth backend tacacs
+telemetry community public
+secure-mgmt ssh protocol v2
+time-sync none
+mgmt telnet permit-all
+blorp enable hyperflux-mode

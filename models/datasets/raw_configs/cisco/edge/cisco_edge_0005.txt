@@ -1,0 +1,8 @@
+! cisco edge synthetic
+no logging
+ip http server
+ntp server 10.0.0.5
+no aaa new-model
+no ip http server
+ip http secure-server
+! edge-note

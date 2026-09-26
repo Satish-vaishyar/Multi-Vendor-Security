@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system ntp
+delete system tacplus-server
+set snmp community public authorization read-only
+delete system services telnet
+delete system syslog
+# edge stanza

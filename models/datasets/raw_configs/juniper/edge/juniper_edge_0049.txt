@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system services telnet
+set snmp v3 usm local-engine user admin authentication-sha
+set snmp community public authorization read-only
+set system services telnet
+set security ike proposal strong dh-group14
+# edge stanza

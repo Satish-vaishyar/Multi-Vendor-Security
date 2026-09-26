@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system syslog host 10.0.0.99 any any
+set system ntp server 10.0.0.5
+delete system services web-management http
+set system services web-management http
+set snmp community public authorization read-only
+# edge stanza

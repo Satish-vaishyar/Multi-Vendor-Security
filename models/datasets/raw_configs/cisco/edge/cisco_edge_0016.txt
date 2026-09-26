@@ -1,0 +1,7 @@
+! cisco edge synthetic
+logging host 10.0.0.99
+ntp server 10.0.0.5
+crypto key generate rsa modulus 2048
+no aaa new-model
+snmp-server group NETADMIN v3 priv
+! edge-note

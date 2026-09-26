@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+time-sync none
+web-mgmt plain disable
+cipher-suite legacy
+auth backend tacacs
+auth backend none
+telemetry v3 priv-only
+blorp enable hyperflux-mode

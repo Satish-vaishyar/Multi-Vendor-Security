@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+web-mgmt plain enable
+cipher-suite legacy
+telemetry v3 priv-only
+time-sync server 10.0.0.5
+time-sync none
+secure-mgmt ssh protocol v1
+blorp enable hyperflux-mode

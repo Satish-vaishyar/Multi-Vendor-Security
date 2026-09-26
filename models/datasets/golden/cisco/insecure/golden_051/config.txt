@@ -1,0 +1,8 @@
+! cisco insecure synthetic
+ip ssh version 1
+line vty 0 4
+ transport input telnet
+snmp-server community public RO
+no logging
+no ntp
+crypto key generate rsa modulus 1024

@@ -1,0 +1,13 @@
+{
+ "raw_configs": 2850,
+ "unknown_lines": 100000,
+ "mappings": 5400,
+ "compliance": 375,
+ "pqc": 40,
+ "risk": 5000,
+ "fleet_devices": 10000,
+ "golden": 200,
+ "unseen": 300,
+ "quantum": 400,
+ "fleet_count": 500
+}

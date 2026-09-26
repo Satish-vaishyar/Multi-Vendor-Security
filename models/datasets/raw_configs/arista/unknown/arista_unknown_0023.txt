@@ -1,0 +1,8 @@
+! arista unknown synthetic
+snmp-server group NETADMIN v3 priv
+ssh protocol version 1
+no http server
+no ntp
+snmp-server community public ro
+no logging
+blorp enable hyperflux-mode

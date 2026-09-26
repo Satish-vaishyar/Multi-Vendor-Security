@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system tacplus-server
+set security ike proposal strong dh-group14
+set system services telnet
+set system services ssh protocol-version v2
+set snmp community public authorization read-only
+# edge stanza

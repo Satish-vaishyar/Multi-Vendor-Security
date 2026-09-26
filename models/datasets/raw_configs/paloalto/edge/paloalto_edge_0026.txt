@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig system telnet disable
+set deviceconfig system syslog-server 10.0.0.99
+set deviceconfig auth tacacs
+delete deviceconfig ntp
+delete deviceconfig system syslog
+# edge

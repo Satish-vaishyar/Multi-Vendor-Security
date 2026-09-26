@@ -1,0 +1,25 @@
+mappings:
+- vendor: CISCO
+  platform: IOS-XE
+  raw_command_pattern: hostname\s+FE-RTR
+  canonical_property: HOSTNAME.DEVICE
+  canonical_value: FE-RTR
+  confidence: 1.0
+  source: human_verified
+  status: approved
+- vendor: CISCO
+  platform: IOS-XE
+  raw_command_pattern: line\s+vty\s+0\s+4
+  canonical_property: auth.ssh.enabled
+  canonical_value: true
+  confidence: 1.0
+  source: human_verified
+  status: approved
+- vendor: CISCO
+  platform: IOS-XE
+  raw_command_pattern: hostname\s+R1
+  canonical_property: auth.ssh.enabled
+  canonical_value: true
+  confidence: 1.0
+  source: human_verified
+  status: approved

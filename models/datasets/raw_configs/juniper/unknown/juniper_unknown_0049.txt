@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system services ssh protocol-version v1
+set system services web-management http
+set snmp community public authorization read-only
+delete system tacplus-server
+set snmp v3 usm local-engine user admin authentication-sha
+set system ntp server 10.0.0.5
+blorp enable hyperflux-mode

@@ -1,0 +1,4 @@
+! paloalto insecure synthetic
+set deviceconfig system ssh protocol v1
+delete deviceconfig system syslog
+set deviceconfig auth local

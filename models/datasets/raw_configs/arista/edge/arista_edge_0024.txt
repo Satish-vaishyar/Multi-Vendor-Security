@@ -1,0 +1,7 @@
+! arista edge synthetic
+aaa authentication login default group tacacs+
+telnet server enable
+generate rsa 2048
+logging host 10.0.0.99
+no aaa
+! edge

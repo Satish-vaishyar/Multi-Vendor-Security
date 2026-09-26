@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+telemetry v3 priv-only
+secure-mgmt ssh protocol v2
+mgmt telnet permit-all
+web-mgmt plain enable
+auth backend tacacs
+event-sink none
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! arista edge synthetic
+ntp server 10.0.0.5
+generate rsa 1024
+snmp-server community public ro
+no logging
+http server enable
+! edge

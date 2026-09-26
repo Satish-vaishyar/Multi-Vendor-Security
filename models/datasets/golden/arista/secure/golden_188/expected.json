@@ -1,0 +1,8 @@
+{
+ "expected_vendor": "arista",
+ "expected_platform": "arista",
+ "expected_findings": false,
+ "sha256": "0d8d372d724bd5b3e3de9f68258d2126f24563afe915a7ea9d308f75c33337e2",
+ "source": "synthetic",
+ "ground_truth": true
+}

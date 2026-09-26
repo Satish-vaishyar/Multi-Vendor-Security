@@ -1,0 +1,190 @@
+{
+ "order": "M1,M2,M3,M4(heuristic/LLM),M5,M6,M7,M9,M10-M13",
+ "M1_vendor": {
+  "acc": 1.0,
+  "f1": 1.0,
+  "n": 2850
+ },
+ "M2_oov": {
+  "val": {
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "false_parse_rate": 0.0,
+   "coverage": 0.174,
+   "mean_unknown_score": 0.996,
+   "n": 14315,
+   "threshold": 0.15
+  },
+  "k": 0.5,
+  "test": {
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "false_parse_rate": 0.0,
+   "coverage": 0.329,
+   "mean_unknown_score": 0.668,
+   "n": 17603,
+   "threshold": 0.15
+  },
+  "train_time_s": 174.4,
+  "unseen_family": {
+   "n": 3171,
+   "recall": 1.0
+  }
+ },
+ "M3_mapping": {
+  "n_train": 4860,
+  "n_test": 540,
+  "top1": 0.967,
+  "top3": 0.998,
+  "mrr": 0.982,
+  "train_time_s": 14.2
+ },
+ "M3_demo": [
+  {
+   "canonical_property": "services.ssh.version",
+   "value": true,
+   "confidence": 1.0,
+   "vendor": "unknown",
+   "evidence": "secure-mgmt ssh protocol v2"
+  },
+  {
+   "canonical_property": "services.ssh.version",
+   "value": true,
+   "confidence": 0.961,
+   "vendor": "unknown",
+   "evidence": "secure-mgmt ssh protocol v1"
+  },
+  {
+   "canonical_property": "services.ssh.version",
+   "value": true,
+   "confidence": 0.888,
+   "vendor": "unknown",
+   "evidence": "config secure-mgmt ssh protocol v1 verbose"
+  }
+ ],
+ "M4_llm": {
+  "n_mappings": 3,
+  "offline": false,
+  "json_valid": true,
+  "sample": [
+   {
+    "property": "SSH.ENABLED",
+    "value": true,
+    "confidence": 0.98,
+    "evidence": "secure-mgmt ssh protocol v2"
+   }
+  ]
+ },
+ "M5_validator": {
+  "valid": true,
+  "errors": [],
+  "coerced": {
+   "device_vendor": "unknown",
+   "services_ssh_version": 2,
+   "services_telnet": null,
+   "services_http": null,
+   "logging_enabled": null,
+   "extra": {}
+  }
+ },
+ "M6_risk": {
+  "n": 5000,
+  "classes": [
+   "critical",
+   "high",
+   "low",
+   "medium"
+  ],
+  "train_time_s": 1.1,
+  "train_acc": 0.877,
+  "spearman_rule_vs_label": 0.522
+ },
+ "M6_rule_demo": {
+  "score": 4.656
+ },
+ "M7_fleet": {
+  "n": 10000,
+  "method": "hdbscan",
+  "train_time_s": 1.8,
+  "silhouette": 1.0,
+  "centroid@0.5": {
+   "precision": 1.0,
+   "recall": 0.884,
+   "false_alert_rate": 0.0
+  },
+  "centroid@1.0": {
+   "precision": 1.0,
+   "recall": 0.146,
+   "false_alert_rate": 0.0
+  },
+  "centroid@1.5": {
+   "precision": 1.0,
+   "recall": 0.146,
+   "false_alert_rate": 0.0
+  },
+  "centroid_selected": "centroid@0.5",
+  "precision": 1.0,
+  "recall": 0.884,
+  "false_alert_rate": 0.0,
+  "detector": "hdbscan-majority-centroid"
+ },
+ "M8_similarity": {
+  "demo_cosine": 0.178,
+  "backbone": "minilm-384"
+ },
+ "M9_transformer": {
+  "n": 5400,
+  "classes": 120,
+  "epochs": 12,
+  "train_acc": 0.979,
+  "test_acc": 0.97,
+  "train_time_s": 0.7,
+  "knn_top1": 0.967,
+  "delta_vs_knn": 0.003
+ },
+ "M10_QKS": {
+  "method": "qiskit-fidelity-kernel",
+  "dims": 4,
+  "quantum_acc": 0.583,
+  "classical_rbf_acc": 0.59,
+  "classical_minus_quantum": 0.007,
+  "classical_time_s": 0.0,
+  "total_time_s": 27.9
+ },
+ "M11_VQC": {
+  "method": "qiskit-machine-learning-vqc",
+  "quantum_acc": 0.458,
+  "classical_mlp_acc": 0.562,
+  "classical_minus_quantum": 0.104,
+  "classical_time_s": 0.2,
+  "total_time_s": 13.1
+ },
+ "M12_QAOA": {
+  "method": "qiskit-qaoa",
+  "selected": [
+   0,
+   1,
+   1,
+   0,
+   0
+  ],
+  "value": 14,
+  "cost": 6,
+  "classical_optimum": 17,
+  "gap_to_optimum": 3,
+  "time_s": 92.7
+ },
+ "M13_VQE": {
+  "method": "qiskit-vqe",
+  "weights": {
+   "severity": 0.012,
+   "exposure": 0.194,
+   "criticality": 0.795
+  },
+  "cost_vqe": 0.7523,
+  "cost_expert": 0.7053,
+  "time_s": 0.1
+ }
+}

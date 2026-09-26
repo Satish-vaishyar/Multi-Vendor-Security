@@ -1,0 +1,6 @@
+! arista insecure synthetic
+ip ssh version 1
+ip http server
+snmp-server community public RO
+no aaa new-model
+crypto key generate rsa modulus 1024

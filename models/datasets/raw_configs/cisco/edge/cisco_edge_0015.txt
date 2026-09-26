@@ -1,0 +1,10 @@
+! cisco edge synthetic
+line vty 0 4
+ transport input telnet
+no ip http server
+ip http secure-server
+line vty 0 4
+ transport input ssh
+ip ssh version 2
+logging host 10.0.0.99
+! edge-note

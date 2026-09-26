@@ -1,0 +1,8 @@
+! arista unknown synthetic
+no aaa
+http server enable
+logging host 10.0.0.99
+no telnet server
+no logging
+aaa authentication login default group tacacs+
+blorp enable hyperflux-mode

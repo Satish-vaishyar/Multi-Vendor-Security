@@ -1,0 +1,9 @@
+! cisco edge synthetic
+line vty 0 4
+ transport input ssh
+no ntp
+no ip http server
+ip http secure-server
+crypto key generate rsa modulus 1024
+aaa new-model
+! edge-note

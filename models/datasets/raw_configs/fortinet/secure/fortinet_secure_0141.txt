@@ -1,0 +1,5 @@
+! fortinet secure synthetic
+set admin-telnet disable
+set snmpv3 enable
+set auth-type tacacs+
+set strong-crypto enable

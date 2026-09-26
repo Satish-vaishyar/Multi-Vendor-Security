@@ -1,0 +1,7 @@
+! arista edge synthetic
+telnet server enable
+no ntp
+ssh protocol version 2
+aaa authentication login default group tacacs+
+snmp-server community public ro
+! edge

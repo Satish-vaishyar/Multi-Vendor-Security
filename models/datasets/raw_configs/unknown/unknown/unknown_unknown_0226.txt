@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite legacy
+mgmt telnet deny
+secure-mgmt ssh protocol v1
+time-sync server 10.0.0.5
+mgmt telnet permit-all
+web-mgmt plain disable
+blorp enable hyperflux-mode

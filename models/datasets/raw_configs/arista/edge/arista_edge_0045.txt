@@ -1,0 +1,7 @@
+! arista edge synthetic
+aaa authentication login default group tacacs+
+no ntp
+snmp-server community public ro
+ssh protocol version 1
+no http server
+! edge

@@ -1,0 +1,6 @@
+! arista secure synthetic
+ssh protocol version 2
+no http server
+snmp-server group NETADMIN v3 priv
+logging host 10.0.0.99
+generate rsa 2048

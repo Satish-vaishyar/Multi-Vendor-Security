@@ -1,0 +1,7 @@
+! arista edge synthetic
+snmp-server group NETADMIN v3 priv
+telnet server enable
+no http server
+no ntp
+aaa authentication login default group tacacs+
+! edge

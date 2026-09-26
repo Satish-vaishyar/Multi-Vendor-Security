@@ -1,0 +1,8 @@
+! paloalto unknown synthetic
+set deviceconfig snmp community public
+set deviceconfig snmp v3 priv
+set deviceconfig crypto weak
+set deviceconfig auth tacacs
+delete deviceconfig ntp
+set deviceconfig system ssh protocol v2
+blorp enable hyperflux-mode

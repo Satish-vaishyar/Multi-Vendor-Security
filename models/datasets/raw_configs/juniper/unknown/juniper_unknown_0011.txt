@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system ntp server 10.0.0.5
+set system services ssh protocol-version v2
+delete system services telnet
+delete system syslog
+delete system ntp
+set system services web-management http
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+{
+ "expected_vendor": "juniper",
+ "expected_platform": "juniper",
+ "expected_findings": false,
+ "sha256": "5ca551b6b168f1010ba07ea572a5139e594fec2aa9318348cf4ae89f457cca95",
+ "source": "synthetic",
+ "ground_truth": true
+}

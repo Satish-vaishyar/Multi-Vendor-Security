@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+web-mgmt plain enable
+cipher-suite modern
+mgmt telnet deny
+web-mgmt plain disable
+cipher-suite legacy
+auth backend none
+blorp enable hyperflux-mode

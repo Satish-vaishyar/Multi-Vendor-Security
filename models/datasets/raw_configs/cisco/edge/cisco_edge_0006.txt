@@ -1,0 +1,9 @@
+! cisco edge synthetic
+line vty 0 4
+ transport input ssh
+line vty 0 4
+ transport input telnet
+snmp-server community public RO
+no aaa new-model
+snmp-server group NETADMIN v3 priv
+! edge-note

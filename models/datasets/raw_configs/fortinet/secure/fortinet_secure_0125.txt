@@ -1,0 +1,7 @@
+! fortinet secure synthetic
+set admin-telnet disable
+set admin-http disable
+set snmpv3 enable
+set syslog-server 10.0.0.99
+set auth-type tacacs+
+set strong-crypto enable

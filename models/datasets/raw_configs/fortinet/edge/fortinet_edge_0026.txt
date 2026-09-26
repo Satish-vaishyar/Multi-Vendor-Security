@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set admin-telnet enable
+unset syslog-server
+set admin-http disable
+set ntp-server 10.0.0.5
+set auth-type tacacs+
+# edge

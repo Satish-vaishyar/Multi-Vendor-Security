@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set security ike proposal strong dh-group14
+set system ntp server 10.0.0.5
+set system services web-management http
+set system authentication-order tacplus
+delete system syslog
+set system services telnet
+blorp enable hyperflux-mode

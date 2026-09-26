@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set auth-type local
+set admin-telnet enable
+set admin-http enable
+set snmpv3 enable
+set admin-telnet disable
+# edge

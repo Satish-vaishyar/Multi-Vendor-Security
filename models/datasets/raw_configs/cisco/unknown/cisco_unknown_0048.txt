@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+ip http server
+aaa new-model
+ntp server 10.0.0.5
+ip ssh version 1
+no logging
+ip ssh version 2
+blorp enable hyperflux-mode

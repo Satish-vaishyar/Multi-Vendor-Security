@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+line vty 0 4
+ transport input telnet
+line vty 0 4
+ transport input ssh
+snmp-server group NETADMIN v3 priv
+crypto key generate rsa modulus 2048
+crypto key generate rsa modulus 1024
+no logging
+blorp enable hyperflux-mode

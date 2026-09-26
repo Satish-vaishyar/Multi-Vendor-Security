@@ -1,0 +1,1 @@
+{"method": "qiskit-qaoa", "selected": [0, 1, 0, 1, 0], "value": 8, "cost": 3, "classical_optimum": 17, "gap_to_optimum": 9, "time_s": 21.3}

@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+delete system services web-management http
+delete system services telnet
+set system services web-management http
+set system services telnet
+set system ntp server 10.0.0.5
+set security ike proposal weak dh-group1
+blorp enable hyperflux-mode

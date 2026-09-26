@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set snmpv3 enable
+set snmp-community public
+set auth-type local
+set admin-telnet enable
+set admin-http enable
+# edge

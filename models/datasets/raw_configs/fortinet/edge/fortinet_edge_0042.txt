@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+unset ntp-server
+set admin-telnet enable
+set admin-http disable
+set snmp-community public
+unset syslog-server
+# edge

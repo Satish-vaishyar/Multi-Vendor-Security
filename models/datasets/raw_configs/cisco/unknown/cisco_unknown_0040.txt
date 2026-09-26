@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+line vty 0 4
+ transport input ssh
+no ip http server
+ip http secure-server
+aaa new-model
+ip http server
+ip ssh version 2
+crypto key generate rsa modulus 1024
+blorp enable hyperflux-mode

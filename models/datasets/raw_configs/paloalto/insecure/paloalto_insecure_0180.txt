@@ -1,0 +1,6 @@
+! paloalto insecure synthetic
+set deviceconfig system http enable
+set deviceconfig snmp community public
+delete deviceconfig system syslog
+delete deviceconfig ntp
+set deviceconfig auth local

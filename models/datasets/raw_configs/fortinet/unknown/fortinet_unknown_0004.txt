@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set admin-telnet enable
+unset syslog-server
+set admin-telnet enable
+unset ntp-server
+set admin-http disable
+set auth-type tacacs+
+blorp enable hyperflux-mode

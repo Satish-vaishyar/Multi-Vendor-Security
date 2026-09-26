@@ -1,0 +1,7 @@
+! arista edge synthetic
+snmp-server community public ro
+telnet server enable
+no http server
+snmp-server group NETADMIN v3 priv
+ssh protocol version 1
+! edge

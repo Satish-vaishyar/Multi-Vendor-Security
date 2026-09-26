@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend none
+event-sink none
+cipher-suite legacy
+mgmt telnet deny
+secure-mgmt ssh protocol v2
+telemetry community public
+blorp enable hyperflux-mode

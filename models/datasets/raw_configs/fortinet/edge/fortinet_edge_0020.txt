@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set snmp-community public
+set auth-type local
+unset ntp-server
+set syslog-server 10.0.0.99
+set admin-telnet enable
+# edge

@@ -1,0 +1,8 @@
+! paloalto unknown synthetic
+delete deviceconfig system syslog
+set deviceconfig snmp v3 priv
+set deviceconfig auth tacacs
+set deviceconfig ntp 10.0.0.5
+set deviceconfig auth local
+delete deviceconfig ntp
+blorp enable hyperflux-mode

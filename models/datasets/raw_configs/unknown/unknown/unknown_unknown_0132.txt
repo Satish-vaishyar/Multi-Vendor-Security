@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend none
+mgmt telnet permit-all
+mgmt telnet deny
+time-sync server 10.0.0.5
+web-mgmt plain disable
+web-mgmt plain enable
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+time-sync none
+mgmt telnet permit-all
+telemetry v3 priv-only
+cipher-suite modern
+auth backend tacacs
+time-sync server 10.0.0.5
+blorp enable hyperflux-mode

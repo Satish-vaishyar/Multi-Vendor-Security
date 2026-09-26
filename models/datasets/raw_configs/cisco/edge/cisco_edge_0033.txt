@@ -1,0 +1,8 @@
+! cisco edge synthetic
+crypto key generate rsa modulus 1024
+crypto key generate rsa modulus 2048
+ntp server 10.0.0.5
+line vty 0 4
+ transport input ssh
+no aaa new-model
+! edge-note

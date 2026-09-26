@@ -1,0 +1,6 @@
+! arista insecure synthetic
+telnet server enable
+http server enable
+snmp-server community public ro
+no logging
+generate rsa 1024

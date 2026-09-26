@@ -1,0 +1,8 @@
+! arista unknown synthetic
+no telnet server
+http server enable
+no logging
+no ntp
+no http server
+aaa authentication login default group tacacs+
+blorp enable hyperflux-mode

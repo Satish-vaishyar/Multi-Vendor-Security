@@ -1,0 +1,8 @@
+{
+ "expected_vendor": "paloalto",
+ "expected_platform": "paloalto",
+ "expected_findings": false,
+ "sha256": "232679d7cafbd2c1624a38cb8256c919022a71027ba1b2ba9aaf419036fc2044",
+ "source": "synthetic",
+ "ground_truth": true
+}

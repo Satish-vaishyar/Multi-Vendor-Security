@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+crypto key generate rsa modulus 2048
+no aaa new-model
+logging host 10.0.0.99
+aaa new-model
+no logging
+crypto key generate rsa modulus 1024
+blorp enable hyperflux-mode

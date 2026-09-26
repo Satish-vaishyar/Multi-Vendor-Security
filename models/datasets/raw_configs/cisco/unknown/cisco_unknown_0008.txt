@@ -1,0 +1,9 @@
+! cisco unknown synthetic
+no ip http server
+ip http secure-server
+snmp-server community public RO
+ip http server
+crypto key generate rsa modulus 1024
+ip ssh version 2
+crypto key generate rsa modulus 2048
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! paloalto unknown synthetic
+set deviceconfig snmp v3 priv
+set deviceconfig system telnet enable
+delete deviceconfig system syslog
+set deviceconfig snmp community public
+set deviceconfig crypto weak
+set deviceconfig ntp 10.0.0.5
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! arista unknown synthetic
+ssh protocol version 2
+no logging
+ssh protocol version 1
+generate rsa 2048
+no ntp
+http server enable
+blorp enable hyperflux-mode

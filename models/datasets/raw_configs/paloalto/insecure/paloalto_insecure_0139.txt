@@ -1,0 +1,8 @@
+! paloalto insecure synthetic
+set deviceconfig system ssh protocol v1
+set deviceconfig system telnet enable
+set deviceconfig system http enable
+set deviceconfig snmp community public
+delete deviceconfig system syslog
+delete deviceconfig ntp
+set deviceconfig crypto weak

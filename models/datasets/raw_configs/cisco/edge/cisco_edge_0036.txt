@@ -1,0 +1,7 @@
+! cisco edge synthetic
+ip http server
+ntp server 10.0.0.5
+no ntp
+crypto key generate rsa modulus 1024
+logging host 10.0.0.99
+! edge-note

@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system syslog
+set system services telnet
+delete system ntp
+set security ike proposal weak dh-group1
+delete system services web-management http
+# edge stanza

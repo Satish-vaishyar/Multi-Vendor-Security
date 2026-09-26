@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig crypto strong
+set deviceconfig ntp 10.0.0.5
+set deviceconfig snmp community public
+set deviceconfig auth tacacs
+set deviceconfig auth local
+# edge

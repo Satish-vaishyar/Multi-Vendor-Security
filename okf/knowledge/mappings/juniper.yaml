@@ -1,0 +1,23 @@
+mappings:
+- vendor: juniper
+  platform: junos
+  raw_command_pattern: set\s+system\s+services\s+ssh\s+protocol-version\s+v2
+  canonical_property: SSH.VERSION
+  canonical_value: 2
+  confidence: 1.0
+  source: curated
+- vendor: juniper
+  platform: junos
+  raw_command_pattern: set\s+system\s+services\s+telnet
+  canonical_property: TELNET.ENABLED
+  canonical_value: true
+  confidence: 1.0
+  source: curated
+- vendor: juniper
+  platform: junos
+  raw_command_pattern: set\s+system\s+syslog\s+host\s+
+  canonical_property: LOGGING.REMOTE_SERVER
+  canonical_value: true
+  confidence: 1.0
+  source: curated
+mappings_learned_placeholder: true

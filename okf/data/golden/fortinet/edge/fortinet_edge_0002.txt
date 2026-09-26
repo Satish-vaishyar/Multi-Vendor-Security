@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set password-policy enable
+set ntp-server 10.0.0.5
+set weak-crypto enable
+set admin-telnet disable
+set admin-telnet enable
+# edge

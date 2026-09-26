@@ -1,0 +1,8 @@
+{
+  "sources": [
+    "https://www.cisecurity.org/controls/v8",
+    "https://www.cisecurity.org/cis-benchmarks"
+  ],
+  "extracts": [],
+  "note": "Public summaries only; full benchmarks require license. Curated controls remain authoritative."
+}

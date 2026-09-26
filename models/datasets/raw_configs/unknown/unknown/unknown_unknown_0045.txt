@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink none
+web-mgmt plain disable
+time-sync none
+auth backend none
+mgmt telnet permit-all
+web-mgmt plain enable
+blorp enable hyperflux-mode

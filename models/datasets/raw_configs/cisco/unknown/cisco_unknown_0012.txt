@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+logging host 10.0.0.99
+crypto key generate rsa modulus 1024
+ip http server
+no logging
+snmp-server community public RO
+no ntp
+blorp enable hyperflux-mode

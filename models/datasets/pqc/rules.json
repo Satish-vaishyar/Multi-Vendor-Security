@@ -1,0 +1,322 @@
+[
+ {
+  "algorithm": "RSA",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate RSA to PQC hybrid"
+ },
+ {
+  "algorithm": "ECDSA",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate ECDSA to PQC hybrid"
+ },
+ {
+  "algorithm": "DSA",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate DSA to PQC hybrid"
+ },
+ {
+  "algorithm": "DH",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate DH to PQC hybrid"
+ },
+ {
+  "algorithm": "ECDH",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate ECDH to PQC hybrid"
+ },
+ {
+  "algorithm": "AES",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate AES to PQC hybrid"
+ },
+ {
+  "algorithm": "3DES",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate 3DES to PQC hybrid"
+ },
+ {
+  "algorithm": "DES",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate DES to PQC hybrid"
+ },
+ {
+  "algorithm": "RC4",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate RC4 to PQC hybrid"
+ },
+ {
+  "algorithm": "SHA-1",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate SHA-1 to PQC hybrid"
+ },
+ {
+  "algorithm": "MD5",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate MD5 to PQC hybrid"
+ },
+ {
+  "algorithm": "TLS1.0",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate TLS1.0 to PQC hybrid"
+ },
+ {
+  "algorithm": "TLS1.2",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate TLS1.2 to PQC hybrid"
+ },
+ {
+  "algorithm": "TLS1.3",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate TLS1.3 to PQC hybrid"
+ },
+ {
+  "algorithm": "SSH-RSA",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate SSH-RSA to PQC hybrid"
+ },
+ {
+  "algorithm": "SSH-ED25519",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate SSH-ED25519 to PQC hybrid"
+ },
+ {
+  "algorithm": "IPsec-IKEv1",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate IPsec-IKEv1 to PQC hybrid"
+ },
+ {
+  "algorithm": "IPsec-IKEv2",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate IPsec-IKEv2 to PQC hybrid"
+ },
+ {
+  "algorithm": "SNMPv2c",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate SNMPv2c to PQC hybrid"
+ },
+ {
+  "algorithm": "SNMPv3",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate SNMPv3 to PQC hybrid"
+ },
+ {
+  "algorithm": "RSA",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate RSA to PQC hybrid"
+ },
+ {
+  "algorithm": "ECDSA",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate ECDSA to PQC hybrid"
+ },
+ {
+  "algorithm": "DSA",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate DSA to PQC hybrid"
+ },
+ {
+  "algorithm": "DH",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate DH to PQC hybrid"
+ },
+ {
+  "algorithm": "ECDH",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate ECDH to PQC hybrid"
+ },
+ {
+  "algorithm": "AES",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate AES to PQC hybrid"
+ },
+ {
+  "algorithm": "3DES",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate 3DES to PQC hybrid"
+ },
+ {
+  "algorithm": "DES",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate DES to PQC hybrid"
+ },
+ {
+  "algorithm": "RC4",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate RC4 to PQC hybrid"
+ },
+ {
+  "algorithm": "SHA-1",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate SHA-1 to PQC hybrid"
+ },
+ {
+  "algorithm": "MD5",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate MD5 to PQC hybrid"
+ },
+ {
+  "algorithm": "TLS1.0",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate TLS1.0 to PQC hybrid"
+ },
+ {
+  "algorithm": "TLS1.2",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate TLS1.2 to PQC hybrid"
+ },
+ {
+  "algorithm": "TLS1.3",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate TLS1.3 to PQC hybrid"
+ },
+ {
+  "algorithm": "SSH-RSA",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate SSH-RSA to PQC hybrid"
+ },
+ {
+  "algorithm": "SSH-ED25519",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate SSH-ED25519 to PQC hybrid"
+ },
+ {
+  "algorithm": "IPsec-IKEv1",
+  "key_size": 1024,
+  "protocol": "SSH",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate IPsec-IKEv1 to PQC hybrid"
+ },
+ {
+  "algorithm": "IPsec-IKEv2",
+  "key_size": 2048,
+  "protocol": "TLS",
+  "security_status": "ok",
+  "pqc_status": "transition",
+  "migration": "Migrate IPsec-IKEv2 to PQC hybrid"
+ },
+ {
+  "algorithm": "SNMPv2c",
+  "key_size": 3072,
+  "protocol": "IPsec",
+  "security_status": "strong",
+  "pqc_status": "ready",
+  "migration": "Migrate SNMPv2c to PQC hybrid"
+ },
+ {
+  "algorithm": "SNMPv3",
+  "key_size": 256,
+  "protocol": "SNMP",
+  "security_status": "weak",
+  "pqc_status": "vulnerable",
+  "migration": "Migrate SNMPv3 to PQC hybrid"
+ }
+]

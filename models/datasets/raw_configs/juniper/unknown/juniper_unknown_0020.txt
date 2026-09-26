@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system syslog host 10.0.0.99 any any
+set system services ssh protocol-version v2
+set system services telnet
+delete system services telnet
+set system services ssh protocol-version v1
+set security ike proposal weak dh-group1
+blorp enable hyperflux-mode

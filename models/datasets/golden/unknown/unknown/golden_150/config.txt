@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+mgmt telnet deny
+telemetry community public
+cipher-suite legacy
+mgmt telnet permit-all
+event-sink none
+secure-mgmt ssh protocol v2
+blorp enable hyperflux-mode

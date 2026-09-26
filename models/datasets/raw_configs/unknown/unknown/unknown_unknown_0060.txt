@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite legacy
+time-sync server 10.0.0.5
+time-sync none
+auth backend none
+mgmt telnet deny
+event-sink none
+blorp enable hyperflux-mode

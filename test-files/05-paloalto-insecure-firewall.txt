@@ -1,0 +1,17 @@
+# Palo Alto Networks — INSECURE (expect LOW score, weak mgmt findings)
+# Device: PA-FW-01
+# PAN-OS 10.2.3
+# vsys vsys1 test config
+
+set deviceconfig system hostname PA-FW-01
+set deviceconfig system dns-setting servers primary 8.8.8.8
+set deviceconfig password-complexity disable
+set deviceconfig admin-telnet enable
+set admin-http enable
+set snmp-community public
+set syslog-server none
+unset ntp-server
+set auth-type local
+set weak-crypto enable
+set deviceconfig management telnet permit-all
+set vsys vsys1 rulebase security rules allow-all from any to any source any destination any application any service any action allow

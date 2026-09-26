@@ -1,0 +1,46 @@
+controls:
+  - control_id: OKF-CERTIN-001
+    title: "CERT-In: audit logging with timestamps and remote syslog (CIS-7 / CERT-In directions)"
+    description: "India CERT-In directions require logging of ICT system events with time-sync."
+    category: logging
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CERT-In: CERTIN-LOG-01, NIST: AU-2, ISO27001: A.8.15}
+    condition: {all: [{property: LOGGING.ENABLED, operator: EQUALS, value: true}, {property: LOGGING.REMOTE_SERVER, operator: EQUALS, value: true}, {property: LOGGING.TIMESTAMPS, operator: EQUALS, value: true}]}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-CERTIN-002
+    title: "CERT-In: time synchronization of ICT systems"
+    description: "NTP with authenticated sources for log correlation."
+    category: system
+    severity: MEDIUM
+    version: "1.0"
+    frameworks: {CERT-In: CERTIN-LOG-02, NIST: AU-8, ISO27001: A.8.15}
+    condition: {property: NTP.ENABLED, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-CERTIN-003
+    title: "CERT-In: strong authentication and encrypted credentials"
+    description: "No cleartext credentials; encrypted storage and AAA."
+    category: authentication
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CERT-In: CERTIN-AUTH-01, NIST: IA-5, ISO27001: A.5.17}
+    condition: {all: [{property: PASSWORD.ENCRYPTED, operator: EQUALS, value: true}, {property: AAA.AUTHENTICATION, operator: EQUALS, value: true}]}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-CERTIN-004
+    title: "CERT-In: no insecure management services"
+    description: "Telnet/HTTP/FTP disabled on internet-facing management."
+    category: remote_access
+    severity: CRITICAL
+    version: "1.0"
+    frameworks: {CERT-In: CERTIN-NET-01, NIST: CM-7, ISO27001: A.8.20}
+    condition: {all: [{property: TELNET.ENABLED, operator: EQUALS, value: false}, {property: HTTP.ENABLED, operator: EQUALS, value: false}]}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-CERTIN-005
+    title: "CERT-In: supported cryptography only"
+    description: "No deprecated algorithms per CERT-In crypto guidance."
+    category: crypto
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CERT-In: CERTIN-CRYPTO-01, NIST: SC-12, ISO27001: A.8.24}
+    condition: {property: CRYPTO.WEAK_ALGO, operator: EQUALS, value: false}
+    evidence_type: CONFIGURATION

@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite modern
+telemetry v3 priv-only
+mgmt telnet deny
+event-sink remote 10.0.0.99
+time-sync server 10.0.0.5
+event-sink none
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set snmp community public authorization read-only
+delete system syslog
+set security ike proposal strong dh-group14
+set system ntp server 10.0.0.5
+set system syslog host 10.0.0.99 any any
+# edge stanza

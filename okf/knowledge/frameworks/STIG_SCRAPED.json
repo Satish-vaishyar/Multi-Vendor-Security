@@ -1,0 +1,5 @@
+{
+  "source": "https://public.cyber.mil/stigs/",
+  "stig_titles": [],
+  "note": "Download full XCCDF from cyber.mil and use import_xccdf()."
+}

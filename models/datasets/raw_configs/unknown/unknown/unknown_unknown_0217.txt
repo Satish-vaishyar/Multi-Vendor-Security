@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+mgmt telnet deny
+cipher-suite legacy
+mgmt telnet permit-all
+telemetry v3 priv-only
+web-mgmt plain enable
+event-sink none
+blorp enable hyperflux-mode

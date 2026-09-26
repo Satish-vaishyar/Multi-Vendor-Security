@@ -1,0 +1,10 @@
+hostname Core-Router-01
+ip domain-name example.local
+ip ssh version 1
+ip http server
+line vty 0 4
+ transport input telnet
+snmp-server community public RO
+logging host 10.0.0.99
+ntp server 10.0.0.5
+aaa new-model

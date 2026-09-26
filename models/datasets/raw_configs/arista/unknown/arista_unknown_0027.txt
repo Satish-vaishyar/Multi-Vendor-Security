@@ -1,0 +1,8 @@
+! arista unknown synthetic
+no aaa
+ssh protocol version 2
+logging host 10.0.0.99
+http server enable
+ssh protocol version 1
+aaa authentication login default group tacacs+
+blorp enable hyperflux-mode

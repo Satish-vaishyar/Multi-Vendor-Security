@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+ip http server
+no aaa new-model
+crypto key generate rsa modulus 2048
+no ntp
+no logging
+ntp server 10.0.0.5
+blorp enable hyperflux-mode

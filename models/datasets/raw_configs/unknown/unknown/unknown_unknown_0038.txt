@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink none
+secure-mgmt ssh protocol v2
+time-sync server 10.0.0.5
+auth backend none
+auth backend tacacs
+telemetry v3 priv-only
+blorp enable hyperflux-mode

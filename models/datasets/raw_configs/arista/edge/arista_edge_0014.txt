@@ -1,0 +1,7 @@
+! arista edge synthetic
+snmp-server community public ro
+no telnet server
+logging host 10.0.0.99
+no ntp
+ssh protocol version 1
+! edge

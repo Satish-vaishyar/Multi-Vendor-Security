@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system services telnet
+delete system services telnet
+delete system tacplus-server
+delete system ntp
+set system ntp server 10.0.0.5
+set security ike proposal weak dh-group1
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set security ike proposal strong dh-group14
+set snmp community public authorization read-only
+set security ike proposal weak dh-group1
+delete system services web-management http
+delete system ntp
+# edge stanza

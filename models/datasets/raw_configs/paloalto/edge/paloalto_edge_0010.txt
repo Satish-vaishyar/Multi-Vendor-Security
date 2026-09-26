@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig auth tacacs
+set deviceconfig snmp community public
+set deviceconfig system http enable
+set deviceconfig system telnet enable
+delete deviceconfig system syslog
+# edge

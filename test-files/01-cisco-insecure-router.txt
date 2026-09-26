@@ -1,0 +1,54 @@
+! Cisco IOS-XE — INSECURE baseline (expect LOW compliance score, many findings)
+! Device: Core-Router-01 | Intentionally misconfigured for testing
+hostname Core-Router-01
+!
+! Platform version string (used for vendor/version detection + CVE correlation)
+! Cisco IOS-XE version 17.9.2
+!
+service password-encryption
+no service timestamps log datetime
+!
+! WEAK: SSH v1, short timeout, many retries
+ip ssh version 1
+ip ssh time-out 30
+ip ssh authentication-retries 5
+!
+! WEAK: Telnet enabled on VTY
+line vty 0 4
+ transport input telnet
+ password cisco123
+ login
+!
+! WEAK: plaintext HTTP management
+ip http server
+no ip http secure-server
+!
+! WEAK: default SNMP community
+snmp-server community public RO
+snmp-server community private RW
+!
+interface GigabitEthernet0/0
+ description Uplink to ISP
+ ip address 192.168.1.1 255.255.255.0
+ no shutdown
+!
+interface GigabitEthernet0/1
+ description LAN
+ ip address 10.0.0.1 255.255.255.0
+ no shutdown
+!
+! WEAK: no AAA
+no aaa new-model
+!
+! WEAK: no logging, no NTP
+no logging
+no ntp
+!
+! WEAK: 1024-bit RSA key
+crypto key generate rsa modulus 1024
+!
+! WEAK: source-route + proxy-arp left on
+ip source-route
+ip proxy-arp
+!
+end

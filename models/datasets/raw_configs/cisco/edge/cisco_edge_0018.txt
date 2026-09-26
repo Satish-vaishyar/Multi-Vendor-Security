@@ -1,0 +1,9 @@
+! cisco edge synthetic
+line vty 0 4
+ transport input ssh
+line vty 0 4
+ transport input telnet
+ip ssh version 2
+ip http server
+crypto key generate rsa modulus 1024
+! edge-note

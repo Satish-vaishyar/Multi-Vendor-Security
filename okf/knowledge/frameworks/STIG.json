@@ -1,0 +1,1 @@
+{"framework_id": "STIG", "name": "DISA STIG (network device checklist subset)", "version": "2024", "publisher": "DISA", "source": "curated+stig_scraper", "control_ids": ["OKF-SSH-001", "OKF-TELNET-001", "OKF-LOG-001", "OKF-CRYPTO-001", "OKF-PASS-001"]}

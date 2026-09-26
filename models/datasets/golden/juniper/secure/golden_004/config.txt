@@ -1,0 +1,7 @@
+! juniper secure synthetic
+set system services ssh protocol-version v2
+delete system services telnet
+delete system services web-management http
+set system ntp server 10.0.0.5
+set system authentication-order tacplus
+set security ike proposal strong dh-group14

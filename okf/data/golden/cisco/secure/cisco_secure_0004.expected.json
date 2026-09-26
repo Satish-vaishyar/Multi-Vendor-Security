@@ -1,0 +1,15 @@
+{
+ "expected_vendor": "cisco",
+ "expected_profile": "secure",
+ "expected_ir": {
+  "ACL.MGMT_RESTRICTED": true
+ },
+ "provenance": {
+  "ACL.MGMT_RESTRICTED": {
+   "line": "access-class MGMT-IN in",
+   "line_no": 7,
+   "source": "curated",
+   "confidence": 0.9
+  }
+ }
+}

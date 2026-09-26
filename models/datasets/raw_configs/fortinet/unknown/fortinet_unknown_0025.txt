@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set snmpv3 enable
+unset ntp-server
+set admin-telnet enable
+set admin-telnet disable
+set admin-http enable
+set snmp-community public
+blorp enable hyperflux-mode

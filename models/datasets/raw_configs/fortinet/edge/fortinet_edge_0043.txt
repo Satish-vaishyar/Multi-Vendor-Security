@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set snmp-community public
+set snmpv3 enable
+unset ntp-server
+set admin-http enable
+set strong-crypto enable
+# edge

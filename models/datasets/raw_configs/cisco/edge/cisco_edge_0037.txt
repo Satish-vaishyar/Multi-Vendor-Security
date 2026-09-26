@@ -1,0 +1,9 @@
+! cisco edge synthetic
+no ntp
+line vty 0 4
+ transport input ssh
+logging host 10.0.0.99
+line vty 0 4
+ transport input telnet
+snmp-server group NETADMIN v3 priv
+! edge-note

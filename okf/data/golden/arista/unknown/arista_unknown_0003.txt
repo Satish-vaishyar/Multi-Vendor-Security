@@ -1,0 +1,14 @@
+! arista unknown synthetic
+ip ssh version 1
+no logging
+ip http server
+no ntp
+snmp-server community public RO
+service password-encryption
+enable secret 9 $9$hashed
+no ip source-route
+no ip proxy-arp
+ip dhcp snooping
+banner motd # Authorized use only #
+no ip routing-source
+blorp enable hyperflux-mode

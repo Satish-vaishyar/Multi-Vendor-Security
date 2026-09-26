@@ -1,0 +1,7 @@
+! cisco edge synthetic
+ip ssh version 1
+logging host 10.0.0.99
+ip http server
+snmp-server community public RO
+no ntp
+! edge-note

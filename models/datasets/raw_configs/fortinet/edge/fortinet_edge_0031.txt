@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set admin-https-redirect enable
+set admin-telnet enable
+set admin-http disable
+set admin-telnet disable
+set snmpv3 enable
+# edge

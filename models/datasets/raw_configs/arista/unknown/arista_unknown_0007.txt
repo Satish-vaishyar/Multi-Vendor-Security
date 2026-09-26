@@ -1,0 +1,8 @@
+! arista unknown synthetic
+no ntp
+no telnet server
+ssh protocol version 2
+http server enable
+telnet server enable
+logging host 10.0.0.99
+blorp enable hyperflux-mode

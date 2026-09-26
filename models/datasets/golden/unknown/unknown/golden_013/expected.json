@@ -1,0 +1,8 @@
+{
+ "expected_vendor": "unknown",
+ "expected_platform": "unknown",
+ "expected_findings": false,
+ "sha256": "dfa3448040bc090b048c3b8351bf637e2f039af4db0a27f7889452af11709570",
+ "source": "synthetic",
+ "ground_truth": true
+}

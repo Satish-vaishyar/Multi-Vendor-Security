@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel · SIH-26155 Network Security Auditor</title>
+<style>
+:root{
+  --bg:#0b0f16; --bg2:#0e1420; --panel:#131b2a; --panel2:#17203200; --card:#141d2e;
+  --line:#233148; --line2:#2c3d58; --txt:#e6edf7; --mut:#8fa1bd; --mut2:#64748f;
+  --acc:#4da3ff; --acc2:#7cc0ff; --ok:#34d399; --bad:#ff6b6b; --warn:#ffb020;
+  --vio:#a78bfa; --teal:#2dd4bf; --r:14px;
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 500px at 80% -10%,#16233c 0%,var(--bg) 55%) fixed,var(--bg);color:var(--txt);font:14px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif}
+a{color:var(--acc)}
+.app{display:flex;min-height:100vh}
+/* ---- sidebar ---- */
+.side{width:236px;flex:0 0 236px;background:linear-gradient(180deg,#0f1729,#0b1120);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;padding:4px 8px 16px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#2563eb,#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;box-shadow:var(--shadow)}
+.brand h1{font-size:15px;margin:0;letter-spacing:.2px}
+.brand small{color:var(--mut);font-size:11px}
+.nav{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.nav button{background:transparent;border:1px solid transparent;color:var(--mut);text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:13.5px;display:flex;gap:10px;align-items:center}
+.nav button:hover{background:#182437;color:var(--txt)}
+.nav button.active{background:linear-gradient(90deg,rgba(77,163,255,.18),rgba(77,163,255,.05));border-color:rgba(77,163,255,.35);color:var(--acc2)}
+.nav .ico{width:22px;text-align:center}
+.sidefoot{margin-top:auto;font-size:11px;color:var(--mut2);padding:8px}
+/* ---- main ---- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;gap:10px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);background:rgba(11,15,22,.7);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.top input{background:#0a0f1a;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:9px;font-size:13px}
+#base{width:250px}#email{width:190px}#pw{width:110px}
+.pill{font-size:11.5px;padding:3px 11px;border-radius:20px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.pill.on{color:var(--ok);border-color:rgba(52,211,153,.5)}
+.pill.off{color:var(--warn);border-color:rgba(255,176,32,.5)}
+.content{padding:22px;max-width:1280px;width:100%;margin:0 auto}
+section.tab{display:none}section.tab.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+h2.page{margin:2px 0 4px;font-size:20px}
+p.sub{color:var(--mut);margin:0 0 16px;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:1100px){.grid,.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.grid,.grid3,.grid4{grid-template-columns:1fr}.side{display:none}}
+.card{background:linear-gradient(180deg,var(--card),#121a2b);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 12px;font-size:13.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+.stat{background:linear-gradient(180deg,#182238,#131c2f);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.stat .v{font-size:26px;font-weight:800}
+.stat .l{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+textarea{width:100%;min-height:150px;background:#0a0f1a;color:#c9f0d8;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:Consolas,monospace;font-size:12.5px}
+input[type=text],input[type=password],select{background:#0a0f1a;border:1px solid var(--line);color:var(--txt);padding:7px 10px;border-radius:9px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+button.go{background:linear-gradient(135deg,#3b82f6,#06b6d4);border:0;color:#fff;font-weight:700;padding:9px 18px;border-radius:10px;cursor:pointer}
+button.go:hover{filter:brightness(1.1)}
+button.ghost{background:#1a2438;border:1px solid var(--line2);color:var(--txt);padding:7px 13px;border-radius:10px;cursor:pointer}
+button.ghost:hover{border-color:var(--acc)}
+button:disabled{opacity:.5;cursor:wait}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+.bdg{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid}
+.CRITICAL,.FAIL{color:var(--bad)}.HIGH{color:#ff9a6b}.MEDIUM{color:var(--warn)}.LOW{color:var(--mut)}.PASS{color:var(--ok)}.UNKNOWN{color:var(--vio)}
+span.bdg.CRITICAL,span.bdg.FAIL{border-color:rgba(255,107,107,.5);background:rgba(255,107,107,.08)}
+span.bdg.HIGH{border-color:rgba(255,154,107,.5);background:rgba(255,154,107,.08)}
+span.bdg.MEDIUM{border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.08)}
+span.bdg.LOW{border-color:var(--line2)}
+span.bdg.PASS{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.08);color:var(--ok)}
+span.bdg.UNKNOWN{border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.08);color:var(--vio)}
+pre{background:#0a0f1a;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;max-height:300px;font-size:12px}
+.mut{color:var(--mut);font-size:12.5px}
+.score{font-size:30px;font-weight:800}
+.bar{height:8px;border-radius:6px;background:#0a0f1a;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#3b82f6,#06b6d4)}
+.fwrow{display:flex;gap:8px;flex-wrap:wrap}
+label.fw{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+#toast{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:50}
+.toast{background:#162032;border:1px solid var(--line2);border-left:4px solid var(--acc);padding:10px 14px;border-radius:10px;box-shadow:var(--shadow);font-size:13px;max-width:340px}
+.toast.err{border-left-color:var(--bad)}.toast.okk{border-left-color:var(--ok)}
+.scroll{overflow:auto}
+.donut{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.legend{font-size:12.5px;color:var(--mut)}
+.legend b{color:var(--txt)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="brand"><div class="logo">S</div><div><h1>Sentinel</h1><small>SIH-26155 auditor</small></div></div>
+  <nav class="nav" id="tabs">
+    <button data-t="dash" class="active"><span class="ico">◈</span>Dashboard</button>
+    <button data-t="audit"><span class="ico">⇪</span>Upload &amp; Audit</button>
+    <button data-t="find"><span class="ico">☰</span>Findings</button>
+    <button data-t="train"><span class="ico">✎</span>Training Loop</button>
+    <button data-t="pqc"><span class="ico">⬢</span>PQC / CBOM</button>
+    <button data-t="rep"><span class="ico">▤</span>Reports</button>
+  </nav>
+  <div class="sidefoot">API-only console · <span id="ver">v1.0.0</span><br>bulk upload · 4 engines · evidence</div>
+</aside>
+<div class="main">
+  <div class="top">
+    <input id="base" type="text" value="http://127.0.0.1:8000" title="Backend API base URL">
+    <button class="ghost" onclick="health()">Check API</button>
+    <span id="health" class="pill">unknown</span>
+    <input id="email" type="text" value="admin@example.com" title="login email">
+    <input id="pw" type="password" value="admin123" title="login password">
+    <button class="ghost" onclick="doLogin()">Login</button>
+    <span id="who" class="mut"></span>
+  </div>
+  <div class="content">
+
+  <section id="t-dash" class="tab active">
+    <h2 class="page">Security posture at a glance</h2>
+    <p class="sub">Aggregated from a single call — <code>GET /dashboard/summary</code>. <button class="ghost" onclick="dash()">Refresh</button></p>
+    <div class="grid4" id="dstats"></div>
+    <div class="grid">
+      <div class="card"><h3>Findings by severity</h3><div class="donut"><svg id="donut" width="150" height="150" viewBox="0 0 42 42"></svg><div class="legend" id="dleg"></div></div></div>
+      <div class="card"><h3>Fleet snapshot</h3><div id="dsum"></div><h3 style="margin-top:14px">Raw</h3><pre id="djson"></pre></div>
+    </div>
+  </section>
+
+  <section id="t-audit" class="tab">
+    <h2 class="page">Upload &amp; audit a device</h2>
+    <p class="sub"><code>POST /assets → POST /configurations/upload → POST /audits → GET /audits/{id}/results</code></p>
+    <div class="grid">
+      <div class="card"><h3>1 · Asset &amp; configuration</h3>
+        <div class="row"><button class="ghost" onclick="mkAsset()">Create demo asset</button><span class="mut" id="aid"></span></div>
+        <div class="row"><button class="ghost" onclick="fillSample('bad')">Insecure Cisco</button><button class="ghost" onclick="fillSample('good')">Secure Cisco</button><button class="ghost" onclick="fillSample('juniper')">Juniper</button></div>
+        <textarea id="cfg" spellcheck="false"></textarea>
+        <div class="row"><button class="go" onclick="upload()">Upload</button><span class="mut" id="cid"></span></div>
+        <div class="fwrow" id="fws">
+          <label class="fw"><input type="checkbox" value="CIS" checked>CIS</label>
+          <label class="fw"><input type="checkbox" value="NIST" checked>NIST</label>
+          <label class="fw"><input type="checkbox" value="STIG" checked>STIG</label>
+          <label class="fw"><input type="checkbox" value="ISO27001" checked>ISO 27001</label>
+        </div>
+        <div class="row"><button class="go" onclick="runAudit()">2 · Run audit</button><span class="mut" id="auid"></span></div>
+      </div>
+      <div class="card"><h3>Result</h3>
+        <div id="score"></div><div id="byfw" style="margin-top:10px"></div>
+        <div class="mut" id="unks" style="margin-top:8px"></div>
+        <div class="mut" id="irv" style="margin-top:4px"></div>
+        <div class="row"><button class="ghost" onclick="loadEvidence()">Evidence chain</button><button class="ghost" onclick="loadCanon()">Canonical IR</button></div>
+        <pre id="ev"></pre>
+      </div>
+    </div>
+    <div class="card"><h3>Unified findings (all four engines)</h3>
+      <div class="scroll"><table id="ftab"><thead><tr><th>ID</th><th>Engine</th><th>Title</th><th>Severity</th><th>Status</th><th>Risk</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="t-find" class="tab">
+    <h2 class="page">Unified findings</h2>
+    <p class="sub"><code>GET /findings</code> — one schema for compliance, CVE, security and PQC.</p>
+    <div class="card"><h3>Filter
+      <select id="fsev" onchange="loadFindings()"><option value="">all severities</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option></select>
+      <select id="feng" onchange="loadFindings()"><option value="">all engines</option><option>compliance</option><option>cve</option><option>pqc</option><option>security</option></select>
+      <label class="fw"><input type="checkbox" id="fded" onchange="loadFindings()">M8 semantic dedup</label>
+      <button class="ghost" onclick="loadFindings()">Refresh</button></h3>
+      <div class="scroll"><table id="gtab"><thead><tr><th>ID</th><th>Type</th><th>Title</th><th>Severity</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>
+      <div class="row"><label>Finding <input id="remf" type="text" size="16"></label><button class="ghost" onclick="remFlow()">Plan → approve → dry-run apply</button></div>
+      <pre id="remout"></pre>
+    </div>
+  </section>
+
+  <section id="t-train" class="tab">
+    <h2 class="page">Adaptive training loop</h2>
+    <p class="sub">Unknown line → M2 OOV score → LLM + M3-kNN suggestions → approve → registry → re-audit recognises it.</p>
+    <div class="card"><h3>Unknown commands <button class="ghost" onclick="tqueue()">Load from last upload</button></h3><pre id="tq"></pre>
+      <div class="row"><label>Training ID <input id="tid" type="text" size="14"></label><button class="ghost" onclick="suggest()">Suggest</button></div>
+      <pre id="sug"></pre>
+      <div class="row"><label>Property <input id="apc" type="text" value="SSH.VERSION" size="16"></label><label>Value <input id="apv" type="text" value="2" size="6"></label><button class="go" onclick="approve()">Approve</button></div>
+      <pre id="apr"></pre>
+    </div>
+  </section>
+
+  <section id="t-pqc" class="tab">
+    <h2 class="page">PQC readiness &amp; CBOM</h2>
+    <p class="sub"><code>GET /pqc/{audit_id}</code> — kept separate from compliance scoring by design.</p>
+    <div class="card"><h3>Cryptographic bill of materials <button class="ghost" onclick="loadPqc()">Load for last audit</button></h3>
+      <div id="pqcs"></div><div id="pqcbar"></div><pre id="pqcj"></pre></div>
+  </section>
+
+  <section id="t-rep" class="tab">
+    <h2 class="page">Audit report</h2>
+    <p class="sub"><code>POST /reports → GET /reports/{id}/download</code> — single PDF per device (ID, findings, remediation).</p>
+    <div class="card"><h3>Generate &amp; download <button class="go" onclick="mkReport()">Generate PDF</button> <button class="ghost" onclick="dlReport()">Download</button></h3><pre id="repj"></pre></div>
+  </section>
+
+  </div>
+</div>
+</div>
+<div id="toast"></div>
+<script>
+// API-only console: every action below is a fetch() to /api/v1/*. No backend imports.
+const $=id=>document.getElementById(id);
+const base=()=>$('base').value.replace(/\/$/,'');
+let TOK='',ASSET='',CFG='',AUD='',REP='';
+function toast(msg,cls=''){const d=document.createElement('div');d.className='toast '+cls;d.textContent=msg;$('toast').appendChild(d);setTimeout(()=>d.remove(),4200)}
+async function call(m,p,b){const h={};if(TOK)h['Authorization']='Bearer '+TOK;const o={method:m,headers:h};if(b){h['Content-Type']='application/json';o.body=JSON.stringify(b)}const r=await fetch(base()+p,o);return r.json()}
+async function callBin(p){const h={};if(TOK)h['Authorization']='Bearer '+TOK;return (await fetch(base()+p,{headers:h})).blob()}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('section.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('t-'+b.dataset.t).classList.add('active')});
+const SAMPLES={bad:`hostname Core-Router-01\nip ssh version 1\nip http server\nline vty 0 4\n transport input telnet\nsnmp-server community public RO\nno logging\nCisco IOS-XE version 17.9.2`,good:`hostname Core-Router-01\nip ssh version 2\nip ssh time-out 60\nno ip http server\nip http secure-server\nline vty 0 4\n transport input ssh\nsnmp-server group NETADMIN v3 priv\nlogging host 10.0.0.99\nservice timestamps log datetime\nntp server 10.0.0.5\nservice password-encryption\nenable secret 9 $9$hashed\nno ip source-route`,juniper:`set system services ssh protocol-version v2\nset system services telnet\nset system syslog host 10.0.0.99 any any`};
+function fillSample(k){$('cfg').value=SAMPLES[k]}
+fillSample('bad');
+const bdg=(t,c)=>`<span class="bdg ${c}">${t}</span>`;
+async function health(){try{const h=await call('GET','/health');$('health').textContent=h.status||'up';$('health').className='pill on'}catch(e){$('health').textContent='unreachable — start backend';$('health').className='pill off'}}
+async function doLogin(){try{const r=await call('POST','/api/v1/auth/login',{email:$('email').value,password:$('pw').value});if(r.success){TOK=r.data.access_token;$('who').textContent=r.data.user.email+' ('+r.data.user.role+')';toast('Logged in as '+r.data.user.email,'okk')}}catch(e){toast('Login failed — continuing anonymously','err')}}
+function donut(segs){const tot=segs.reduce((a,s)=>a+s.v,0)||1;let off=25;const C={'CRITICAL':'#ff6b6b','HIGH':'#ff9a6b','MEDIUM':'#ffb020','LOW':'#8fa1bd'};$('donut').innerHTML=segs.map(s=>{const len=s.v/tot*100;const el=`<circle cx="21" cy="21" r="15.9" fill="none" stroke="${C[s.k]}" stroke-width="5" stroke-dasharray="${len.toFixed(1)} ${(100-len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}"/>`;off-=len;return el}).join('');$('dleg').innerHTML=segs.map(s=>`<div><span class="dot" style="background:${C[s.k]}"></span><b>${s.v}</b> ${s.k.toLowerCase()}</div>`).join('')}
+async function dash(){try{const r=await call('GET','/api/v1/dashboard/summary');const d=r.data,f=d.findings;$('dstats').innerHTML=[['Assets',d.assets.total],['Compliance %',d.compliance.overall],['Critical',f.critical],['Pending training',d.training.pending]].map(([l,v])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');donut([{k:'CRITICAL',v:f.critical},{k:'HIGH',v:f.high},{k:'MEDIUM',v:f.medium},{k:'LOW',v:f.low}]);$('dsum').innerHTML=`CVE critical <b>${d.cve.critical}</b> · high <b>${d.cve.high}</b>`;$('djson').textContent=JSON.stringify(d,null,1)}catch(e){toast('Dashboard failed: '+e,'err')}}
+async function mkAsset(){const r=await call('POST','/api/v1/assets',{name:'Core-Router-01',vendor:'Cisco',product:'IOS-XE',version:'17.9.2',criticality:'HIGH'});ASSET=r.data.asset_id;$('aid').textContent=ASSET;toast('Asset '+ASSET,'okk')}
+async function upload(){const fd=new FormData();fd.append('file',new Blob([$('cfg').value],{type:'text/plain'}),'router.txt');fd.append('asset_id',ASSET||'AST-001');const h={};if(TOK)h['Authorization']='Bearer '+TOK;const r=await (await fetch(base()+'/api/v1/configurations/upload',{method:'POST',headers:h,body:fd})).json();CFG=r.data.configuration_id;$('cid').textContent=`${CFG} · ${r.data.detected_vendor} ${r.data.detected_platform} ${r.data.detected_version||''}`;toast('Detected '+r.data.detected_vendor,'okk')}
+async function runAudit(){const fws=[...document.querySelectorAll('#fws input:checked')].map(x=>x.value);const r=await call('POST','/api/v1/audits',{asset_id:ASSET||'AST-001',configuration_id:CFG,frameworks:fws,run_cve:true,run_pqc:true,run_security_analysis:true});AUD=r.data.audit_id;$('auid').textContent=AUD;const res=await call('GET',`/api/v1/audits/${AUD}/results`);const s=res.data.summary;$('score').innerHTML=`<span class="score">${s.compliance_score}%</span> <span class="mut">critical ${s.critical} · high ${s.high} · medium ${s.medium}</span>`;$('byfw').innerHTML=Object.entries(res.data.frameworks).map(([k,v])=>`<div class="row" style="margin:4px 0"><span style="width:90px">${k}</span><div class="bar" style="flex:1"><i style="width:${v.score}%"></i></div><b>${v.score}%</b></div>`).join('');$('unks').textContent='Unknown lines: '+(res.data.unknown_lines||[]).join(' | ');const iv=res.data.ir_validation||{};$('irv').textContent=`IR valid: ${iv.valid} · versions: `+JSON.stringify(res.data.versions||{});$('ftab').querySelector('tbody').innerHTML=res.data.findings.map(f=>`<tr><td class="mut">${f.finding_id}</td><td>${f.engine}</td><td>${f.title}</td><td>${bdg(f.severity,f.severity)}</td><td>${bdg(f.status,f.status)}</td><td>${(f.risk&&(f.risk.priority||f.risk.risk_score))||''}</td></tr>`).join('');toast('Audit complete: '+res.data.findings.length+' findings','okk')}
+async function loadEvidence(){const r=await call('GET',`/api/v1/audits/${AUD}/evidence`);$('ev').textContent=JSON.stringify(r.data.items,null,1)}
+async function loadCanon(){const r=await call('GET',`/api/v1/configurations/${CFG}/canonical-ir`);$('ev').textContent=JSON.stringify(r.data,null,1)}
+async function loadFindings(){const q=new URLSearchParams({severity:$('fsev').value,engine:$('feng').value});if($('fded').checked)q.set('dedupe','true');const r=await call('GET','/api/v1/findings?'+q.toString());$('gtab').querySelector('tbody').innerHTML=r.data.items.map(f=>`<tr><td class="mut">${f.finding_id}</td><td>${f.type}</td><td>${f.title}</td><td>${bdg(f.severity,f.severity)}</td><td>${bdg(f.status,f.status)}</td><td><button class="ghost" onclick="$('remf').value='${f.finding_id}'">select</button></td></tr>`).join('')||'<tr><td colspan="6" class="mut">no findings match</td></tr>'}
+async function remFlow(){const f=$('remf').value;if(!f)return toast('Select a finding first','err');let r=await call('GET',`/api/v1/remediation/${f}`);$('remout').textContent='PLAN:\n'+JSON.stringify(r.data,null,1);r=await call('POST',`/api/v1/remediation/${f}/approve`,{approved_by:'console'});const id=r.data.id;$('remout').textContent+='\nAPPROVED '+id;r=await call('POST',`/api/v1/remediation/${f}/apply`,{id});$('remout').textContent+='\nAPPLY (simulation):\n'+JSON.stringify(r,null,1)}
+async function tqueue(){const r=await call('GET','/api/v1/configurations/'+CFG+'/unknowns');$('tq').textContent=JSON.stringify(r.data,null,1);const q=await call('GET','/api/v1/training/queue');if(q.data.items[0])$('tid').value=q.data.items[0].training_id}
+async function suggest(){const r=await call('POST',`/api/v1/training/${$('tid').value}/suggest`);$('sug').textContent=JSON.stringify(r.data,null,1)}
+async function approve(){let v=$('apv').value;if(/^-?\d+$/.test(v))v=parseInt(v);const r=await call('POST',`/api/v1/training/${$('tid').value}/approve`,{canonical_property:$('apc').value,canonical_value:v});$('apr').textContent=JSON.stringify(r.data,null,1);toast('Mapping approved','okk')}
+async function loadPqc(){const r=await call('GET',`/api/v1/pqc/${AUD}`);$('pqcs').innerHTML=`Readiness <span class="score">${r.data.readiness_score}</span>`;$('pqcbar').innerHTML=`<div class="bar"><i style="width:${r.data.readiness_score}%"></i></div>`;$('pqcj').textContent=JSON.stringify(r.data,null,1)}
+async function mkReport(){const r=await call('POST','/api/v1/reports',{audit_id:AUD,format:'PDF'});REP=r.data.report_id;$('repj').textContent=JSON.stringify(r.data,null,1);toast('Report ready','okk')}
+async function dlReport(){const b=await callBin(`/api/v1/reports/${REP}/download`);const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=REP+'.pdf';a.click()}
+health();dash();
+</script>
+</body>
+</html>

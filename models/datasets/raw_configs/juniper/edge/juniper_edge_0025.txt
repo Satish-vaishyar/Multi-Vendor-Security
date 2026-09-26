@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system syslog
+set system authentication-order tacplus
+set snmp v3 usm local-engine user admin authentication-sha
+delete system tacplus-server
+delete system services telnet
+# edge stanza

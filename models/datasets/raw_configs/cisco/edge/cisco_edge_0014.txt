@@ -1,0 +1,7 @@
+! cisco edge synthetic
+aaa new-model
+ip ssh version 2
+ip http server
+no aaa new-model
+no ntp
+! edge-note

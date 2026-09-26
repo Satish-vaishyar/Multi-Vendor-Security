@@ -1,0 +1,6 @@
+! cisco secure synthetic
+ip ssh version 2
+snmp-server group NETADMIN v3 priv
+logging host 10.0.0.99
+ntp server 10.0.0.5
+aaa new-model

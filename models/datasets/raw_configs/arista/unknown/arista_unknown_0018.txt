@@ -1,0 +1,8 @@
+! arista unknown synthetic
+snmp-server community public ro
+no aaa
+aaa authentication login default group tacacs+
+logging host 10.0.0.99
+no ntp
+generate rsa 2048
+blorp enable hyperflux-mode

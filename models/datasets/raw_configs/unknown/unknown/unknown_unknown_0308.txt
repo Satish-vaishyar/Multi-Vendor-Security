@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend tacacs
+web-mgmt plain enable
+time-sync none
+auth backend none
+event-sink remote 10.0.0.99
+telemetry community public
+blorp enable hyperflux-mode

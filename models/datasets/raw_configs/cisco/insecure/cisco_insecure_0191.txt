@@ -1,0 +1,7 @@
+! cisco insecure synthetic
+ip ssh version 1
+ip http server
+snmp-server community public RO
+no logging
+no ntp
+crypto key generate rsa modulus 1024

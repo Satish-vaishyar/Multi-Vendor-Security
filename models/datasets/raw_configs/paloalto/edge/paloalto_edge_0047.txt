@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig system ssh protocol v1
+set deviceconfig auth local
+set deviceconfig system telnet enable
+set deviceconfig auth tacacs
+set deviceconfig system ssh protocol v2
+# edge

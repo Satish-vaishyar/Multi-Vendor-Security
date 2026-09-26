@@ -1,0 +1,7 @@
+! arista edge synthetic
+no http server
+no aaa
+ssh protocol version 2
+aaa authentication login default group tacacs+
+generate rsa 1024
+! edge

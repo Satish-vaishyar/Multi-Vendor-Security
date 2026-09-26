@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system services telnet
+delete system services web-management http
+set snmp community public authorization read-only
+set system services web-management http
+delete system ntp
+set system services ssh protocol-version v2
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink remote 10.0.0.99
+web-mgmt plain disable
+web-mgmt plain enable
+auth backend none
+secure-mgmt ssh protocol v2
+time-sync server 10.0.0.5
+blorp enable hyperflux-mode

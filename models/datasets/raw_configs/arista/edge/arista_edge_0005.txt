@@ -1,0 +1,7 @@
+! arista edge synthetic
+no http server
+no ntp
+no aaa
+snmp-server community public ro
+snmp-server group NETADMIN v3 priv
+! edge

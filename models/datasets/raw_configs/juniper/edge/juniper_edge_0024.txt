@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system services telnet
+set system ntp server 10.0.0.5
+set security ike proposal weak dh-group1
+set system services ssh protocol-version v2
+delete system ntp
+# edge stanza

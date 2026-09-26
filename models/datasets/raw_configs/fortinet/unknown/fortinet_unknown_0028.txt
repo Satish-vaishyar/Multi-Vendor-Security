@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set auth-type tacacs+
+set admin-telnet disable
+set syslog-server 10.0.0.99
+set admin-telnet enable
+set snmp-community public
+unset syslog-server
+blorp enable hyperflux-mode

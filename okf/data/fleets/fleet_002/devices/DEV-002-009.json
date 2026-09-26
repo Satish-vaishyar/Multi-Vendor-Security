@@ -1,0 +1,18 @@
+{
+ "device_id": "DEV-002-009",
+ "label": "normal",
+ "ir": {
+  "SSH.VERSION": 2,
+  "TELNET.ENABLED": false,
+  "HTTP.ENABLED": false,
+  "SNMP.COMMUNITY_PUBLIC": false,
+  "SNMP.VERSION": 3,
+  "LOGGING.ENABLED": true,
+  "LOGGING.REMOTE_SERVER": true,
+  "NTP.ENABLED": true,
+  "AAA.AUTHENTICATION": true,
+  "ACL.MGMT_RESTRICTED": true,
+  "CRYPTO.WEAK_ALGO": false,
+  "SERVICE.PASSWORD_ENCRYPTION": true
+ }
+}

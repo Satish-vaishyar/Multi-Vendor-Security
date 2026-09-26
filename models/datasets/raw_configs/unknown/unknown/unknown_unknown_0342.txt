@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+time-sync server 10.0.0.5
+secure-mgmt ssh protocol v2
+auth backend none
+time-sync none
+cipher-suite legacy
+web-mgmt plain disable
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! paloalto unknown synthetic
+set deviceconfig system ssh protocol v1
+set deviceconfig system http disable
+set deviceconfig system syslog-server 10.0.0.99
+set deviceconfig auth local
+set deviceconfig snmp v3 priv
+set deviceconfig crypto weak
+blorp enable hyperflux-mode

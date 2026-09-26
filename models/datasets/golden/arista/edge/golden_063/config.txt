@@ -1,0 +1,7 @@
+! arista edge synthetic
+no telnet server
+snmp-server community public ro
+aaa authentication login default group tacacs+
+no logging
+ntp server 10.0.0.5
+! edge

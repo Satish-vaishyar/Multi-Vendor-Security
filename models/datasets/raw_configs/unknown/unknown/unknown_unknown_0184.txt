@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+mgmt telnet deny
+auth backend tacacs
+mgmt telnet permit-all
+web-mgmt plain enable
+auth backend none
+event-sink none
+blorp enable hyperflux-mode

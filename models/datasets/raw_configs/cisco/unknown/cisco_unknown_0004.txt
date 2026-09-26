@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+crypto key generate rsa modulus 1024
+ip ssh version 1
+no ntp
+no logging
+ip http server
+ip ssh version 2
+blorp enable hyperflux-mode

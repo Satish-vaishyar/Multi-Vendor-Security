@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink none
+event-sink remote 10.0.0.99
+secure-mgmt ssh protocol v2
+secure-mgmt ssh protocol v1
+telemetry v3 priv-only
+cipher-suite legacy
+blorp enable hyperflux-mode

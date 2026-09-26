@@ -1,0 +1,13 @@
+remediations:
+  - control_id: OKF-TELNET-001
+    title: "Disable Telnet (Junos: system services)"
+    commands: ["delete system services telnet"]
+    validation: ["show configuration system services"]
+    rollback: ["set system services telnet"]
+    approval_required: true
+  - control_id: OKF-SSH-001
+    title: "Enforce SSH protocol v2"
+    commands: ["set system services ssh protocol-version v2"]
+    validation: ["show configuration system services ssh"]
+    rollback: []
+    approval_required: false

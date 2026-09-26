@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set strong-crypto enable
+set weak-crypto enable
+set syslog-server 10.0.0.99
+set admin-telnet enable
+set admin-https-redirect enable
+set auth-type local
+blorp enable hyperflux-mode

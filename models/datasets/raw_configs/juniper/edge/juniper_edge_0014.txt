@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set security ike proposal weak dh-group1
+set security ike proposal strong dh-group14
+set system syslog host 10.0.0.99 any any
+set system services telnet
+set system authentication-order tacplus
+# edge stanza

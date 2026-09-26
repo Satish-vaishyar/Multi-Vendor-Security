@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+ntp server 10.0.0.5
+line vty 0 4
+ transport input telnet
+ip http server
+ip ssh version 1
+logging host 10.0.0.99
+no ip http server
+ip http secure-server
+blorp enable hyperflux-mode

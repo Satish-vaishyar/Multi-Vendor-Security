@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+secure-mgmt ssh protocol v1
+event-sink none
+web-mgmt plain enable
+time-sync none
+auth backend none
+telemetry community public
+blorp enable hyperflux-mode

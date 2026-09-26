@@ -1,0 +1,8 @@
+! arista unknown synthetic
+snmp-server group NETADMIN v3 priv
+no http server
+no logging
+generate rsa 2048
+aaa authentication login default group tacacs+
+snmp-server community public ro
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! paloalto edge synthetic
+set strong-crypto enable
+set admin-https-redirect enable
+set ssh-port 22
+set admin-telnet disable
+set admin-http enable
+set admin-telnet enable
+# edge

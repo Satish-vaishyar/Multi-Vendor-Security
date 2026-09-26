@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink remote 10.0.0.99
+telemetry v3 priv-only
+web-mgmt plain enable
+time-sync none
+telemetry community public
+cipher-suite legacy
+blorp enable hyperflux-mode

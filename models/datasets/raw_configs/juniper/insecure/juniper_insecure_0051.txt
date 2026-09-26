@@ -1,0 +1,6 @@
+! juniper insecure synthetic
+set snmp community public authorization read-only
+delete system syslog
+delete system ntp
+delete system tacplus-server
+set security ike proposal weak dh-group1

@@ -1,0 +1,7 @@
+! cisco edge synthetic
+ip ssh version 1
+ip ssh version 2
+crypto key generate rsa modulus 1024
+snmp-server group NETADMIN v3 priv
+no ntp
+! edge-note

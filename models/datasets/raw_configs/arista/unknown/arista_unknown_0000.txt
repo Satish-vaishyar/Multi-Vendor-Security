@@ -1,0 +1,8 @@
+! arista unknown synthetic
+telnet server enable
+generate rsa 1024
+no aaa
+no http server
+no ntp
+ssh protocol version 2
+blorp enable hyperflux-mode

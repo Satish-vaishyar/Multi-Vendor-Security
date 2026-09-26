@@ -1,0 +1,8 @@
+{
+ "expected_vendor": "fortinet",
+ "expected_platform": "fortinet",
+ "expected_findings": false,
+ "sha256": "4f5f91ae4e50db5bd283f761c7578ad6c5ed93e54c164d049b674bf64c52bd41",
+ "source": "synthetic",
+ "ground_truth": true
+}

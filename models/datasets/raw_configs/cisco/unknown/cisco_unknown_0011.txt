@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+no aaa new-model
+aaa new-model
+crypto key generate rsa modulus 1024
+ip http server
+ip ssh version 2
+crypto key generate rsa modulus 2048
+blorp enable hyperflux-mode

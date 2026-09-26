@@ -1,0 +1,7 @@
+! arista secure synthetic
+no telnet server
+no http server
+logging host 10.0.0.99
+ntp server 10.0.0.5
+aaa authentication login default group tacacs+
+generate rsa 2048

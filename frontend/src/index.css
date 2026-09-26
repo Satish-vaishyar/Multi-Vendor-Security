@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+:root {
+  /* Light — warm off-white enterprise */
+  --background: #F7F7F5;
+  --surface: #FFFFFF;
+  --surface-secondary: #F1F2EF;
+
+  --text-primary: #1C2430;
+  --text-secondary: #59616B;
+  --text-muted: #7B838C;
+
+  --border: #E2E4E0;
+  --border-strong: #CDD1CC;
+
+  --primary: #315E9B;
+  --primary-hover: #284F86;
+  --primary-light: #EDF3FA;
+  --on-primary: #FFFFFF;
+
+  --ai: #5B5BD6;
+  --ai-bg: #F0F0FF;
+
+  --pqc: #167C72;
+  --pqc-bg: #EAF7F5;
+
+  --success: #277A4B;
+  --success-bg: #EDF8F1;
+
+  --warning: #9A6A00;
+  --warning-bg: #FFF8E6;
+
+  --danger: #B23A3A;
+  --danger-bg: #FDF0F0;
+
+  --high: #B45309;
+  --high-bg: #FFF4E5;
+
+  --info: #2F6F8F;
+  --info-bg: #EAF4FA;
+
+  --chart-1: #315E9B;
+  --chart-2: #4E7FB8;
+  --chart-3: #7AA5D2;
+  --chart-4: #A9C6E4;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* Dark — charcoal enterprise SOC, never pure black + neon */
+  --background: #111315;
+  --surface: #181B1F;
+  --surface-secondary: #20242A;
+
+  --text-primary: #F1F3F5;
+  --text-secondary: #A7ADB5;
+  --text-muted: #7F8791;
+
+  --border: #30353C;
+  --border-strong: #414750;
+
+  --primary: #6B9FE8;
+  --primary-hover: #82AEED;
+  --primary-light: #1B2A40;
+  --on-primary: #0B1220;
+
+  --ai: #8585E8;
+  --ai-bg: #252542;
+
+  --pqc: #38A69A;
+  --pqc-bg: #183330;
+
+  --success: #55B87A;
+  --success-bg: #183124;
+
+  --warning: #D6A43A;
+  --warning-bg: #332B18;
+
+  --danger: #E06B6B;
+  --danger-bg: #351D1D;
+
+  --high: #E39A55;
+  --high-bg: #362718;
+
+  --info: #6FB3E0;
+  --info-bg: #1A2E3D;
+
+  --chart-1: #6B9FE8;
+  --chart-2: #5B8BD0;
+  --chart-3: #4A76B8;
+  --chart-4: #3A5F99;
+
+  color-scheme: dark;
+}
+
+/* Semantic Tailwind utilities bound to the runtime theme variables. */
+@theme inline {
+  --color-canvas: var(--background);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface-secondary);
+
+  --color-ink: var(--text-primary);
+  --color-ink2: var(--text-secondary);
+  --color-ink3: var(--text-muted);
+
+  --color-line: var(--border);
+  --color-linestrong: var(--border-strong);
+
+  --color-primary: var(--primary);
+  --color-primaryhover: var(--primary-hover);
+  --color-primarylight: var(--primary-light);
+  --color-onprimary: var(--on-primary);
+
+  --color-ai: var(--ai);
+  --color-aibg: var(--ai-bg);
+
+  --color-pqc: var(--pqc);
+  --color-pqcbg: var(--pqc-bg);
+
+  --color-ok: var(--success);
+  --color-okbg: var(--success-bg);
+
+  --color-warn: var(--warning);
+  --color-warnbg: var(--warning-bg);
+
+  --color-danger: var(--danger);
+  --color-dangerbg: var(--danger-bg);
+
+  --color-high: var(--high);
+  --color-highbg: var(--high-bg);
+
+  --color-info: var(--info);
+  --color-infobg: var(--info-bg);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+}
+
+.code-view {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.card-shadow {
+  box-shadow: 0 1px 3px rgba(28, 36, 48, 0.06);
+}
+[data-theme="dark"] .card-shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}

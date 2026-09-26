@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system authentication-order tacplus
+set security ike proposal strong dh-group14
+set snmp community public authorization read-only
+set system services ssh protocol-version v2
+set system services web-management http
+# edge stanza

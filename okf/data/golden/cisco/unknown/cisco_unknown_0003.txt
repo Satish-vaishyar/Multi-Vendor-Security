@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+snmp-server group NETADMIN v3 priv
+ip http server
+no logging
+ntp server 10.0.0.5
+ntp authenticate
+ip ssh version 1
+logging host 10.0.0.99
+service timestamps log datetime
+blorp enable hyperflux-mode

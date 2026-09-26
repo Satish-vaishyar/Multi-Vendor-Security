@@ -1,0 +1,9 @@
+! cisco secure synthetic
+line vty 0 4
+ transport input ssh
+no ip http server
+ip http secure-server
+snmp-server group NETADMIN v3 priv
+logging host 10.0.0.99
+aaa new-model
+crypto key generate rsa modulus 2048

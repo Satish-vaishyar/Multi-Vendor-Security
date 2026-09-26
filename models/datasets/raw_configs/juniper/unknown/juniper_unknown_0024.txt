@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+delete system services web-management http
+set system syslog host 10.0.0.99 any any
+delete system ntp
+set system services web-management http
+set system services ssh protocol-version v1
+set security ike proposal strong dh-group14
+blorp enable hyperflux-mode

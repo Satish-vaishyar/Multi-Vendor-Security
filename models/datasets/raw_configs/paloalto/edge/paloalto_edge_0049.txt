@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig crypto strong
+set deviceconfig system syslog-server 10.0.0.99
+set deviceconfig system ssh protocol v1
+set deviceconfig auth tacacs
+delete deviceconfig ntp
+# edge

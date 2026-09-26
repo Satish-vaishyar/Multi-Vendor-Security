@@ -1,0 +1,391 @@
+controls:
+- control_id: OKF-NIST-AC11
+  title: 'NIST AC-11: Device Lock'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-11.
+  category: management
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: AC-11
+  condition:
+    property: MGMT.SESSION_TIMEOUT
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AC12
+  title: 'NIST AC-12: Session Termination'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-12.
+  category: management
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: AC-12
+  condition:
+    property: MGMT.SESSION_TIMEOUT
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AC17
+  title: 'NIST AC-17: Remote Access'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-17.
+  category: remote_access
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: AC-17
+  condition:
+    property: SSH.VERSION
+    operator: EQUALS
+    value: 2
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AC2
+  title: 'NIST AC-2: Account Management'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-2.
+  category: authentication
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: AC-2
+  condition:
+    property: AAA.AUTHENTICATION
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AC3
+  title: 'NIST AC-3: Access Enforcement'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-3.
+  category: access_control
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: AC-3
+  condition:
+    property: ACL.MGMT_RESTRICTED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AC7
+  title: 'NIST AC-7: Unsuccessful Logon Attempts'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-7.
+  category: authentication
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: AC-7
+  condition:
+    property: AAA.LOCKOUT_ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AC8
+  title: 'NIST AC-8: System Use Notification'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-8.
+  category: system
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    NIST: AC-8
+  condition:
+    property: BANNER.LOGIN_SET
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AU2
+  title: 'NIST AU-2: Event Logging'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-2.
+  category: logging
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: AU-2
+  condition:
+    property: LOGGING.ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AU3
+  title: 'NIST AU-3: Content of Audit Records'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-3.
+  category: logging
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: AU-3
+  condition:
+    property: LOGGING.ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AU4
+  title: 'NIST AU-4: Audit Log Storage Capacity'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-4.
+  category: logging
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: AU-4
+  condition:
+    property: LOGGING.REMOTE_SERVER
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AU6
+  title: 'NIST AU-6: Audit Record Review, Analysis, and Reporting'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-6.
+  category: logging
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: AU-6
+  condition:
+    property: LOGGING.ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AU8
+  title: 'NIST AU-8: Time Stamps'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-8.
+  category: system
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: AU-8
+  condition:
+    property: NTP.ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-AU9
+  title: 'NIST AU-9: Protection of Audit Information'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-9.
+  category: logging
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: AU-9
+  condition:
+    property: LOGGING.REMOTE_SERVER
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-CM2
+  title: 'NIST CM-2: Baseline Configuration'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-2.
+  category: logging
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    NIST: CM-2
+  condition:
+    property: AUDIT.CONFIG_ARCHIVED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-CM6
+  title: 'NIST CM-6: Configuration Settings'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-6.
+  category: logging
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    NIST: CM-6
+  condition:
+    property: AUDIT.CONFIG_ARCHIVED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-CM7
+  title: 'NIST CM-7: Least Functionality'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-7.
+  category: remote_access
+  severity: CRITICAL
+  version: '1.0'
+  frameworks:
+    NIST: CM-7
+  condition:
+    property: TELNET.ENABLED
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-CM8
+  title: 'NIST CM-8: System Component Inventory'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-8.
+  category: logging
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    NIST: CM-8
+  condition:
+    property: AUDIT.CONFIG_ARCHIVED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-IA2
+  title: 'NIST IA-2: Identification and Authentication (Organizational Users)'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 IA-2.
+  category: authentication
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: IA-2
+  condition:
+    property: AAA.AUTHENTICATION
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-IA4
+  title: 'NIST IA-4: Identifier Management'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 IA-4.
+  category: authentication
+  severity: CRITICAL
+  version: '1.0'
+  frameworks:
+    NIST: IA-4
+  condition:
+    property: USER.DEFAULT_ACCOUNTS
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-IA5
+  title: 'NIST IA-5: Authenticator Management'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 IA-5.
+  category: authentication
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: IA-5
+  condition:
+    property: PASSWORD.ENCRYPTED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-MA4
+  title: 'NIST MA-4: Nonlocal Maintenance'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 MA-4.
+  category: management
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: MA-4
+  condition:
+    property: MGMT.ENCRYPTED_ONLY
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-PE17
+  title: 'NIST PE-17: Alternate Work Site'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 PE-17.
+  category: remote_access
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: PE-17
+  condition:
+    property: CONSOLE.SECURED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SC10
+  title: 'NIST SC-10: Network Disconnect'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-10.
+  category: network
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    NIST: SC-10
+  condition:
+    property: DOS.PROTECTION
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SC12
+  title: 'NIST SC-12: Cryptographic Key Establishment and Management'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-12.
+  category: crypto
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: SC-12
+  condition:
+    property: CRYPTO.WEAK_ALGO
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SC17
+  title: 'NIST SC-17: Public Key Infrastructure Certificates'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-17.
+  category: crypto
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: SC-17
+  condition:
+    property: KEY.STORED_SECURE
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SC28
+  title: 'NIST SC-28: Protection of Information at Rest'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-28.
+  category: crypto
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: SC-28
+  condition:
+    property: KEY.STORED_SECURE
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SC7
+  title: 'NIST SC-7: Boundary Protection'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-7.
+  category: network
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: SC-7
+  condition:
+    property: IP.SOURCE_ROUTE_DISABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SC8
+  title: 'NIST SC-8: Transmission Confidentiality and Integrity'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-8.
+  category: management
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    NIST: SC-8
+  condition:
+    property: MGMT.ENCRYPTED_ONLY
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SI2
+  title: 'NIST SI-2: Flaw Remediation'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SI-2.
+  category: monitoring
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    NIST: SI-2
+  condition:
+    property: MONITORING.NETFLOW
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NIST-SI4
+  title: 'NIST SI-4: System Monitoring'
+  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SI-4.
+  category: monitoring
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    NIST: SI-4
+  condition:
+    property: MONITORING.NETFLOW
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION

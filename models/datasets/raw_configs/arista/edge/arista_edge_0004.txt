@@ -1,0 +1,7 @@
+! arista edge synthetic
+telnet server enable
+ssh protocol version 2
+generate rsa 2048
+aaa authentication login default group tacacs+
+no logging
+! edge

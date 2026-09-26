@@ -1,0 +1,7 @@
+! arista edge synthetic
+generate rsa 2048
+no logging
+no http server
+telnet server enable
+no aaa
+! edge

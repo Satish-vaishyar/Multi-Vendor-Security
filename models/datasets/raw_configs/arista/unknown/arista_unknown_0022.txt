@@ -1,0 +1,8 @@
+! arista unknown synthetic
+no ntp
+telnet server enable
+ssh protocol version 1
+snmp-server group NETADMIN v3 priv
+no logging
+ssh protocol version 2
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+delete deviceconfig ntp
+set deviceconfig system ssh protocol v1
+set deviceconfig snmp v3 priv
+set deviceconfig system telnet disable
+set deviceconfig crypto strong
+# edge

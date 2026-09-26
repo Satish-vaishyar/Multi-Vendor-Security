@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+snmp-server community public RO
+ip ssh version 2
+snmp-server group NETADMIN v3 priv
+no logging
+crypto key generate rsa modulus 2048
+no ntp
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! arista edge synthetic
+logging host 10.0.0.99
+snmp-server community public ro
+ssh protocol version 2
+telnet server enable
+aaa authentication login default group tacacs+
+! edge

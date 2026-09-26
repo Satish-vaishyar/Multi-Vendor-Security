@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink none
+cipher-suite modern
+auth backend tacacs
+cipher-suite legacy
+telemetry community public
+auth backend none
+blorp enable hyperflux-mode

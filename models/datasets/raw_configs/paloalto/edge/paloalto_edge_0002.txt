@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig crypto weak
+set deviceconfig system telnet disable
+set deviceconfig snmp v3 priv
+set deviceconfig system http enable
+set deviceconfig system telnet enable
+# edge

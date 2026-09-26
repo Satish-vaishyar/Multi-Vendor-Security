@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system services ssh protocol-version v2
+set system syslog host 10.0.0.99 any any
+set security ike proposal weak dh-group1
+set system services telnet
+set system services ssh protocol-version v1
+set snmp v3 usm local-engine user admin authentication-sha
+blorp enable hyperflux-mode

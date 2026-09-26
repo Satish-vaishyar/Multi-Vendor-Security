@@ -1,0 +1,9 @@
+! cisco unknown synthetic
+ntp server 10.0.0.5
+aaa new-model
+ip http server
+no aaa new-model
+crypto key generate rsa modulus 1024
+line vty 0 4
+ transport input telnet
+blorp enable hyperflux-mode

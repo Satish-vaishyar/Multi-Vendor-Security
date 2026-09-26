@@ -1,0 +1,23 @@
+properties:
+  - {property_id: SSH.ENABLED, category: remote_access, datatype: boolean, security_level: HIGH, description: "SSH service enabled", default_expected: true}
+  - {property_id: SSH.VERSION, category: remote_access, datatype: enum, allowed_values: [1, 2], security_level: HIGH, description: "SSH protocol version", default_expected: 2}
+  - {property_id: SSH.WEAK_CIPHERS, category: remote_access, datatype: boolean, security_level: HIGH, description: "Weak SSH ciphers present", default_expected: false}
+  - {property_id: TELNET.ENABLED, category: remote_access, datatype: boolean, security_level: CRITICAL, description: "Telnet must be disabled", default_expected: false}
+  - {property_id: HTTP.ENABLED, category: remote_access, datatype: boolean, security_level: HIGH, description: "Cleartext HTTP mgmt", default_expected: false}
+  - {property_id: HTTPS.ENABLED, category: remote_access, datatype: boolean, security_level: MEDIUM, description: "HTTPS mgmt enabled", default_expected: true}
+  - {property_id: SNMP.ENABLED, category: monitoring, datatype: boolean, security_level: MEDIUM, description: "SNMP enabled", default_expected: true}
+  - {property_id: SNMP.VERSION, category: monitoring, datatype: enum, allowed_values: [1, 2, 2c, 3], security_level: HIGH, description: "SNMP version", default_expected: 3}
+  - {property_id: SNMP.COMMUNITY_PUBLIC, category: monitoring, datatype: boolean, security_level: CRITICAL, description: "Default 'public' community in use", default_expected: false}
+  - {property_id: AAA.AUTHENTICATION, category: authentication, datatype: boolean, security_level: HIGH, description: "AAA authentication configured", default_expected: true}
+  - {property_id: AAA.AUTHORIZATION, category: authentication, datatype: boolean, security_level: MEDIUM, description: "AAA authorization configured", default_expected: true}
+  - {property_id: AAA.ACCOUNTING, category: authentication, datatype: boolean, security_level: MEDIUM, description: "AAA accounting configured", default_expected: true}
+  - {property_id: AAA.MFA, category: authentication, datatype: boolean, security_level: HIGH, description: "MFA/2FA for admin access", default_expected: true}
+  - {property_id: LOGGING.ENABLED, category: logging, datatype: boolean, security_level: MEDIUM, description: "Local logging enabled", default_expected: true}
+  - {property_id: LOGGING.REMOTE_SERVER, category: logging, datatype: boolean, security_level: HIGH, description: "Remote syslog configured", default_expected: true}
+  - {property_id: NTP.ENABLED, category: system, datatype: boolean, security_level: MEDIUM, description: "NTP time sync enabled", default_expected: true}
+  - {property_id: NTP.AUTHENTICATED, category: system, datatype: boolean, security_level: MEDIUM, description: "Authenticated NTP", default_expected: true}
+  - {property_id: ACL.MGMT_RESTRICTED, category: access_control, datatype: boolean, security_level: HIGH, description: "Management plane ACL restricts access", default_expected: true}
+  - {property_id: CRYPTO.WEAK_ALGO, category: crypto, datatype: boolean, security_level: HIGH, description: "Weak crypto (DES/3DES/MD5/RC4/SHA1/DH-g1) present", default_expected: false}
+  - {property_id: CRYPTO.TLS_MIN, category: crypto, datatype: string, security_level: HIGH, description: "Minimum TLS version", default_expected: "1.2"}
+  - {property_id: PASSWORD.POLICY_STRONG, category: authentication, datatype: boolean, security_level: HIGH, description: "Strong password policy enforced", default_expected: true}
+  - {property_id: BANNER.MOTD_SET, category: system, datatype: boolean, security_level: LOW, description: "Login/MOTD banner configured", default_expected: true}

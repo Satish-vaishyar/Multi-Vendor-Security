@@ -1,0 +1,5 @@
+! arista insecure synthetic
+telnet server enable
+http server enable
+no aaa
+generate rsa 1024

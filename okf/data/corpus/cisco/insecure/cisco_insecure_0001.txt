@@ -1,0 +1,8 @@
+! cisco insecure synthetic
+line vty 0 4
+ transport input telnet
+ip http server
+no logging
+no ntp
+no aaa new-model
+crypto key generate rsa modulus 1024

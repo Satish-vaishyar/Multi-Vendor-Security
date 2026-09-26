@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system services ssh protocol-version v1
+set snmp v3 usm local-engine user admin authentication-sha
+set snmp community public authorization read-only
+set system services telnet
+delete system services web-management http
+# edge stanza

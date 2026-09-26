@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system authentication-order tacplus
+set system syslog host 10.0.0.99 any any
+set security ike proposal weak dh-group1
+set snmp community public authorization read-only
+set system services web-management http
+# edge stanza

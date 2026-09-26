@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set weak-crypto enable
+set snmpv3 enable
+set admin-telnet enable
+set strong-crypto enable
+set auth-type local
+# edge

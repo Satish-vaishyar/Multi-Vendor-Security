@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend none
+auth backend tacacs
+secure-mgmt ssh protocol v1
+secure-mgmt ssh protocol v2
+time-sync server 10.0.0.5
+web-mgmt plain enable
+blorp enable hyperflux-mode

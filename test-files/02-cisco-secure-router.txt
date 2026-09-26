@@ -1,0 +1,65 @@
+! Cisco IOS-XE — SECURE baseline (expect HIGH compliance score, few findings)
+! Device: Core-Router-02 | Hardened reference config
+hostname Core-Router-02
+!
+! Cisco IOS-XE version 17.9.4
+!
+service password-encryption
+service timestamps log datetime
+!
+enable secret 9 $9$hashedExampleSecureValue01
+!
+! STRONG: SSH v2 only, hardened timers
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+! STRONG: VTY over SSH only + access-class
+line vty 0 4
+ transport input ssh
+ access-class MGMT-IN in
+ login local
+!
+ip access-list standard MGMT-IN
+ permit 10.0.0.0 0.0.0.255
+ deny any log
+!
+! STRONG: HTTPS only
+no ip http server
+ip http secure-server
+ip http authentication local
+!
+! STRONG: SNMPv3 only
+snmp-server group NETADMIN v3 priv
+snmp-server user netadmin NETADMIN v3 auth sha AuthPass123 priv aes 128 PrivPass123
+!
+interface GigabitEthernet0/0
+ description Uplink to ISP
+ ip address 192.168.1.2 255.255.255.0
+ no ip proxy-arp
+ no shutdown
+!
+interface GigabitEthernet0/1
+ description LAN
+ ip address 10.0.0.1 255.255.255.0
+ ip dhcp snooping
+ no shutdown
+!
+! STRONG: AAA + lockout policy
+aaa new-model
+tacacs-server host 10.0.0.10
+login block-for 120 attempts 3 within 60
+!
+! STRONG: central logging + NTP auth
+logging host 10.0.0.99
+ntp server 10.0.0.5
+ntp authenticate
+!
+! STRONG: 2048-bit RSA key
+crypto key generate rsa modulus 2048
+!
+no ip source-route
+no ip proxy-arp
+banner motd # Authorized use only - all activity is logged #
+!
+end

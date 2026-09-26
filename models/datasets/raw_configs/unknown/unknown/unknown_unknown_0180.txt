@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+secure-mgmt ssh protocol v2
+web-mgmt plain disable
+secure-mgmt ssh protocol v1
+time-sync none
+web-mgmt plain enable
+mgmt telnet deny
+blorp enable hyperflux-mode

@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+snmp-server community public RO
+snmp-server group NETADMIN v3 priv
+ip http server
+ip ssh version 2
+no ip http server
+ip http secure-server
+line vty 0 4
+ transport input ssh
+blorp enable hyperflux-mode

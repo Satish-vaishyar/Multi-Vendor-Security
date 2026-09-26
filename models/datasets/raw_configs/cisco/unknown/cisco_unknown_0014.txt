@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+ntp server 10.0.0.5
+no ip http server
+ip http secure-server
+snmp-server group NETADMIN v3 priv
+line vty 0 4
+ transport input telnet
+logging host 10.0.0.99
+no ntp
+blorp enable hyperflux-mode

@@ -1,0 +1,19 @@
+# Juniper Junos — INSECURE (expect LOW score, telnet/http/weak-crypto findings)
+# Device: Juniper-EX-Switch-01
+# Juniper Junos OS version 20.4R3
+
+set system host-name Juniper-EX-Switch-01
+set system services ssh protocol-version v1
+set system services telnet
+set system services web-management http
+set system services web-management https system-generated-certificate
+set snmp community public authorization read-only
+set snmp community public clients 0.0.0.0/0
+set interfaces ge-0/0/0 unit 0 family inet address 192.168.2.1/24
+set interfaces ge-0/0/1 unit 0 family inet address 10.0.1.1/24
+delete system syslog
+delete system ntp
+delete system tacplus-server
+set system authentication-order password
+set security ike proposal weak dh-group1
+set security ike proposal weak authentication-method pre-shared-keys

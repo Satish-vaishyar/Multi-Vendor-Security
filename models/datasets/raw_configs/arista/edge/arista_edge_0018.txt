@@ -1,0 +1,7 @@
+! arista edge synthetic
+ssh protocol version 2
+generate rsa 1024
+logging host 10.0.0.99
+telnet server enable
+snmp-server group NETADMIN v3 priv
+! edge

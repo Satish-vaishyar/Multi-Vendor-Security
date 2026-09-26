@@ -1,0 +1,7 @@
+! arista edge synthetic
+no telnet server
+no http server
+telnet server enable
+no aaa
+ntp server 10.0.0.5
+! edge

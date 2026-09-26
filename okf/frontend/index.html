@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OKF Test Console</title>
+<style>
+  :root { color-scheme: dark; --bg:#0f1419; --panel:#182028; --line:#2a3542; --txt:#dbe4ee; --mut:#8fa0b3; --acc:#4da3ff; --ok:#3fb97f; --bad:#ff5d5d; --warn:#ffb020; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.5 system-ui, sans-serif; }
+  header { padding:12px 18px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; }
+  header input { background:#0b0f14; border:1px solid var(--line); color:var(--txt); padding:6px 8px; border-radius:6px; width:260px; }
+  .pill { font-size:12px; padding:2px 10px; border-radius:20px; border:1px solid var(--line); color:var(--mut); }
+  .pill.on { color:var(--ok); border-color:var(--ok); } .pill.off { color:var(--warn); border-color:var(--warn); }
+  nav { display:flex; gap:6px; padding:10px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  nav button { background:var(--panel); color:var(--txt); border:1px solid var(--line); padding:7px 14px; border-radius:8px; cursor:pointer; }
+  nav button.active { border-color:var(--acc); color:var(--acc); }
+  main { padding:16px 18px; max-width:1200px; }
+  section.tab { display:none; } section.tab.active { display:block; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:900px){ .grid{ grid-template-columns:1fr; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
+  .card h3 { margin:0 0 10px; font-size:14px; }
+  textarea { width:100%; min-height:170px; background:#0b0f14; color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:8px; font-family:monospace; font-size:12.5px; }
+  input[type=text], select { background:#0b0f14; border:1px solid var(--line); color:var(--txt); padding:6px 8px; border-radius:6px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+  button.go { background:var(--acc); border:0; color:#04121f; font-weight:700; padding:8px 16px; border-radius:8px; cursor:pointer; }
+  button.ghost { background:transparent; border:1px solid var(--line); color:var(--txt); padding:6px 12px; border-radius:8px; cursor:pointer; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mut); font-weight:600; }
+  .CRITICAL,.FAIL { color:var(--bad); font-weight:700; } .HIGH { color:#ff8a5d; } .MEDIUM { color:var(--warn); }
+  .LOW { color:var(--mut); } .PASS { color:var(--ok); } .UNKNOWN { color:var(--warn); }
+  pre { background:#0b0f14; border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; max-height:320px; font-size:12px; }
+  .score { font-size:26px; font-weight:800; }
+  .mut { color:var(--mut); font-size:12.5px; }
+  label.fw { display:inline-flex; gap:4px; align-items:center; border:1px solid var(--line); border-radius:6px; padding:4px 8px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>OKF Test Console</h1>
+  <input id="base" type="text" value="http://127.0.0.1:8001" title="API base URL">
+  <button class="ghost" onclick="health()">Check API</button>
+  <span id="health" class="pill">unknown</span>
+  <span id="llm" class="pill">llm: ?</span>
+</header>
+<nav id="tabs">
+  <button data-t="audit" class="active">Compliance Audit</button>
+  <button data-t="cve">CVE Audit</button>
+  <button data-t="training">Training Loop</button>
+  <button data-t="kb">Knowledge Base</button>
+  <button data-t="rem">Remediation</button>
+  <button data-t="blast">Blast Radius</button>
+</nav>
+<main>
+  <!-- AUDIT -->
+  <section id="t-audit" class="tab active">
+    <div class="grid">
+      <div class="card">
+        <h3>Input configuration</h3>
+        <div class="row">
+          <button class="ghost" onclick="fillSample('bad')">Insecure Cisco</button>
+          <button class="ghost" onclick="fillSample('good')">Secure Cisco</button>
+          <button class="ghost" onclick="fillSample('juniper')">Juniper</button>
+        </div>
+        <textarea id="cfg" spellcheck="false"></textarea>
+        <div class="row">
+          <label>Vendor <input id="vendor" type="text" value="cisco" size="8"></label>
+          <label>Asset <input id="asset" type="text" value="RTR-001" size="10"></label>
+          <label>Criticality
+            <select id="crit"><option>HIGH</option><option>CRITICAL</option><option>MEDIUM</option><option>LOW</option></select>
+          </label>
+        </div>
+        <div class="row" id="fws">
+          <label class="fw"><input type="checkbox" value="CIS" checked>CIS</label>
+          <label class="fw"><input type="checkbox" value="NIST" checked>NIST</label>
+          <label class="fw"><input type="checkbox" value="STIG" checked>STIG</label>
+          <label class="fw"><input type="checkbox" value="ISO27001" checked>ISO27001</label>
+          <label class="fw"><input type="checkbox" value="CERT-In" checked>CERT-In</label>
+        </div>
+        <button class="go" onclick="runAudit()">Run audit</button>
+        <span class="mut" id="auditMeta"></span>
+      </div>
+      <div class="card">
+        <h3>Result</h3>
+        <div id="score"></div>
+        <div id="byfw"></div>
+        <div class="mut" id="unknowns"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Findings <span class="mut">(filter)</span>
+        <select id="fsev" onchange="renderFindings()"><option value="">all</option><option>FAIL</option><option>PASS</option><option>UNKNOWN</option></select>
+        <button class="ghost" onclick="loadEvidence()">Load evidence chain ↓</button>
+      </h3>
+      <div style="overflow:auto"><table id="ftab"><thead><tr><th>Control</th><th>Title</th><th>Sev</th><th>Status</th><th>Observed → Expected</th><th>Risk</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card"><h3>Evidence chain (why did this fail?)</h3><div style="overflow:auto"><table id="evtab"><thead><tr><th>Control</th><th>Property</th><th>Observed → Expected</th><th>Status</th><th>Source line</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><h3>Canonical IR</h3><pre id="ir"></pre></div>
+  </section>
+
+  <!-- CVE -->
+  <section id="t-cve" class="tab">
+    <div class="grid">
+      <div class="card"><h3>Input</h3>
+        <textarea id="cvecfg" spellcheck="false">Cisco IOS-XE version 17.9.2
+ip ssh version 2
+snmp-server community public RO</textarea>
+        <div class="row">
+          <label>Vendor <input id="cvevendor" type="text" value="cisco" size="8"></label>
+          <label>Product <input id="cveproduct" type="text" value="ios_xe" size="10"></label>
+          <label>Version <input id="cveversion" type="text" value="17.9.2" size="8"></label>
+        </div>
+        <button class="go" onclick="runCve()">Run CVE audit</button>
+        <button class="ghost" onclick="kbInfo()">KB info</button>
+        <button class="ghost" onclick="cveSync()">Sync NVD (1 page)</button>
+      </div>
+      <div class="card"><h3>Summary</h3><div id="cvesum"></div><div class="mut" id="cvecomp"></div></div>
+    </div>
+    <div class="card"><h3>Matches</h3><div style="overflow:auto"><table id="cvetab"><thead><tr><th>CVE</th><th>Product @ version</th><th>Status</th><th>CVSS</th><th>Fixed</th><th>CPE</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><h3>CBOM</h3><div style="overflow:auto"><table id="cbomtab"><thead><tr><th>Protocol</th><th>Algorithm</th><th>Usage</th><th>Class</th><th>PQC</th></tr></thead><tbody></tbody></table></div></div>
+  </section>
+
+  <!-- TRAINING -->
+  <section id="t-training" class="tab">
+    <div class="grid">
+      <div class="card"><h3>Suggest mapping</h3>
+        <label>Unknown command<br><input id="unk" type="text" value="set mgmt-secure ssh protocol v2" size="45"></label>
+        <div class="row"><label>Vendor <input id="unkv" type="text" value="unknown" size="10"></label>
+        <button class="go" onclick="suggest()">Suggest</button></div>
+        <pre id="sug"></pre>
+      </div>
+      <div class="card"><h3>Approve mapping (writes to learned registry)</h3>
+        <div class="row"><label>Vendor <input id="apv" type="text" value="unknown" size="10"></label>
+        <label>Pattern (regex) <input id="app" type="text" value="mgmt-secure\s+ssh\s+protocol\s+v2" size="30"></label></div>
+        <div class="row"><label>Property <input id="apc" type="text" value="SSH.VERSION" size="16"></label>
+        <label>Value <input id="apval" type="text" value="2" size="6"></label>
+        <button class="go" onclick="approve()">Approve</button></div>
+        <pre id="appr"></pre>
+        <p class="mut">Re-run the audit afterwards: the approved line should be recognized with no unknown.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- KB -->
+  <section id="t-kb" class="tab">
+    <div class="card"><h3>Browse</h3>
+      <div class="row">
+        <button class="ghost" onclick="kb('properties')">Properties</button>
+        <button class="ghost" onclick="kb('controls')">Controls</button>
+        <button class="ghost" onclick="kb('frameworks')">Frameworks</button>
+        <label>Framework filter <input id="kbf" type="text" value="NIST" size="10"></label>
+        <label>Control detail <input id="kbc" type="text" value="OKF-SSH-001" size="14"></label>
+        <button class="ghost" onclick="kbControl()">Control</button>
+        <button class="ghost" onclick="kbX()">Crosswalk</button>
+      </div>
+      <pre id="kbout"></pre>
+    </div>
+  </section>
+
+  <!-- REMEDIATION -->
+  <section id="t-rem" class="tab">
+    <div class="card"><h3>Dry-run remediation (simulation — never touches devices)</h3>
+      <div class="row"><label>Control <input id="remc" type="text" value="OKF-TELNET-001" size="16"></label>
+      <label>Vendor <input id="remv" type="text" value="cisco" size="8"></label>
+      <button class="ghost" onclick="remGet()">1. Get plan</button></div>
+      <div class="row"><button class="ghost" onclick="remApprove()">2. Approve</button>
+      <span class="mut">approval id: <b id="aprid"></b></span></div>
+      <div class="row"><button class="go" onclick="remApply()">3. Apply (dry-run + re-audit)</button></div>
+      <label>Updated config (paste fixed config to verify):</label>
+      <textarea id="remcfg" spellcheck="false" style="min-height:90px">ip ssh version 2
+no ip http server
+line vty 0 4
+ transport input ssh</textarea>
+      <pre id="remout"></pre>
+    </div>
+  </section>
+
+  <!-- BLAST -->
+  <section id="t-blast" class="tab">
+    <div class="card"><h3>New CVE → which assets are affected?</h3>
+      <div class="row"><label>CVE <input id="blcve" type="text" value="CVE-2024-99904" size="16"></label>
+      <button class="go" onclick="blast()">Check</button></div>
+      <label>Asset inventory (JSON list):</label>
+      <textarea id="blassets" spellcheck="false" style="min-height:90px">[{"asset_id":"FW-001","vendor":"fortinet","product":"fortios","version":"7.2.2"},{"asset_id":"FW-003","vendor":"fortinet","product":"fortios","version":"7.4.0"}]</textarea>
+      <pre id="blout"></pre>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const base = () => $('base').value.replace(/\/$/, '');
+let LAST = { findings: [], audit_id: null };
+async function jget(p){ const r = await fetch(base()+p); return r.json(); }
+async function jpost(p, b){ const r = await fetch(base()+p, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}); return r.json(); }
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('section.tab').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); $('t-'+b.dataset.t).classList.add('active');
+});
+
+const SAMPLES = {
+bad: `hostname Core-Router-01\nip ssh version 1\nip http server\nline vty 0 4\n transport input telnet\nsnmp-server community public RO\nno logging\nntp server 10.0.0.5\nline vty 0 4\n transport input telnet`,
+good: `hostname Core-Router-01\nip ssh version 2\nip ssh time-out 60\nno ip http server\nip http secure-server\nline vty 0 4\n transport input ssh\nno snmp-server community public\nsnmp-server group NETADMIN v3 priv\nlogging host 10.0.0.99\nservice timestamps log datetime\nntp server 10.0.0.5\nservice password-encryption\nenable secret 9 $9$hashed\nno ip source-route`,
+juniper: `set system services ssh protocol-version v2\nset system services telnet\nset system syslog host 10.0.0.99 any any`
+};
+function fillSample(k){ $('cfg').value = SAMPLES[k]; if(k==='juniper') $('vendor').value='juniper'; else $('vendor').value='cisco'; }
+fillSample('bad');
+
+async function health(){
+  try {
+    const h = await jget('/');
+    $('health').textContent = h.service + ' ' + h.version;
+    $('health').className = 'pill on';
+  } catch(e){ $('health').textContent = 'unreachable — is uvicorn running?'; $('health').className = 'pill off'; }
+}
+async function runAudit(){
+  const fws = [...document.querySelectorAll('#fws input:checked')].map(x => x.value);
+  const body = { asset_id: $('asset').value, vendor: $('vendor').value, platform: 'ios-xe',
+    config_text: $('cfg').value, frameworks: fws, asset_criticality: $('crit').value };
+  const r = await jpost('/api/v1/okf/audit', body);
+  if(!r.success){ alert(JSON.stringify(r)); return; }
+  const d = r.data;
+  LAST.findings = d.findings; LAST.audit_id = d.audit_id;
+  $('score').innerHTML = `<span class="score">${d.summary.compliance_score}%</span> <span class="mut">pass ${d.summary.passed} · fail ${d.summary.failed} · unknown ${d.summary.unknown} · audit ${d.audit_id}</span>`;
+  $('byfw').innerHTML = Object.entries(d.by_framework).map(([k,v]) => `<span class="pill">${k}: ${v.compliance_score}% (${v.passed||0}/${v.total||0})</span>`).join(' ');
+  $('unknowns').textContent = 'Unknown lines (' + d.unknown_lines.length + '): ' + d.unknown_lines.join(' | ');
+  $('llm').textContent = 'llm: ' + (d.llm_offline ? 'offline/fallback' : 'online gpt-oss-120b');
+  $('llm').className = 'pill ' + (d.llm_offline ? 'off' : 'on');
+  $('ir').textContent = JSON.stringify(d.canonical_ir, null, 1);
+  $('auditMeta').textContent = 'evidence ready — click "Load evidence chain"';
+  renderFindings();
+}
+function renderFindings(){
+  const f = $('fsev').value;
+  const rows = LAST.findings.filter(x => !f || x.status === f);
+  $('ftab').querySelector('tbody').innerHTML = rows.map(x => {
+    const ev = x.evidence || {};
+    const risk = (x.remediation && x.remediation.risk) ? `${x.remediation.risk.priority} (${x.remediation.risk.risk_score})` : '';
+    return `<tr><td>${x.control_id}</td><td>${x.title}</td><td class="${x.severity}">${x.severity}</td><td class="${x.status}">${x.status}</td><td>${JSON.stringify(ev.observed_value)} → ${JSON.stringify(ev.expected_value)} <span class="mut">${ev.property||''}</span></td><td>${risk}</td></tr>`;
+  }).join('');
+}
+async function loadEvidence(){
+  if(!LAST.audit_id) return alert('Run an audit first');
+  const r = await jget(`/api/v1/okf/audit/${LAST.audit_id}/evidence`);
+  $('evtab').querySelector('tbody').innerHTML = r.data.items.map(e =>
+    `<tr><td>${e.control_id}</td><td>${e.property}</td><td>${JSON.stringify(e.observed_value)} → ${JSON.stringify(e.expected_value)}</td><td class="${e.status}">${e.status}</td><td class="mut">L${e.source.line_no||'?'}: ${e.source.line||''}</td></tr>`).join('');
+}
+async function runCve(){
+  const r = await jpost('/api/v1/okf/cve/audit', { asset_id: $('asset').value || 'RTR-001', vendor: $('cvevendor').value,
+    product: $('cveproduct').value, version: $('cveversion').value, config_text: $('cvecfg').value });
+  const d = r.data;
+  $('cvesum').innerHTML = `<span class="score">${d.summary.vulnerable}</span> vulnerable · ${d.summary.not_affected} not affected · ${d.summary.unknown} unknown`;
+  $('cvecomp').textContent = d.components.map(c => `${c.vendor}/${c.product} ${c.version} (${c.cpe})`).join(' | ');
+  $('cvetab').querySelector('tbody').innerHTML = d.matches.map(m =>
+    `<tr><td>${m.cve_id||'—'}</td><td>${m.product} @ ${m.installed_version}</td><td class="${m.status==='VULNERABLE'?'FAIL':m.status==='UNKNOWN'?'UNKNOWN':'PASS'}">${m.status}</td><td>${(m.cvss&&m.cvss.score)||''} ${(m.cvss&&m.cvss.severity)||''}</td><td>${m.fixed_version||''}</td><td class="mut">${m.cpe||''}</td></tr>`).join('');
+  $('cbomtab').querySelector('tbody').innerHTML = d.cbom.map(c =>
+    `<tr><td>${c.protocol}</td><td>${c.algorithm}</td><td>${c.usage}</td><td>${c.klass}</td><td>${c.pqc_status}</td></tr>`).join('');
+}
+async function kbInfo(){ $('cvesum').textContent = JSON.stringify(await jget('/api/v1/okf/cve/kb'), null, 1); }
+async function cveSync(){ $('cvesum').textContent = 'syncing 1 page from NVD…'; const r = await jpost('/api/v1/okf/cve/sync', {pages:1, results_per_page:20}); $('cvesum').textContent = JSON.stringify(r.data, null, 1); }
+async function suggest(){ $('sug').textContent = JSON.stringify((await jpost('/api/v1/okf/training/suggest', {raw_command: $('unk').value, vendor: $('unkv').value})).data, null, 1); }
+async function approve(){
+  let v = $('apval').value; if(/^-?\d+$/.test(v)) v = parseInt(v);
+  const r = await jpost('/api/v1/okf/training/approve', {vendor: $('apv').value, platform: 'any', pattern: $('app').value, canonical_property: $('apc').value, canonical_value: v});
+  $('appr').textContent = JSON.stringify(r.data, null, 1);
+}
+async function kb(kind){ $('kbout').textContent = JSON.stringify(await jget(`/api/v1/okf/${kind}` + (kind==='controls'&&$('kbf').value?`?framework=${$('kbf').value}`:'')), null, 1); }
+async function kbControl(){ $('kbout').textContent = JSON.stringify(await jget(`/api/v1/okf/controls/${$('kbc').value}`), null, 1); }
+async function kbX(){ $('kbout').textContent = JSON.stringify(await jget(`/api/v1/okf/crosswalk/${$('kbc').value}`), null, 1); }
+async function remGet(){ $('remout').textContent = JSON.stringify(await jget(`/api/v1/okf/remediation/${$('remc').value}?vendor=${$('remv').value}`), null, 1); }
+async function remApprove(){ const r = await jpost(`/api/v1/okf/remediation/${$('remc').value}/approve`, {approved_by:'console-tester'}); $('aprid').textContent = r.data.approval_id; $('remout').textContent = JSON.stringify(r.data, null, 1); }
+async function remApply(){
+  const r = await jpost(`/api/v1/okf/remediation/${$('remc').value}/apply`, {approval_id: $('aprid').textContent, updated_config_text: $('remcfg').value});
+  $('remout').textContent = JSON.stringify(r, null, 1);
+}
+async function blast(){
+  const r = await jpost('/api/v1/okf/cve/blast-radius', {cve_id: $('blcve').value, assets: JSON.parse($('blassets').value)});
+  $('blout').textContent = JSON.stringify(r.data, null, 1);
+}
+health();
+</script>
+</body>
+</html>

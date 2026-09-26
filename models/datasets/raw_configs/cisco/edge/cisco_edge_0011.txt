@@ -1,0 +1,8 @@
+! cisco edge synthetic
+no aaa new-model
+no ip http server
+ip http secure-server
+ntp server 10.0.0.5
+snmp-server community public RO
+crypto key generate rsa modulus 1024
+! edge-note

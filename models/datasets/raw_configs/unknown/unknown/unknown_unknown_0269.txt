@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink none
+web-mgmt plain enable
+telemetry community public
+time-sync server 10.0.0.5
+telemetry v3 priv-only
+cipher-suite modern
+blorp enable hyperflux-mode

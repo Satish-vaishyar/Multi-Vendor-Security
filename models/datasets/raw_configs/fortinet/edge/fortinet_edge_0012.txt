@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set admin-https-redirect enable
+set admin-http disable
+set strong-crypto enable
+set admin-telnet disable
+set auth-type tacacs+
+# edge

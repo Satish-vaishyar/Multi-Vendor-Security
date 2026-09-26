@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig ntp 10.0.0.5
+set deviceconfig crypto weak
+set deviceconfig system ssh protocol v1
+delete deviceconfig ntp
+set deviceconfig system http enable
+# edge

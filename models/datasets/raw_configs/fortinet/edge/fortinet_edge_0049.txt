@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set ntp-server 10.0.0.5
+set admin-https-redirect enable
+set admin-http enable
+set weak-crypto enable
+set admin-telnet disable
+# edge

@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set syslog-server 10.0.0.99
+unset ntp-server
+set ntp-server 10.0.0.5
+set admin-http disable
+set admin-telnet disable
+set weak-crypto enable
+blorp enable hyperflux-mode

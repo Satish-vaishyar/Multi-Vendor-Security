@@ -1,0 +1,8 @@
+! arista unknown synthetic
+logging host 10.0.0.99
+generate rsa 1024
+no http server
+http server enable
+ntp server 10.0.0.5
+snmp-server group NETADMIN v3 priv
+blorp enable hyperflux-mode

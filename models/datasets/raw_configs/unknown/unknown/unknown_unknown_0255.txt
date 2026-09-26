@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink none
+cipher-suite modern
+time-sync server 10.0.0.5
+mgmt telnet permit-all
+telemetry community public
+secure-mgmt ssh protocol v1
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+secure-mgmt ssh protocol v2
+mgmt telnet permit-all
+event-sink none
+auth backend tacacs
+web-mgmt plain enable
+mgmt telnet deny
+blorp enable hyperflux-mode

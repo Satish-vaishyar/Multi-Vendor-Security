@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system syslog host 10.0.0.99 any any
+set system authentication-order tacplus
+delete system tacplus-server
+set system services web-management http
+delete system services web-management http
+set system services ssh protocol-version v2
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! cisco edge synthetic
+no ntp
+aaa new-model
+no aaa new-model
+crypto key generate rsa modulus 2048
+crypto key generate rsa modulus 1024
+! edge-note

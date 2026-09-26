@@ -1,0 +1,9 @@
+crosswalk:
+  - canonical_property: SSH.VERSION
+    mappings: [{framework: CIS, control_id: CIS-SSH-001}, {framework: NIST, control_id: AC-17}, {framework: STIG, control_id: V-220622}, {framework: ISO27001, control_id: A.8.20}]
+  - canonical_property: TELNET.ENABLED
+    mappings: [{framework: CIS, control_id: CIS-TELNET-001}, {framework: NIST, control_id: CM-7}, {framework: STIG, control_id: V-220681}]
+  - canonical_property: LOGGING.REMOTE_SERVER
+    mappings: [{framework: CIS, control_id: CIS-LOG-002}, {framework: NIST, control_id: AU-9}, {framework: STIG, control_id: V-220701}]
+  - canonical_property: CRYPTO.WEAK_ALGO
+    mappings: [{framework: NIST, control_id: SC-12}, {framework: ISO27001, control_id: A.8.24}, {framework: CIS, control_id: CIS-CRYPTO-001}]

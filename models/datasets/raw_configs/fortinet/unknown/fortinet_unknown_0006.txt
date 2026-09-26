@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set admin-telnet enable
+set weak-crypto enable
+set auth-type local
+set admin-telnet disable
+set ntp-server 10.0.0.5
+set snmpv3 enable
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! arista unknown synthetic
+no ntp
+generate rsa 2048
+ssh protocol version 2
+aaa authentication login default group tacacs+
+telnet server enable
+no http server
+blorp enable hyperflux-mode

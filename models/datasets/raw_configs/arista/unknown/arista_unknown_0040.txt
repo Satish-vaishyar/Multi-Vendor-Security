@@ -1,0 +1,8 @@
+! arista unknown synthetic
+http server enable
+no logging
+ssh protocol version 2
+generate rsa 1024
+no ntp
+generate rsa 2048
+blorp enable hyperflux-mode

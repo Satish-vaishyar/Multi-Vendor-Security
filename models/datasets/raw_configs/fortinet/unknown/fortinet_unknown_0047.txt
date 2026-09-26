@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set snmp-community public
+set snmpv3 enable
+set auth-type tacacs+
+unset ntp-server
+unset syslog-server
+set strong-crypto enable
+blorp enable hyperflux-mode

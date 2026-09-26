@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend tacacs
+cipher-suite modern
+web-mgmt plain enable
+mgmt telnet permit-all
+time-sync server 10.0.0.5
+cipher-suite legacy
+blorp enable hyperflux-mode

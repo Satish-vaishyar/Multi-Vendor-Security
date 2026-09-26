@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite legacy
+auth backend none
+telemetry community public
+mgmt telnet deny
+mgmt telnet permit-all
+telemetry v3 priv-only
+blorp enable hyperflux-mode

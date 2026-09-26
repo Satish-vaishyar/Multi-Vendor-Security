@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+secure-mgmt ssh protocol v2
+web-mgmt plain enable
+telemetry v3 priv-only
+cipher-suite modern
+secure-mgmt ssh protocol v1
+mgmt telnet permit-all
+blorp enable hyperflux-mode

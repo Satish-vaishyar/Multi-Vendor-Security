@@ -1,0 +1,8 @@
+! arista unknown synthetic
+generate rsa 2048
+logging host 10.0.0.99
+ntp server 10.0.0.5
+aaa authentication login default group tacacs+
+no ntp
+snmp-server group NETADMIN v3 priv
+blorp enable hyperflux-mode

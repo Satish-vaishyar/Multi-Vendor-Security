@@ -1,0 +1,1 @@
+{"method": "qiskit-fidelity-kernel", "dims": 4, "quantum_acc": 0.583, "classical_rbf_acc": 0.59, "classical_minus_quantum": 0.007, "classical_time_s": 0.0, "total_time_s": 27.9}

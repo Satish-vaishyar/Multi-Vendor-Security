@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite modern
+secure-mgmt ssh protocol v1
+cipher-suite legacy
+auth backend none
+mgmt telnet permit-all
+secure-mgmt ssh protocol v2
+blorp enable hyperflux-mode

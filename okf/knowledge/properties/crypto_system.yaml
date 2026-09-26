@@ -1,0 +1,21 @@
+properties:
+  - {property_id: CRYPTO.IPSEC_ENABLED, category: crypto, datatype: boolean, security_level: MEDIUM, description: "IPsec configured", default_expected: true}
+  - {property_id: CRYPTO.IKE_VERSION, category: crypto, datatype: enum, allowed_values: [1, 2], security_level: HIGH, description: "IKE version", default_expected: 2}
+  - {property_id: CRYPTO.PFS_ENABLED, category: crypto, datatype: boolean, security_level: MEDIUM, description: "Perfect forward secrecy enabled", default_expected: true}
+  - {property_id: CRYPTO.RSA_KEY_SIZE, category: crypto, datatype: integer, security_level: HIGH, description: "RSA key size in bits", default_expected: 2048}
+  - {property_id: CRYPTO.SSL_VERSION_MIN, category: crypto, datatype: string, security_level: HIGH, description: "Minimum SSL/TLS version token", default_expected: "tlsv1.2"}
+  - {property_id: CERT.PRESENT, category: crypto, datatype: boolean, security_level: MEDIUM, description: "Device certificate installed", default_expected: true}
+  - {property_id: CERT.SELF_SIGNED, category: crypto, datatype: boolean, security_level: MEDIUM, description: "Self-signed certificate in use", default_expected: false}
+  - {property_id: CERT.EXPIRED, category: crypto, datatype: boolean, security_level: HIGH, description: "Expired certificate present", default_expected: false}
+  - {property_id: SNMP.V3_PRIV, category: monitoring, datatype: boolean, security_level: HIGH, description: "SNMPv3 with privacy (authPriv) configured", default_expected: true}
+  - {property_id: SNMP.READWRITE, category: monitoring, datatype: boolean, security_level: HIGH, description: "SNMP write access enabled", default_expected: false}
+  - {property_id: LOGGING.BUFFERED, category: logging, datatype: boolean, security_level: LOW, description: "Buffered logging configured", default_expected: true}
+  - {property_id: LOGGING.TRAP_LEVEL, category: logging, datatype: string, security_level: LOW, description: "Logging trap level", default_expected: "informational"}
+  - {property_id: LOGGING.TIMESTAMPS, category: logging, datatype: boolean, security_level: LOW, description: "Log timestamps enabled", default_expected: true}
+  - {property_id: NTP.SOURCE_SET, category: system, datatype: boolean, security_level: LOW, description: "NTP source interface set", default_expected: true}
+  - {property_id: DNS.LOOKUP_DISABLED, category: system, datatype: boolean, security_level: LOW, description: "DNS lookup disabled on CLI", default_expected: true}
+  - {property_id: SERVICE.PASSWORD_ENCRYPTION, category: system, datatype: boolean, security_level: HIGH, description: "Service password-encryption enabled", default_expected: true}
+  - {property_id: SERVICE.PAD_DISABLED, category: system, datatype: boolean, security_level: LOW, description: "PAD service disabled", default_expected: true}
+  - {property_id: BANNER.LOGIN_SET, category: system, datatype: boolean, security_level: LOW, description: "Login banner configured", default_expected: true}
+  - {property_id: BANNER.EXEC_SET, category: system, datatype: boolean, security_level: LOW, description: "EXEC banner configured", default_expected: true}
+  - {property_id: CLOCK.TIMEZONE_SET, category: system, datatype: boolean, security_level: LOW, description: "Timezone/clock configured", default_expected: true}

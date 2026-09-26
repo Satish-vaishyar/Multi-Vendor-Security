@@ -1,0 +1,7 @@
+! arista edge synthetic
+http server enable
+telnet server enable
+no ntp
+generate rsa 2048
+aaa authentication login default group tacacs+
+! edge

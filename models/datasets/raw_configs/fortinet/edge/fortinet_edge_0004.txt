@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set snmp-community public
+set admin-https-redirect enable
+set admin-telnet enable
+set auth-type tacacs+
+set auth-type local
+# edge

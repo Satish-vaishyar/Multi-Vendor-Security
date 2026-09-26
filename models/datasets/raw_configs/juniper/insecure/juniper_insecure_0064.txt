@@ -1,0 +1,6 @@
+! juniper insecure synthetic
+set system services ssh protocol-version v1
+set system services telnet
+set system services web-management http
+delete system syslog
+delete system tacplus-server

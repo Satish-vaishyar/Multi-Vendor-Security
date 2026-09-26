@@ -1,0 +1,19 @@
+remediations:
+  - control_id: OKF-TELNET-001
+    title: "Disable Telnet, enforce SSH-only VTY access"
+    commands: ["line vty 0 4", "transport input ssh"]
+    validation: ["show running-config | include transport input"]
+    rollback: ["line vty 0 4", "transport input telnet ssh"]
+    approval_required: true
+  - control_id: OKF-SSH-001
+    title: "Enforce SSH version 2"
+    commands: ["ip ssh version 2"]
+    validation: ["show ip ssh"]
+    rollback: []
+    approval_required: false
+  - control_id: OKF-HTTP-001
+    title: "Disable cleartext HTTP server"
+    commands: ["no ip http server"]
+    validation: ["show running-config | include ip http"]
+    rollback: ["ip http server"]
+    approval_required: false

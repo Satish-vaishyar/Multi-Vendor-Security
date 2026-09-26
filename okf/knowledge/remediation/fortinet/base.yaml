@@ -1,0 +1,7 @@
+remediations:
+  - control_id: OKF-TELNET-001
+    title: "Disable Telnet admin access"
+    commands: ["config system interface", "set allowaccess ssh https ping"]
+    validation: ["show system interface"]
+    rollback: []
+    approval_required: true

@@ -1,0 +1,20 @@
+properties:
+  - {property_id: AAA.LOCKOUT_ENABLED, category: authentication, datatype: boolean, security_level: MEDIUM, description: "Account lockout after failed logins", default_expected: true}
+  - {property_id: AAA.TACACS_CONFIGURED, category: authentication, datatype: boolean, security_level: MEDIUM, description: "TACACS+ server configured", default_expected: true}
+  - {property_id: AAA.RADIUS_CONFIGURED, category: authentication, datatype: boolean, security_level: MEDIUM, description: "RADIUS server configured", default_expected: true}
+  - {property_id: AAA.LOCAL_FALLBACK_ONLY, category: authentication, datatype: boolean, security_level: MEDIUM, description: "Only local fallback accounts (no central auth)", default_expected: false}
+  - {property_id: PASSWORD.MIN_LENGTH, category: authentication, datatype: integer, security_level: HIGH, description: "Minimum password length", default_expected: 12}
+  - {property_id: PASSWORD.COMPLEXITY, category: authentication, datatype: boolean, security_level: HIGH, description: "Password complexity enforced", default_expected: true}
+  - {property_id: PASSWORD.ENCRYPTED, category: authentication, datatype: boolean, security_level: HIGH, description: "Passwords stored encrypted/secret", default_expected: true}
+  - {property_id: PASSWORD.REUSE_PREVENTED, category: authentication, datatype: boolean, security_level: MEDIUM, description: "Password history/reuse prevention", default_expected: true}
+  - {property_id: USER.DEFAULT_ACCOUNTS, category: authentication, datatype: boolean, security_level: CRITICAL, description: "Default/vendor accounts present", default_expected: false}
+  - {property_id: USER.PRIVILEGE_MAX, category: authentication, datatype: integer, security_level: MEDIUM, description: "Highest local privilege level assigned", default_expected: 15}
+  - {property_id: SSH.TIMEOUT_SET, category: remote_access, datatype: boolean, security_level: MEDIUM, description: "SSH timeout configured", default_expected: true}
+  - {property_id: SSH.RETRIES_LIMITED, category: remote_access, datatype: boolean, security_level: MEDIUM, description: "SSH auth retries limited", default_expected: true}
+  - {property_id: SSH.MACS_STRONG, category: remote_access, datatype: boolean, security_level: MEDIUM, description: "Strong SSH MACs only", default_expected: true}
+  - {property_id: VTY.ACL_APPLIED, category: remote_access, datatype: boolean, security_level: HIGH, description: "ACL applied to VTY lines", default_expected: true}
+  - {property_id: VTY.TIMEOUT_SET, category: remote_access, datatype: boolean, security_level: MEDIUM, description: "VTY exec timeout set", default_expected: true}
+  - {property_id: CONSOLE.SECURED, category: remote_access, datatype: boolean, security_level: MEDIUM, description: "Console line secured with auth/timeout", default_expected: true}
+  - {property_id: FTP.ENABLED, category: remote_access, datatype: boolean, security_level: HIGH, description: "Cleartext FTP service enabled", default_expected: false}
+  - {property_id: TFTP.ENABLED, category: remote_access, datatype: boolean, security_level: HIGH, description: "TFTP service enabled", default_expected: false}
+  - {property_id: AUX.DISABLED, category: remote_access, datatype: boolean, security_level: LOW, description: "AUX port disabled", default_expected: true}

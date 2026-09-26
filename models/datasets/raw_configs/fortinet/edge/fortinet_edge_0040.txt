@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set admin-telnet enable
+set admin-telnet enable
+set admin-telnet disable
+unset syslog-server
+set admin-http enable
+# edge

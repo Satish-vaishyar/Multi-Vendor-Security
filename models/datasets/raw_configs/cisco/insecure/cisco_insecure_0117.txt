@@ -1,0 +1,6 @@
+! cisco insecure synthetic
+ip http server
+snmp-server community public RO
+no logging
+no ntp
+no aaa new-model

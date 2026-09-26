@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink none
+time-sync none
+web-mgmt plain enable
+cipher-suite legacy
+mgmt telnet deny
+secure-mgmt ssh protocol v1
+blorp enable hyperflux-mode

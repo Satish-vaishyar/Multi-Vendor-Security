@@ -1,0 +1,7 @@
+! cisco edge synthetic
+no aaa new-model
+no ntp
+snmp-server group NETADMIN v3 priv
+ip http server
+snmp-server community public RO
+! edge-note

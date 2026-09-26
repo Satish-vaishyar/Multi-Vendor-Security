@@ -1,0 +1,7 @@
+! arista edge synthetic
+snmp-server community public ro
+http server enable
+generate rsa 2048
+aaa authentication login default group tacacs+
+telnet server enable
+! edge

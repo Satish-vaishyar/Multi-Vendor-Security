@@ -1,0 +1,8 @@
+! arista unknown synthetic
+no logging
+snmp-server group NETADMIN v3 priv
+no http server
+ssh protocol version 2
+no telnet server
+aaa authentication login default group tacacs+
+blorp enable hyperflux-mode

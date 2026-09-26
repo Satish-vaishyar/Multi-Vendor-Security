@@ -1,0 +1,9 @@
+! fortinet unknown synthetic
+set weak-crypto enable
+set admin-https-redirect enable
+set ssh-port 22
+set admin-telnet enable
+set ntp-server 10.0.0.5
+set strong-crypto enable
+set auth-type local
+blorp enable hyperflux-mode

@@ -1,0 +1,8 @@
+! cisco edge synthetic
+no ntp
+no logging
+ip ssh version 2
+ip ssh version 1
+line vty 0 4
+ transport input ssh
+! edge-note

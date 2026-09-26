@@ -1,0 +1,15 @@
+mappings:
+- vendor: any
+  platform: any
+  raw_command_pattern: snmp.*community\s+public
+  canonical_property: SNMP.COMMUNITY_PUBLIC
+  canonical_value: true
+  confidence: 0.9
+  source: curated
+- vendor: any
+  platform: any
+  raw_command_pattern: ^no\s+logging\b
+  canonical_property: LOGGING.ENABLED
+  canonical_value: false
+  confidence: 0.9
+  source: curated

@@ -1,0 +1,8 @@
+! arista unknown synthetic
+snmp-server community public ro
+logging host 10.0.0.99
+no ntp
+no aaa
+no telnet server
+snmp-server group NETADMIN v3 priv
+blorp enable hyperflux-mode

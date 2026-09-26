@@ -1,0 +1,1 @@
+{"method": "qiskit-machine-learning-vqc", "quantum_acc": 0.458, "classical_mlp_acc": 0.562, "classical_minus_quantum": 0.104, "classical_time_s": 0.2, "total_time_s": 13.1}

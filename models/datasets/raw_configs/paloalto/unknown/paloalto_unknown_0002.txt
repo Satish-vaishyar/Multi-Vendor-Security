@@ -1,0 +1,8 @@
+! paloalto unknown synthetic
+delete deviceconfig ntp
+set deviceconfig system telnet disable
+set deviceconfig snmp v3 priv
+set deviceconfig crypto weak
+set deviceconfig crypto strong
+set deviceconfig auth tacacs
+blorp enable hyperflux-mode

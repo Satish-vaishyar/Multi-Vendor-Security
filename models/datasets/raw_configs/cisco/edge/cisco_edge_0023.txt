@@ -1,0 +1,9 @@
+! cisco edge synthetic
+no ip http server
+ip http secure-server
+snmp-server community public RO
+no aaa new-model
+line vty 0 4
+ transport input ssh
+logging host 10.0.0.99
+! edge-note

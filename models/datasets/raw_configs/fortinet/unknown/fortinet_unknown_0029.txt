@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set auth-type tacacs+
+set ntp-server 10.0.0.5
+set admin-telnet enable
+set admin-https-redirect enable
+set admin-http enable
+set weak-crypto enable
+blorp enable hyperflux-mode

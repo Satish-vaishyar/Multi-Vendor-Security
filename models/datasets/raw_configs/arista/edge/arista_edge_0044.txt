@@ -1,0 +1,7 @@
+! arista edge synthetic
+no aaa
+snmp-server community public ro
+ssh protocol version 1
+http server enable
+logging host 10.0.0.99
+! edge

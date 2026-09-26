@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite legacy
+auth backend tacacs
+event-sink remote 10.0.0.99
+secure-mgmt ssh protocol v2
+event-sink none
+telemetry community public
+blorp enable hyperflux-mode

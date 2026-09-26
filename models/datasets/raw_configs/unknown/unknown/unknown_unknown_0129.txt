@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+time-sync none
+auth backend tacacs
+cipher-suite modern
+cipher-suite legacy
+mgmt telnet deny
+mgmt telnet permit-all
+blorp enable hyperflux-mode

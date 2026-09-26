@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+telemetry community public
+event-sink remote 10.0.0.99
+time-sync server 10.0.0.5
+auth backend tacacs
+mgmt telnet permit-all
+cipher-suite modern
+blorp enable hyperflux-mode

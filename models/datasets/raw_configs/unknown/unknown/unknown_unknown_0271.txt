@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+telemetry v3 priv-only
+mgmt telnet deny
+time-sync server 10.0.0.5
+secure-mgmt ssh protocol v2
+telemetry community public
+auth backend none
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set snmpv3 enable
+set weak-crypto enable
+set auth-type local
+set syslog-server 10.0.0.99
+set admin-http disable
+# edge

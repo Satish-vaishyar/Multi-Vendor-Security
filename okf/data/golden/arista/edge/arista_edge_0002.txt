@@ -1,0 +1,9 @@
+! arista edge synthetic
+no logging
+no aaa new-model
+crypto key generate rsa modulus 2048
+snmp-server group NETADMIN v3 priv
+aaa new-model
+tacacs-server host 10.0.0.10
+login block-for 120 attempts 3 within 60
+!

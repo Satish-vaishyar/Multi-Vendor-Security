@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system services ssh protocol-version v1
+delete system ntp
+delete system syslog
+set security ike proposal strong dh-group14
+delete system services telnet
+set system ntp server 10.0.0.5
+blorp enable hyperflux-mode

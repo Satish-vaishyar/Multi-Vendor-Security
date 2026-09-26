@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend none
+cipher-suite modern
+time-sync server 10.0.0.5
+secure-mgmt ssh protocol v1
+cipher-suite legacy
+secure-mgmt ssh protocol v2
+blorp enable hyperflux-mode

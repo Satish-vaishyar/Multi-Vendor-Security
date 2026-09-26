@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set admin-http enable
+set snmp-community public
+set auth-type tacacs+
+unset syslog-server
+set ntp-server 10.0.0.5
+set admin-http disable
+blorp enable hyperflux-mode

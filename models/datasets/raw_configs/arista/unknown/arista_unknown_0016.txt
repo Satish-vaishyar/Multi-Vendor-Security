@@ -1,0 +1,8 @@
+! arista unknown synthetic
+generate rsa 2048
+generate rsa 1024
+ssh protocol version 1
+no telnet server
+logging host 10.0.0.99
+http server enable
+blorp enable hyperflux-mode

@@ -1,0 +1,16 @@
+! cisco secure synthetic
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+line vty 0 4
+ transport input ssh
+ access-class MGMT-IN in
+no ip http server
+ip http secure-server
+snmp-server group NETADMIN v3 priv
+logging host 10.0.0.99
+service timestamps log datetime
+aaa new-model
+tacacs-server host 10.0.0.10
+login block-for 120 attempts 3 within 60
+crypto key generate rsa modulus 2048

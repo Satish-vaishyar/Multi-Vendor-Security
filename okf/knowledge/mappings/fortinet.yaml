@@ -1,0 +1,22 @@
+mappings:
+- vendor: fortinet
+  platform: fortios
+  raw_command_pattern: set\s+telnet\s+enable
+  canonical_property: TELNET.ENABLED
+  canonical_value: true
+  confidence: 0.9
+  source: curated
+- vendor: fortinet
+  platform: fortios
+  raw_command_pattern: set\s+https\s+enable
+  canonical_property: HTTPS.ENABLED
+  canonical_value: true
+  confidence: 0.85
+  source: curated
+- vendor: fortinet
+  platform: fortios
+  raw_command_pattern: set\s+syslog.*enable|set\s+log.*server
+  canonical_property: LOGGING.REMOTE_SERVER
+  canonical_value: true
+  confidence: 0.8
+  source: curated

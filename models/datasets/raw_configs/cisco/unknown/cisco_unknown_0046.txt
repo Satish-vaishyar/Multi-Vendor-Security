@@ -1,0 +1,9 @@
+! cisco unknown synthetic
+ip ssh version 1
+no aaa new-model
+crypto key generate rsa modulus 1024
+no logging
+line vty 0 4
+ transport input telnet
+logging host 10.0.0.99
+blorp enable hyperflux-mode

@@ -1,0 +1,7 @@
+! arista edge synthetic
+logging host 10.0.0.99
+no ntp
+no logging
+generate rsa 1024
+no aaa
+! edge

@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+time-sync server 10.0.0.5
+telemetry community public
+time-sync none
+secure-mgmt ssh protocol v2
+event-sink none
+cipher-suite modern
+blorp enable hyperflux-mode

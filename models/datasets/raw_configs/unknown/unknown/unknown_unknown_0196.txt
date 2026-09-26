@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend none
+cipher-suite legacy
+web-mgmt plain disable
+time-sync none
+web-mgmt plain enable
+secure-mgmt ssh protocol v1
+blorp enable hyperflux-mode

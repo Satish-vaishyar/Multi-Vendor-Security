@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig system http disable
+set deviceconfig snmp v3 priv
+set deviceconfig ntp 10.0.0.5
+set deviceconfig system http enable
+set deviceconfig snmp community public
+# edge

@@ -1,0 +1,1669 @@
+{
+ "total": 208,
+ "cases": [
+  {
+   "category": "outside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "16.9",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "16.12.9",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "exact-start",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.0",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.1",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.5.1",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.2",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.3",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "end-bound",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.4",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "after-fixed",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.5",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.6",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.10",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "18.0",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.3",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.5.1",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "exact-start",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.6",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.6.1",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.8",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.2",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "end-bound",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.3",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "after-fixed",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.4",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.5",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.12.1",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "20.4R3",
+   "cve_id": "CVE-2024-99903",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "exact-start",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "21.0",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "21.4R1",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.1R1",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R1",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "end-bound",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R2",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "after-fixed",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R3",
+   "cve_id": "CVE-2024-99903",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "23.1R1",
+   "cve_id": "CVE-2024-99903",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "6.4.15",
+   "cve_id": "CVE-2024-99904",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "exact-start",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.0",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.0.5",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.1",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.2",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "end-bound",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.4",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "after-fixed",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.5",
+   "cve_id": "CVE-2024-99904",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.4.0",
+   "cve_id": "CVE-2024-99904",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "1.1.1",
+   "cve_id": "CVE-2024-99905",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "exact-start",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.1",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "inside-range",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.11",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "end-bound",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.12",
+   "cve_id": "CVE-2024-99905",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "outside-range",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.1.0",
+   "cve_id": "CVE-2024-99905",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "alias-spelling",
+   "vendor": "Cisco",
+   "product": "IOS-XE",
+   "installed": "17.9.2",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "alias-spelling",
+   "vendor": "CISCO",
+   "product": "ios-xe",
+   "installed": "17.9.4",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "alias-spelling",
+   "vendor": "Juniper",
+   "product": "JUNOS-OS",
+   "installed": "22.1R1",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "alias-spelling",
+   "vendor": "Fortinet",
+   "product": "FortiGate",
+   "installed": "7.2.2",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "version-format",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "v17.9.2",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "version-format",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.4a",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "version-format",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.4a-ES",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "version-format",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "R81.10",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "version-format",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "22.4R3",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "version-format",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "7.2(1)",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-product",
+   "vendor": "unknown",
+   "product": "unknown",
+   "installed": "7.1",
+   "cve_id": null,
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.0",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.1",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.2",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.3",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.4",
+   "cve_id": "CVE-2024-99901",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.5",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "17.9.6",
+   "cve_id": "CVE-2024-99901",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.0",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.1",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.2",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.3",
+   "cve_id": "CVE-2024-99902",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.4",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.5",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "17.9.6",
+   "cve_id": "CVE-2024-99902",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.0",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.1",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.2",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.3",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.4",
+   "cve_id": "CVE-2024-99904",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.5",
+   "cve_id": "CVE-2024-99904",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.6",
+   "cve_id": "CVE-2024-99904",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "7.2.7",
+   "cve_id": "CVE-2024-99904",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R1",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R2",
+   "cve_id": "CVE-2024-99903",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R3",
+   "cve_id": "CVE-2024-99903",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R4",
+   "cve_id": "CVE-2024-99903",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "22.4R5",
+   "cve_id": "CVE-2024-99903",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.0",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.1",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.2",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.3",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.4",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.5",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.6",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.7",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.9",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.10",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.11",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.12",
+   "cve_id": "CVE-2024-99905",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "patch-sweep",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.13",
+   "cve_id": "CVE-2024-99905",
+   "expected": "NOT_AFFECTED"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "examplevendor",
+   "product": "exampleproduct",
+   "installed": "",
+   "cve_id": "CVE-2024-99901",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "cisco",
+   "product": "ios_xe",
+   "installed": "",
+   "cve_id": "CVE-2024-99902",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "juniper",
+   "product": "junos",
+   "installed": "",
+   "cve_id": "CVE-2024-99903",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "fortinet",
+   "product": "fortios",
+   "installed": "",
+   "cve_id": "CVE-2024-99904",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "unknown-version",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "",
+   "cve_id": "CVE-2024-99905",
+   "expected": "UNKNOWN"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  },
+  {
+   "category": "multi-component",
+   "vendor": "openssl",
+   "product": "openssl",
+   "installed": "3.0.8",
+   "cve_id": "CVE-2024-99905",
+   "expected": "VULNERABLE"
+  }
+ ]
+}

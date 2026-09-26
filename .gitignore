@@ -1,0 +1,91 @@
+# ============================================================
+# Multi-Vendor Security — root .gitignore
+# Protects secrets (.env), local tooling, build outputs, ML artifacts
+# ============================================================
+
+# ---------- Secrets / environment ----------
+# Never commit real credentials. Only *.example files are tracked.
+.env
+.env.*
+!.env.example
+!.env.development
+!.env.production
+backend/.env
+backend/.env.*
+!backend/.env.example
+*.pem
+*.key
+secrets.json
+
+# ---------- Python / backend ----------
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.Python
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+uv.lock.bak
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- Node / frontend ----------
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/build/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- OS / editors ----------
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ---------- Docker / local data ----------
+*.sqlite
+*.sqlite3
+*.db
+postgres-data/
+pgdata/
+
+# ---------- ML / caches (trained artifacts ARE tracked — app needs them) ----------
+.huggingface/
+torch_cache/
+transformers_cache/
+__pycache__/
+
+# ---------- Reports / generated (sample PDFs ignored; docs kept) ----------
+reports/out/
+backend/reports/out/
+test-results/
+playwright-report/
+
+# ---------- Misc ----------
+*.tmp
+*.bak
+*.orig
+dist/
+build/

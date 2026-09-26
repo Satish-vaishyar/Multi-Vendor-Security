@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig crypto weak
+set deviceconfig system http enable
+set deviceconfig auth local
+set deviceconfig system ssh protocol v2
+set deviceconfig system syslog-server 10.0.0.99
+# edge

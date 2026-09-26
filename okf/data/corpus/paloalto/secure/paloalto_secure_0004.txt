@@ -1,0 +1,9 @@
+! paloalto secure synthetic
+set admin-https-redirect enable
+set ssh-port 22
+set admin-telnet disable
+set admin-http disable
+set syslog-server 10.0.0.99
+set ntp-server 10.0.0.5
+set strong-crypto enable
+set deviceconfig password-complexity enable

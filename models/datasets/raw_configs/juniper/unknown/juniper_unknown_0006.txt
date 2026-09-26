@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+delete system tacplus-server
+set system syslog host 10.0.0.99 any any
+set security ike proposal strong dh-group14
+set security ike proposal weak dh-group1
+set system authentication-order tacplus
+set system services ssh protocol-version v1
+blorp enable hyperflux-mode

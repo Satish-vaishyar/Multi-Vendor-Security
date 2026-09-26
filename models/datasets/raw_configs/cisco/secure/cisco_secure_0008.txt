@@ -1,0 +1,10 @@
+! cisco secure synthetic
+ip ssh version 2
+line vty 0 4
+ transport input ssh
+no ip http server
+ip http secure-server
+logging host 10.0.0.99
+ntp server 10.0.0.5
+aaa new-model
+crypto key generate rsa modulus 2048

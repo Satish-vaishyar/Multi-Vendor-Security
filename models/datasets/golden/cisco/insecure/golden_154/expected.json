@@ -1,0 +1,8 @@
+{
+ "expected_vendor": "cisco",
+ "expected_platform": "cisco",
+ "expected_findings": true,
+ "sha256": "78316e07f47545b87fa791050e038b4bffaab25861e2a209c05e0aa97623c3f6",
+ "source": "synthetic",
+ "ground_truth": true
+}

@@ -1,0 +1,7 @@
+! arista edge synthetic
+no telnet server
+snmp-server community public ro
+generate rsa 2048
+ssh protocol version 1
+telnet server enable
+! edge

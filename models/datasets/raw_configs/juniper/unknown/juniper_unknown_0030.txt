@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set security ike proposal strong dh-group14
+delete system services telnet
+set system authentication-order tacplus
+set system services ssh protocol-version v2
+set system services ssh protocol-version v1
+set security ike proposal weak dh-group1
+blorp enable hyperflux-mode

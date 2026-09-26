@@ -1,0 +1,17 @@
+! arista secure synthetic
+line vty 0 4
+ transport input ssh
+ access-class MGMT-IN in
+snmp-server group NETADMIN v3 priv
+logging host 10.0.0.99
+service timestamps log datetime
+ntp server 10.0.0.5
+ntp authenticate
+crypto key generate rsa modulus 2048
+service password-encryption
+enable secret 9 $9$hashed
+no ip source-route
+no ip proxy-arp
+ip dhcp snooping
+banner motd # Authorized use only #
+no ip routing-source

@@ -1,0 +1,20 @@
+okf_version: "1.1.0"
+canonical_ir_version: "1.0"
+control_packs:
+  core: {version: "1.0", controls: 14}
+  extended: {version: "1.0", controls: 21}
+  certin: {version: "1.0", controls: 5}
+  nist_oscal_subset: {version: "1.0", generated_from: NIST_OSCAL.json}
+frameworks: [CIS, NIST, STIG, ISO27001, CERT-In]
+properties_count: 102
+llm:
+  provider: featherless_ai
+  model: openai/gpt-oss-120b
+  gateway_file: llm_gateway.py
+  offline_fallback: heuristic
+  value_coercion: true
+cve:
+  kb: knowledge/vulnerability/cves.json
+  modules: [inventory, cpe_resolver, version_normalizer, version_range, kb, nvd_client, correlator, cbom, update]
+  golden_cases: 208
+source_hierarchy: [official_framework, vendor_docs, nvd, expert_rule, ai_suggestion]

@@ -1,0 +1,7 @@
+! paloalto secure synthetic
+set deviceconfig system ssh protocol v2
+set deviceconfig system telnet disable
+set deviceconfig system http disable
+set deviceconfig system syslog-server 10.0.0.99
+set deviceconfig auth tacacs
+set deviceconfig crypto strong

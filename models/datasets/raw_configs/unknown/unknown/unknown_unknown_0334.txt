@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+web-mgmt plain disable
+time-sync server 10.0.0.5
+time-sync none
+telemetry v3 priv-only
+secure-mgmt ssh protocol v2
+event-sink remote 10.0.0.99
+blorp enable hyperflux-mode

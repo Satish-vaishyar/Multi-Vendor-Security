@@ -1,0 +1,8 @@
+! paloalto unknown synthetic
+set auth-type local
+set auth-type tacacs+
+set deviceconfig password-complexity enable
+set admin-http disable
+set admin-http enable
+set admin-telnet enable
+blorp enable hyperflux-mode

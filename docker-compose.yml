@@ -1,0 +1,30 @@
+# SIH-26155 production stack. DB is Supabase Postgres (see backend/.env DATABASE_URL).
+# Usage:
+#   1. cp backend/.env.example backend/.env   # fill JWT_SECRET, DATABASE_URL, CORS_ORIGINS
+#   2. docker compose up --build
+# Frontend: http://localhost:8080 | Backend: http://localhost:8000 | Docs: /docs
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      ENV: production
+      REQUIRE_AUTH: "true"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.yourdomain.com/api/v1}
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

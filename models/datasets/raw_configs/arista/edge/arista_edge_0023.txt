@@ -1,0 +1,7 @@
+! arista edge synthetic
+no ntp
+snmp-server community public ro
+aaa authentication login default group tacacs+
+generate rsa 2048
+generate rsa 1024
+! edge

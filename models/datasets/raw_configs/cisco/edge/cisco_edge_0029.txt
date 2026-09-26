@@ -1,0 +1,7 @@
+! cisco edge synthetic
+ip ssh version 2
+snmp-server community public RO
+no ntp
+ip http server
+ip ssh version 1
+! edge-note

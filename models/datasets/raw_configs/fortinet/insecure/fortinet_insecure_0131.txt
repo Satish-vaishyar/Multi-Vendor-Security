@@ -1,0 +1,6 @@
+! fortinet insecure synthetic
+set admin-telnet enable
+set admin-http enable
+unset syslog-server
+unset ntp-server
+set weak-crypto enable

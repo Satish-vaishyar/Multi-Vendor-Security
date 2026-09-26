@@ -1,0 +1,8 @@
+! juniper secure synthetic
+set system services ssh protocol-version v2
+delete system services telnet
+delete system services web-management http
+set snmp v3 usm local-engine user admin authentication-sha authentication-password *** privacy-aes128
+set system syslog host 10.0.0.99 any any
+set system login password format sha512
+set system services ssh no-passwords

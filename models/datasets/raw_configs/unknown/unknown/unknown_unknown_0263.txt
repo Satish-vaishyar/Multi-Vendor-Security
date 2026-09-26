@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite legacy
+cipher-suite modern
+telemetry community public
+event-sink none
+mgmt telnet deny
+time-sync none
+blorp enable hyperflux-mode

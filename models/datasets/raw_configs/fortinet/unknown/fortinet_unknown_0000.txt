@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set snmp-community public
+set ntp-server 10.0.0.5
+set snmpv3 enable
+set syslog-server 10.0.0.99
+set strong-crypto enable
+set admin-https-redirect enable
+blorp enable hyperflux-mode

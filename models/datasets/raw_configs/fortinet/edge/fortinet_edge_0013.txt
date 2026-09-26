@@ -1,0 +1,7 @@
+! fortinet edge synthetic
+set auth-type tacacs+
+set snmpv3 enable
+unset syslog-server
+set weak-crypto enable
+set admin-telnet enable
+# edge

@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig system http enable
+set deviceconfig crypto weak
+set deviceconfig snmp community public
+set deviceconfig system ssh protocol v1
+set deviceconfig crypto strong
+# edge

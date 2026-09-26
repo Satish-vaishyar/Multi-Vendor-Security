@@ -1,0 +1,123 @@
+{
+ "M1": {
+  "functional": "PASS",
+  "mean_ms": 4.29,
+  "throughput_per_s": 233.1,
+  "vendors_seen": [
+   "cisco",
+   "unknown"
+  ],
+  "n": 500,
+  "edges_ok": true,
+  "edge_out": {
+   "empty": "arista",
+   "whitespace": "arista",
+   "garbage": "arista",
+   "long": "cisco",
+   "unicode": "arista"
+  }
+ },
+ "M2": {
+  "functional": "PASS",
+  "mean_ms": 11.2,
+  "throughput_per_s": 89.3,
+  "n": 2000,
+  "edges_ok": true,
+  "edge_out": {
+   "empty": "unknown",
+   "whitespace": "unknown",
+   "garbage": "unknown",
+   "long": "known",
+   "unicode": "known"
+  }
+ },
+ "M3": {
+  "functional": "PASS",
+  "mean_ms": 186.82,
+  "n": 100,
+  "gibberish_top3": [
+   [
+    "aaa.authentication",
+    0.292
+   ],
+   [
+    "mgmt.snmp_priv",
+    0.278
+   ],
+   [
+    "aaa.authentication",
+    0.277
+   ]
+  ],
+  "approve_probe": true
+ },
+ "M4": {
+  "functional": "PASS",
+  "normal_ms": 8065.81,
+  "empty_ms": 2042.42,
+  "long60x_ms": 4591.52,
+  "long_valid": true
+ },
+ "M5": {
+  "functional": "PASS",
+  "rejects_bad": true,
+  "accepts_good": true
+ },
+ "M6": {
+  "functional": "PASS",
+  "rule_mean_ms": 0.0,
+  "artifact_labels": [
+   "critical",
+   "high",
+   "low",
+   "medium"
+  ],
+  "sweep_min": 0.216,
+  "sweep_max": 6.4
+ },
+ "M7": {
+  "functional": "PASS",
+  "method": "hdbscan",
+  "has_labels": true
+ },
+ "M8": {
+  "functional": "PASS",
+  "mean_ms": 10.8,
+  "n": 200,
+  "dedup_100_to": 2
+ },
+ "M9": {
+  "functional": "PASS",
+  "labels": 120,
+  "d_in": 1024,
+  "artifact_ok": true
+ },
+ "M10": {
+  "functional": "PASS",
+  "kernel8x8_ms": 257.63,
+  "method": "native"
+ },
+ "M11": {
+  "functional": "PASS",
+  "artifact": {
+   "method": "qiskit-machine-learning-vqc",
+   "quantum_acc": 0.458,
+   "classical_mlp_acc": 0.562,
+   "classical_minus_quantum": 0.104,
+   "classical_time_s": 0.1,
+   "total_time_s": 4.9
+  }
+ },
+ "M13": {
+  "functional": "PASS",
+  "ms": 176.68,
+  "method": "qiskit-vqe"
+ },
+ "M12": {
+  "functional": "PASS",
+  "ms": 21262.74,
+  "method": "qiskit-qaoa",
+  "value": 8,
+  "gap": 9
+ }
+}

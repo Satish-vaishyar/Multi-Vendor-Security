@@ -1,0 +1,8 @@
+! arista unknown synthetic
+generate rsa 1024
+no aaa
+snmp-server community public ro
+no http server
+telnet server enable
+no telnet server
+blorp enable hyperflux-mode

@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+no ip http server
+ip http secure-server
+no aaa new-model
+line vty 0 4
+ transport input ssh
+ip ssh version 1
+logging host 10.0.0.99
+no logging
+blorp enable hyperflux-mode

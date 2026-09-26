@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system syslog
+set security ike proposal weak dh-group1
+set system services web-management http
+delete system tacplus-server
+set system services ssh protocol-version v1
+# edge stanza

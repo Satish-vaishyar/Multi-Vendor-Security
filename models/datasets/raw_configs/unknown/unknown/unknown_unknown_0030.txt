@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+mgmt telnet deny
+mgmt telnet permit-all
+web-mgmt plain disable
+secure-mgmt ssh protocol v2
+web-mgmt plain enable
+cipher-suite legacy
+blorp enable hyperflux-mode

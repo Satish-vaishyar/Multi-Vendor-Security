@@ -1,0 +1,21 @@
+properties:
+  - {property_id: ACL.INGRESS_DEFINED, category: access_control, datatype: boolean, security_level: MEDIUM, description: "Ingress ACLs defined", default_expected: true}
+  - {property_id: ACL.EGRESS_DEFINED, category: access_control, datatype: boolean, security_level: MEDIUM, description: "Egress ACLs defined", default_expected: true}
+  - {property_id: ACL.DEFAULT_DENY, category: access_control, datatype: boolean, security_level: HIGH, description: "Default deny rule present", default_expected: true}
+  - {property_id: ACL.PERMIT_ANY, category: access_control, datatype: boolean, security_level: HIGH, description: "Overly permissive permit-any rule", default_expected: false}
+  - {property_id: FIREWALL.POLICY_SET, category: access_control, datatype: boolean, security_level: HIGH, description: "Firewall policy configured", default_expected: true}
+  - {property_id: ZONE.SECURED, category: access_control, datatype: boolean, security_level: MEDIUM, description: "Security zones defined", default_expected: true}
+  - {property_id: INTERFACE.UNUSED_SHUTDOWN, category: network, datatype: boolean, security_level: MEDIUM, description: "Unused interfaces shut down", default_expected: true}
+  - {property_id: INTERFACE.MGMT_ISOLATED, category: network, datatype: boolean, security_level: HIGH, description: "Dedicated management interface/VRF", default_expected: true}
+  - {property_id: CDP.DISABLED_EDGE, category: network, datatype: boolean, security_level: MEDIUM, description: "CDP/LLDP disabled on edge ports", default_expected: true}
+  - {property_id: PROXY_ARP.DISABLED, category: network, datatype: boolean, security_level: MEDIUM, description: "Proxy ARP disabled", default_expected: true}
+  - {property_id: IP.SOURCE_ROUTE_DISABLED, category: network, datatype: boolean, security_level: HIGH, description: "IP source routing disabled", default_expected: true}
+  - {property_id: IP.REDIRECTS_DISABLED, category: network, datatype: boolean, security_level: MEDIUM, description: "ICMP redirects disabled", default_expected: true}
+  - {property_id: IP.DIRECTED_BROADCAST_DISABLED, category: network, datatype: boolean, security_level: MEDIUM, description: "Directed broadcast disabled", default_expected: true}
+  - {property_id: ROUTING.AUTH_ENABLED, category: network, datatype: boolean, security_level: HIGH, description: "Routing protocol authentication enabled", default_expected: true}
+  - {property_id: ROUTING.OSPF_AUTH, category: network, datatype: boolean, security_level: MEDIUM, description: "OSPF authentication configured", default_expected: true}
+  - {property_id: ROUTING.BGP_AUTH, category: network, datatype: boolean, security_level: MEDIUM, description: "BGP peer authentication configured", default_expected: true}
+  - {property_id: STP.BPDU_GUARD, category: network, datatype: boolean, security_level: MEDIUM, description: "BPDU guard on access ports", default_expected: true}
+  - {property_id: DHCP.SNOOPING, category: network, datatype: boolean, security_level: MEDIUM, description: "DHCP snooping enabled", default_expected: true}
+  - {property_id: PORT_SECURITY.ENABLED, category: network, datatype: boolean, security_level: MEDIUM, description: "Port security enabled", default_expected: true}
+  - {property_id: VLAN.NATIVE_SET, category: network, datatype: boolean, security_level: MEDIUM, description: "Native VLAN set securely", default_expected: true}

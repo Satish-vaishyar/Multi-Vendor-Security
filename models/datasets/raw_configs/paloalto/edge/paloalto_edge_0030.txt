@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig crypto weak
+set deviceconfig auth local
+set deviceconfig auth tacacs
+delete deviceconfig system syslog
+set deviceconfig system telnet enable
+# edge

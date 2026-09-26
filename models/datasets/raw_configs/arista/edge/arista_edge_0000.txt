@@ -1,0 +1,7 @@
+! arista edge synthetic
+no http server
+generate rsa 2048
+no telnet server
+ssh protocol version 2
+no aaa
+! edge

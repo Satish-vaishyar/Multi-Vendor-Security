@@ -1,0 +1,8 @@
+! cisco edge synthetic
+line vty 0 4
+ transport input telnet
+no ntp
+snmp-server community public RO
+ip ssh version 1
+ntp server 10.0.0.5
+! edge-note

@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+line vty 0 4
+ transport input ssh
+snmp-server community public RO
+aaa new-model
+no ntp
+line vty 0 4
+ transport input telnet
+ip http server
+blorp enable hyperflux-mode

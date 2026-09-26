@@ -1,0 +1,10 @@
+! cisco unknown synthetic
+ip ssh version 2
+line vty 0 4
+ transport input telnet
+ip ssh version 1
+line vty 0 4
+ transport input ssh
+no ntp
+crypto key generate rsa modulus 1024
+blorp enable hyperflux-mode

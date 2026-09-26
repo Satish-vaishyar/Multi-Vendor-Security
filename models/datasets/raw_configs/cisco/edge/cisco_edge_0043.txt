@@ -1,0 +1,8 @@
+! cisco edge synthetic
+snmp-server community public RO
+no aaa new-model
+ip http server
+no ip http server
+ip http secure-server
+crypto key generate rsa modulus 1024
+! edge-note

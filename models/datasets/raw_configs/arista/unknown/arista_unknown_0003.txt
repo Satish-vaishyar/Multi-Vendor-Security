@@ -1,0 +1,8 @@
+! arista unknown synthetic
+ntp server 10.0.0.5
+no http server
+no aaa
+logging host 10.0.0.99
+generate rsa 2048
+no telnet server
+blorp enable hyperflux-mode

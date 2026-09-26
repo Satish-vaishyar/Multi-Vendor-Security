@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system authentication-order tacplus
+set security ike proposal weak dh-group1
+set system services ssh protocol-version v2
+delete system ntp
+set system syslog host 10.0.0.99 any any
+# edge stanza

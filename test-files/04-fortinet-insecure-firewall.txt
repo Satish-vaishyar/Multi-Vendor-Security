@@ -1,0 +1,28 @@
+# Fortinet FortiGate — INSECURE (expect LOW score + CVE hits on old FortiOS)
+# Device: FortiGate-FW-01
+# FortiOS v7.2.2
+# fortigate firewall policy test config
+
+config system global
+    set admin-telnet enable
+    set admin-http enable
+    set admin-https-redirect disable
+    set hostname FortiGate-FW-01
+end
+config system interface
+    edit port1
+        set ip 192.168.3.1 255.255.255.0
+        set allowaccess ping http telnet snmp
+    next
+end
+config system snmp user
+    edit public
+        set snmp-community public
+    next
+end
+set syslog-server 0.0.0.0
+unset syslog-server
+unset ntp-server
+set auth-type local
+set weak-crypto enable
+set password-policy disable

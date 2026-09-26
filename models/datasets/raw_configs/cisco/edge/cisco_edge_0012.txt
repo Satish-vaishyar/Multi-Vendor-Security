@@ -1,0 +1,8 @@
+! cisco edge synthetic
+ip ssh version 1
+snmp-server group NETADMIN v3 priv
+no logging
+no ntp
+no ip http server
+ip http secure-server
+! edge-note

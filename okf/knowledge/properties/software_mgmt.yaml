@@ -1,0 +1,22 @@
+properties:
+  - {property_id: SOFTWARE.OS_VERSION_KNOWN, category: software, datatype: boolean, security_level: HIGH, description: "OS version identified", default_expected: true}
+  - {property_id: SOFTWARE.EOL_VERSION, category: software, datatype: boolean, security_level: HIGH, description: "OS version end-of-life", default_expected: false}
+  - {property_id: SOFTWARE.SSH_VERSION_KNOWN, category: software, datatype: boolean, security_level: MEDIUM, description: "SSH component version known", default_expected: true}
+  - {property_id: SOFTWARE.SSL_VERSION_KNOWN, category: software, datatype: boolean, security_level: MEDIUM, description: "SSL/TLS library version known", default_expected: true}
+  - {property_id: MGMT.ENCRYPTED_ONLY, category: management, datatype: boolean, security_level: HIGH, description: "Management only over encrypted protocols", default_expected: true}
+  - {property_id: MGMT.INTERNET_EXPOSED, category: management, datatype: boolean, security_level: CRITICAL, description: "Management reachable from internet", default_expected: false}
+  - {property_id: MGMT.SESSION_TIMEOUT, category: management, datatype: boolean, security_level: MEDIUM, description: "Management session timeout set", default_expected: true}
+  - {property_id: AUDIT.CONFIG_ARCHIVED, category: logging, datatype: boolean, security_level: LOW, description: "Configuration archiving enabled", default_expected: true}
+  - {property_id: BACKUP.SCHEDULED, category: system, datatype: boolean, security_level: LOW, description: "Scheduled config backup", default_expected: true}
+  - {property_id: MONITORING.NETFLOW, category: monitoring, datatype: boolean, security_level: LOW, description: "Flow monitoring (netflow/sflow) enabled", default_expected: true}
+  - {property_id: DOS.PROTECTION, category: network, datatype: boolean, security_level: MEDIUM, description: "DoS/rate limiting protection", default_expected: true}
+  - {property_id: URPF.ENABLED, category: network, datatype: boolean, security_level: MEDIUM, description: "Unicast RPF enabled", default_expected: true}
+  - {property_id: POLICY.PASSWORD_ROTATION, category: authentication, datatype: boolean, security_level: LOW, description: "Credential rotation policy evident", default_expected: true}
+  - {property_id: POLICY.SESSION_LOCK, category: authentication, datatype: boolean, security_level: MEDIUM, description: "Session lock on inactivity", default_expected: true}
+  - {property_id: ENCRYPTION.CONTROL_PLANE, category: crypto, datatype: boolean, security_level: HIGH, description: "Control-plane traffic encrypted", default_expected: true}
+  - {property_id: KEY.STORED_SECURE, category: crypto, datatype: boolean, security_level: HIGH, description: "Keys stored securely (not in cleartext)", default_expected: true}
+  - {property_id: HTTP.SECURE_ONLY, category: remote_access, datatype: boolean, security_level: HIGH, description: "Only HTTPS management (no HTTP)", default_expected: true}
+  - {property_id: TELNET.ABSENT, category: remote_access, datatype: boolean, security_level: CRITICAL, description: "No telnet statements present", default_expected: true}
+  - {property_id: SNMP.ACL_RESTRICTED, category: monitoring, datatype: boolean, security_level: HIGH, description: "SNMP access restricted by ACL", default_expected: true}
+  - {property_id: LOGGING.SERVER_REACHABLE, category: logging, datatype: boolean, security_level: MEDIUM, description: "Syslog server address configured", default_expected: true}
+  - {property_id: AAA.SERVER_REDUNDANT, category: authentication, datatype: boolean, security_level: LOW, description: "Multiple AAA servers configured", default_expected: true}

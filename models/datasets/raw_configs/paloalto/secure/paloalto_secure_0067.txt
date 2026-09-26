@@ -1,0 +1,5 @@
+! paloalto secure synthetic
+set deviceconfig snmp v3 priv
+set deviceconfig ntp 10.0.0.5
+set deviceconfig auth tacacs
+set deviceconfig crypto strong

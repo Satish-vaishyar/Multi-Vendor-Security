@@ -1,0 +1,8 @@
+! cisco unknown synthetic
+snmp-server group NETADMIN v3 priv
+ip ssh version 2
+crypto key generate rsa modulus 1024
+ip ssh version 1
+no logging
+ip http server
+blorp enable hyperflux-mode

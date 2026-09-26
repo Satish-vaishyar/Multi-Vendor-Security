@@ -1,0 +1,191 @@
+{
+ "total": 30,
+ "profiles": [
+  "secure",
+  "insecure",
+  "edge",
+  "unknown"
+ ],
+ "items": [
+  {
+   "file": "cisco\\secure\\cisco_secure_0000.txt",
+   "vendor": "cisco",
+   "profile": "secure",
+   "sha256": "031ab133cfa7ba6b405b61517bcd4fe68c8c94efdb5eb4abff2b8d4131ce1eef"
+  },
+  {
+   "file": "cisco\\insecure\\cisco_insecure_0001.txt",
+   "vendor": "cisco",
+   "profile": "insecure",
+   "sha256": "7e2a650ad548cc4ad5f4980785c5d553b2a006b165147fa30220ef3c07974b59"
+  },
+  {
+   "file": "cisco\\edge\\cisco_edge_0002.txt",
+   "vendor": "cisco",
+   "profile": "edge",
+   "sha256": "f8b0097b9a0a65bcb85172e68a87a73603533d615f9b33d4603d1f8bf194f53d"
+  },
+  {
+   "file": "cisco\\unknown\\cisco_unknown_0003.txt",
+   "vendor": "cisco",
+   "profile": "unknown",
+   "sha256": "1bcd1308ad9bca8e4395f5c684d01f3e699514fe93d3da1345761c36a42daa90"
+  },
+  {
+   "file": "cisco\\secure\\cisco_secure_0004.txt",
+   "vendor": "cisco",
+   "profile": "secure",
+   "sha256": "c72b625004292529fc83478c6417764fa05cb8348ceefb477355214b9efcc14a"
+  },
+  {
+   "file": "juniper\\secure\\juniper_secure_0000.txt",
+   "vendor": "juniper",
+   "profile": "secure",
+   "sha256": "7b81be207c1fe23a5d6c640139fd9f35b01c7931a9fd10f17d0bc576c00a7c34"
+  },
+  {
+   "file": "juniper\\insecure\\juniper_insecure_0001.txt",
+   "vendor": "juniper",
+   "profile": "insecure",
+   "sha256": "bce64092c9b3bb2e0bfd8e75ddd1df5815af2c6cca069ed5898fc633cc393b5b"
+  },
+  {
+   "file": "juniper\\edge\\juniper_edge_0002.txt",
+   "vendor": "juniper",
+   "profile": "edge",
+   "sha256": "5788efe274abea8f9b887ef1963355166245822bea8ca9d7d09ebf8bdf27c131"
+  },
+  {
+   "file": "juniper\\unknown\\juniper_unknown_0003.txt",
+   "vendor": "juniper",
+   "profile": "unknown",
+   "sha256": "f89d666fa50fa39f187e779b9d4efe5c6e173d4b3976bf00f8aa0da07bf1826a"
+  },
+  {
+   "file": "juniper\\secure\\juniper_secure_0004.txt",
+   "vendor": "juniper",
+   "profile": "secure",
+   "sha256": "2cfc953012a54145999a5b3a3b75d8c371d8431723febac8090ee147563339f8"
+  },
+  {
+   "file": "fortinet\\secure\\fortinet_secure_0000.txt",
+   "vendor": "fortinet",
+   "profile": "secure",
+   "sha256": "4d4f6f2c4a07723711b34f99b6982524b768202633416b4cc4229e945b5039f0"
+  },
+  {
+   "file": "fortinet\\insecure\\fortinet_insecure_0001.txt",
+   "vendor": "fortinet",
+   "profile": "insecure",
+   "sha256": "41ff1dce82b548c543d9fc821a63caf4bcd3aab213eeb8f750b265ba534dcca4"
+  },
+  {
+   "file": "fortinet\\edge\\fortinet_edge_0002.txt",
+   "vendor": "fortinet",
+   "profile": "edge",
+   "sha256": "5e3b9890383ead44182552f94f862be10d02232e4c368151fbed899b19966d33"
+  },
+  {
+   "file": "fortinet\\unknown\\fortinet_unknown_0003.txt",
+   "vendor": "fortinet",
+   "profile": "unknown",
+   "sha256": "7e3f9432bcd19cb0b05d27ac76d653cbd71649f2686a3a2c678046b44c176c3a"
+  },
+  {
+   "file": "fortinet\\secure\\fortinet_secure_0004.txt",
+   "vendor": "fortinet",
+   "profile": "secure",
+   "sha256": "8a5f5227cafc1af8390f48296f81beb8bdedb6d35a58f909b8bb9fcd956b6c5a"
+  },
+  {
+   "file": "paloalto\\secure\\paloalto_secure_0000.txt",
+   "vendor": "paloalto",
+   "profile": "secure",
+   "sha256": "1ac51c2ce8ab5d16fa542ee0b31a726525c3e02dd3a394933372886951987b3e"
+  },
+  {
+   "file": "paloalto\\insecure\\paloalto_insecure_0001.txt",
+   "vendor": "paloalto",
+   "profile": "insecure",
+   "sha256": "75f3a65c192a03e166e3f9e0f0b89346936481b62aec11b19ac85ebb34fe6162"
+  },
+  {
+   "file": "paloalto\\edge\\paloalto_edge_0002.txt",
+   "vendor": "paloalto",
+   "profile": "edge",
+   "sha256": "1713d4d28ac84a2c4e7c95d97cb18cacd47a1aefea0814c60dfa27f6cf6f6b6d"
+  },
+  {
+   "file": "paloalto\\unknown\\paloalto_unknown_0003.txt",
+   "vendor": "paloalto",
+   "profile": "unknown",
+   "sha256": "281db161df73c58b6f05ccf6d236f93d2132db8184f7c417cdbb607f339875c1"
+  },
+  {
+   "file": "paloalto\\secure\\paloalto_secure_0004.txt",
+   "vendor": "paloalto",
+   "profile": "secure",
+   "sha256": "d22a70cebf674c810723b54bb67ddf553d5458844dfe6bdd4d5b367619a043ea"
+  },
+  {
+   "file": "arista\\secure\\arista_secure_0000.txt",
+   "vendor": "arista",
+   "profile": "secure",
+   "sha256": "d644ca00aa5018e63c6cde8806e415f880189e64368efd639e39f4ceeefae37d"
+  },
+  {
+   "file": "arista\\insecure\\arista_insecure_0001.txt",
+   "vendor": "arista",
+   "profile": "insecure",
+   "sha256": "240236a9375a0814467efa1c977723856e1e9dd6fd144526912c778bf1bd3144"
+  },
+  {
+   "file": "arista\\edge\\arista_edge_0002.txt",
+   "vendor": "arista",
+   "profile": "edge",
+   "sha256": "c3f14141d5d881e91548fba4829fb64ff2ae00b71b2eb7778f4695ddc744ab83"
+  },
+  {
+   "file": "arista\\unknown\\arista_unknown_0003.txt",
+   "vendor": "arista",
+   "profile": "unknown",
+   "sha256": "11265290476408d94ca9f412b306cfbe33b1a129856b6fa95b66dff34287325a"
+  },
+  {
+   "file": "arista\\secure\\arista_secure_0004.txt",
+   "vendor": "arista",
+   "profile": "secure",
+   "sha256": "68e5425dbe606f80072bf7efc35b60503c71873a44253656475d61f4b3b6c9d2"
+  },
+  {
+   "file": "unknown\\unknown\\unknown_unknown_0000.txt",
+   "vendor": "unknown",
+   "profile": "unknown",
+   "sha256": "4bf19f2db0dc963707c6fde4ce08ea5383377f38ff5d6c8862eb1920219a098b"
+  },
+  {
+   "file": "unknown\\unknown\\unknown_unknown_0001.txt",
+   "vendor": "unknown",
+   "profile": "unknown",
+   "sha256": "f1dfa962761ebee2893f95838f453eb0abb52f367f8b8ea79258c83c51b23850"
+  },
+  {
+   "file": "unknown\\unknown\\unknown_unknown_0002.txt",
+   "vendor": "unknown",
+   "profile": "unknown",
+   "sha256": "37322d76dcf8290da1021373d7bc92b65b116cef6662a3250d0d3bbc80587458"
+  },
+  {
+   "file": "unknown\\unknown\\unknown_unknown_0003.txt",
+   "vendor": "unknown",
+   "profile": "unknown",
+   "sha256": "8409927f1323084af825b222799bd462810f5b21260d8ec4187196d0230b17de"
+  },
+  {
+   "file": "unknown\\unknown\\unknown_unknown_0004.txt",
+   "vendor": "unknown",
+   "profile": "unknown",
+   "sha256": "9db216c4d183c1bdbb0c0d3d336c10625dcd2554c0e8a05ceae5949e92bbbf5d"
+  }
+ ]
+}

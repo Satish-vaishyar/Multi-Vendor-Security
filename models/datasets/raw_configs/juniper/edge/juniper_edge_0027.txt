@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system syslog
+set system syslog host 10.0.0.99 any any
+set snmp v3 usm local-engine user admin authentication-sha
+delete system ntp
+delete system tacplus-server
+# edge stanza

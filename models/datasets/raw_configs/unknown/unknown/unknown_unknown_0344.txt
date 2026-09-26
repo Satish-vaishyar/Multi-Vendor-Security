@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend tacacs
+cipher-suite modern
+secure-mgmt ssh protocol v2
+secure-mgmt ssh protocol v1
+time-sync server 10.0.0.5
+mgmt telnet deny
+blorp enable hyperflux-mode

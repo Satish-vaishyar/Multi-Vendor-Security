@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system syslog host 10.0.0.99 any any
+set system authentication-order tacplus
+set system services web-management http
+delete system syslog
+delete system services telnet
+# edge stanza

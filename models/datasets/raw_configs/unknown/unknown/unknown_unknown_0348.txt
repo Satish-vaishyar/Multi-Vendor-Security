@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+telemetry community public
+time-sync server 10.0.0.5
+cipher-suite modern
+telemetry v3 priv-only
+time-sync none
+mgmt telnet deny
+blorp enable hyperflux-mode

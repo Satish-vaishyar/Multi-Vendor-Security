@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+auth backend tacacs
+event-sink none
+secure-mgmt ssh protocol v2
+mgmt telnet deny
+time-sync none
+telemetry community public
+blorp enable hyperflux-mode

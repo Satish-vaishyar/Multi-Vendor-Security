@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set security ike proposal weak dh-group1
+set snmp community public authorization read-only
+set system ntp server 10.0.0.5
+set system services ssh protocol-version v1
+delete system ntp
+set system services telnet
+blorp enable hyperflux-mode

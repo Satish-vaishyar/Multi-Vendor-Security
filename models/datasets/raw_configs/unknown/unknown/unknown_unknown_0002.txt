@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+event-sink remote 10.0.0.99
+telemetry community public
+secure-mgmt ssh protocol v2
+cipher-suite legacy
+web-mgmt plain disable
+mgmt telnet permit-all
+blorp enable hyperflux-mode

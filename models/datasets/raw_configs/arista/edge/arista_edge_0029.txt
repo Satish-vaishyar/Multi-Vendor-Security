@@ -1,0 +1,7 @@
+! arista edge synthetic
+no telnet server
+generate rsa 1024
+telnet server enable
+snmp-server community public ro
+snmp-server group NETADMIN v3 priv
+! edge

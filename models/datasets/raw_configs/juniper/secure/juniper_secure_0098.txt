@@ -1,0 +1,7 @@
+! juniper secure synthetic
+delete system services telnet
+delete system services web-management http
+set snmp v3 usm local-engine user admin authentication-sha
+set system syslog host 10.0.0.99 any any
+set system ntp server 10.0.0.5
+set security ike proposal strong dh-group14

@@ -1,0 +1,8 @@
+! juniper unknown synthetic
+set system syslog host 10.0.0.99 any any
+set system services telnet
+set snmp v3 usm local-engine user admin authentication-sha
+set system services web-management http
+delete system services web-management http
+delete system services telnet
+blorp enable hyperflux-mode

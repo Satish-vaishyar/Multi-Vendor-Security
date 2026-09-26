@@ -1,0 +1,7 @@
+! cisco edge synthetic
+snmp-server group NETADMIN v3 priv
+aaa new-model
+ip http server
+snmp-server community public RO
+crypto key generate rsa modulus 1024
+! edge-note

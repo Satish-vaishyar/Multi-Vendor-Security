@@ -1,0 +1,7 @@
+! arista insecure synthetic
+http server enable
+snmp-server community public ro
+no logging
+no ntp
+no aaa
+generate rsa 1024

@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+mgmt telnet deny
+auth backend none
+mgmt telnet permit-all
+event-sink remote 10.0.0.99
+event-sink none
+web-mgmt plain disable
+blorp enable hyperflux-mode

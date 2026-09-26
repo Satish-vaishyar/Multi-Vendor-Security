@@ -1,0 +1,7 @@
+! cisco edge synthetic
+logging host 10.0.0.99
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh version 1
+snmp-server community public RO
+! edge-note

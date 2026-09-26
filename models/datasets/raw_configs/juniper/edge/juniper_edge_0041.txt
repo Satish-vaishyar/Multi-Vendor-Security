@@ -1,0 +1,7 @@
+! juniper edge synthetic
+set system services ssh protocol-version v2
+set system ntp server 10.0.0.5
+delete system ntp
+set snmp v3 usm local-engine user admin authentication-sha
+set system services web-management http
+# edge stanza

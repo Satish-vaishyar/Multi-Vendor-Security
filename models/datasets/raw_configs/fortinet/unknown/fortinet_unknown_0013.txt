@@ -1,0 +1,8 @@
+! fortinet unknown synthetic
+set admin-https-redirect enable
+set snmp-community public
+set admin-telnet enable
+set strong-crypto enable
+set auth-type tacacs+
+set admin-http disable
+blorp enable hyperflux-mode

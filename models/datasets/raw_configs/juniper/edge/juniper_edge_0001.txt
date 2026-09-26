@@ -1,0 +1,7 @@
+! juniper edge synthetic
+delete system services telnet
+set system services ssh protocol-version v2
+delete system services web-management http
+set system syslog host 10.0.0.99 any any
+set system services telnet
+# edge stanza

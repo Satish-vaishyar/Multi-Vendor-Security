@@ -1,0 +1,38 @@
+! Arista EOS — INSECURE (expect LOW score, telnet/http/weak-snmp findings)
+! Device: Arista-Leaf-01
+! Arista EOS version 4.28.0F
+
+hostname Arista-Leaf-01
+!
+daemon TerminAttr
+ exec /usr/bin/TerminAttr -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent
+!
+management api http-commands
+   protocol http
+   no protocol https
+   no shutdown
+!
+ip ssh version 1
+!
+management telnet
+   idle-timeout 60
+   no shutdown
+!
+interface Ethernet1
+   description Uplink
+   ip address 192.168.4.1/24
+   switchport mode trunk
+!
+interface Ethernet2
+   description Downlink
+   switchport access vlan 10
+!
+interface Management1
+   ip address 10.0.4.10/24
+!
+snmp-server community public ro
+no logging host
+no ntp server
+no aaa new-model
+!
+end

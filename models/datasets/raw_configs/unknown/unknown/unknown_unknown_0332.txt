@@ -1,0 +1,8 @@
+! unknown unknown synthetic
+cipher-suite modern
+time-sync none
+mgmt telnet permit-all
+web-mgmt plain disable
+event-sink none
+mgmt telnet deny
+blorp enable hyperflux-mode

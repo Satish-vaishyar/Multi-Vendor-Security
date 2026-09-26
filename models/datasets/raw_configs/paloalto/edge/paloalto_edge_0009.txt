@@ -1,0 +1,7 @@
+! paloalto edge synthetic
+set deviceconfig auth tacacs
+set deviceconfig snmp community public
+delete deviceconfig ntp
+set deviceconfig ntp 10.0.0.5
+delete deviceconfig system syslog
+# edge

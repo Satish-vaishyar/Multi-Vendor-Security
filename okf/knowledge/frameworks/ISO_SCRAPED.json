@@ -1,0 +1,52 @@
+{
+  "standard": "ISO/IEC 27001:2022 Annex A",
+  "themes": {
+    "5_Organizational": [
+      "A.5.1",
+      "A.5.10",
+      "A.5.17",
+      "A.5.18",
+      "A.5.33"
+    ],
+    "6_People": [
+      "A.6.1",
+      "A.6.2"
+    ],
+    "7_Physical": [
+      "A.7.1",
+      "A.7.5"
+    ],
+    "8_Technological": [
+      "A.8.3",
+      "A.8.15",
+      "A.8.20",
+      "A.8.24",
+      "A.8.26"
+    ]
+  },
+  "okf_map": {
+    "A.8.20": [
+      "OKF-SSH-001",
+      "OKF-TELNET-001"
+    ],
+    "A.5.17": [
+      "OKF-AAA-001",
+      "OKF-PASS-001"
+    ],
+    "A.8.15": [
+      "OKF-LOG-001",
+      "OKF-LOG-002"
+    ],
+    "A.8.24": [
+      "OKF-CRYPTO-001"
+    ],
+    "A.8.3": [
+      "OKF-ACL-001"
+    ],
+    "A.5.10": [
+      "OKF-BANNER-001"
+    ]
+  },
+  "iso_page_reachable": false,
+  "note": "IDs/themes only; full control text requires ISO license."
+}

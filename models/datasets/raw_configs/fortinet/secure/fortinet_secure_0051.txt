@@ -1,0 +1,6 @@
+! fortinet secure synthetic
+set admin-https-redirect enable
+set snmpv3 enable
+set syslog-server 10.0.0.99
+set auth-type tacacs+
+set strong-crypto enable

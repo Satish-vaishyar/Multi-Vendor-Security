@@ -1,0 +1,7 @@
+! arista edge synthetic
+generate rsa 2048
+snmp-server group NETADMIN v3 priv
+no http server
+ssh protocol version 2
+no ntp
+! edge

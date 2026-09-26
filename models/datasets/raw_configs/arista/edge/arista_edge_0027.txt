@@ -1,0 +1,7 @@
+! arista edge synthetic
+generate rsa 2048
+telnet server enable
+ssh protocol version 2
+logging host 10.0.0.99
+no logging
+! edge

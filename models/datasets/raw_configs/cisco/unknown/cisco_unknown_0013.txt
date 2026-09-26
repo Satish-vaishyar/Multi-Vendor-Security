@@ -1,0 +1,9 @@
+! cisco unknown synthetic
+no logging
+ip ssh version 1
+no aaa new-model
+line vty 0 4
+ transport input ssh
+logging host 10.0.0.99
+snmp-server group NETADMIN v3 priv
+blorp enable hyperflux-mode

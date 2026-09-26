@@ -1,0 +1,22 @@
+! EDGE / UNKNOWN-TOKEN demo (expect Unknown Tokens tab + Training queue entries)
+! Device: MysteryBox-01 | Mixed known Cisco lines + unknown vendor idioms
+hostname MysteryBox-01
+!
+! Cisco IOS-XE version 17.9.2
+!
+ip ssh version 2
+line vty 0 4
+ transport input ssh
+!
+snmp-server community public RO
+no logging
+!
+! --- lines below are intentionally unknown to the parser ---
+blorp enable hyperflux-mode
+secure-mgmt ssh protocol v1
+mgmt telnet permit-all
+vault lock enable
+??? malformed (( stanza
+frobnicate quantum-tunnel throughput ultra
+!
+end

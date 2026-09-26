@@ -1,0 +1,8 @@
+! arista insecure synthetic
+ssh protocol version 1
+http server enable
+snmp-server community public ro
+no logging
+no ntp
+no aaa
+generate rsa 1024
