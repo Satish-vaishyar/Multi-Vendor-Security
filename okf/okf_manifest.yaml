@@ -6,7 +6,8 @@ control_packs:
   certin: {version: "1.0", controls: 5}
   nist_oscal_subset: {version: "1.0", generated_from: NIST_OSCAL.json}
 frameworks: [CIS, NIST, STIG, ISO27001, CERT-In]
-properties_count: 102
+properties_count: 103
+controls_count: 82
 llm:
   provider: featherless_ai
   model: openai/gpt-oss-120b

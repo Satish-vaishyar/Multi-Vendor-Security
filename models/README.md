@@ -1,4 +1,4 @@
-# SIH 26155 — Models (M1–M13) + Datasets
+# SIH 26155 - Models (M1-M13) + Datasets
 # Implements `docs/models.md`. ALL work lives in this folder only.
 
 ## Layout
@@ -42,6 +42,6 @@ python -m src.evaluate_all                # re-print metrics
 
 ## Design notes (from docs/models.md)
 - Layered: deterministic parsers win, AI fills gaps (§7 arch.md, §11-13 models.md).
-- M10–M13 are RESEARCH ONLY, never dependencies of the auditor (§2, §39).
+- M10-M13 are RESEARCH ONLY, never dependencies of the auditor (§2, §39).
 - Device-level splits (no line leakage) for M2/M3 (§5, §35).
 - Canonical IR frozen at ~100-150 props before M3 training (§9).

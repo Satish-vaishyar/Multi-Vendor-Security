@@ -1,6 +1,6 @@
-# Production hosting checklist — SIH-26155 auditor
+# Production hosting checklist - SIH-26155 auditor
 
-## 1. Backend env (`backend/.env` — NEVER commit this file)
+## 1. Backend env (`backend/.env` - NEVER commit this file)
 
 Copy the template and fill in secrets:
 
@@ -11,9 +11,9 @@ copy backend\.env.example backend\.env
 | Key | Value |
 |---|---|
 | `ENV` | `production` |
-| `JWT_SECRET` | `<openssl rand -hex 32>` — required, the dev default is rejected |
+| `JWT_SECRET` | `<openssl rand -hex 32>` - required, the dev default is rejected |
 | `DATABASE_URL` | `postgresql://postgres:<pw>@db.<ref>.supabase.co:5432/postgres?sslmode=require` |
-| `CORS_ORIGINS` | `https://app.yourdomain.com` — no `"*"` in production |
+| `CORS_ORIGINS` | `https://app.yourdomain.com` - no `"*"` in production |
 | `TRUSTED_HOSTS` | `api.yourdomain.com` |
 | `REQUIRE_AUTH` | `true` |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | strong values |
@@ -44,7 +44,7 @@ $env:VITE_API_BASE_URL="https://api.yourdomain.com/api/v1"; docker compose up --
 ## 4. Verify
 
 ```powershell
-curl http://localhost:8000/health    # -> {"status":"healthy"}
+curl http://localhost:8000/health    # -> {"success":true,"status":"healthy"}
 curl http://localhost:8000/readyz    # -> {"status":"ready","db":{"status":"up","public_tables":10}}
 ```
 

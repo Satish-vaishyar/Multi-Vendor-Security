@@ -1,9 +1,9 @@
-# Frontend — Security Compliance Auditor UI (SIH 26155)
+# Frontend - Security Compliance Auditor UI (SIH 26155)
 
 React 19 + Vite + Tailwind + React Query + Zustand app in this folder.
-It talks **only** to the FastAPI backend (`../backend/`, 42 routes under `/api/v1`).
+It talks **only** to the FastAPI backend (`../backend/`, 56 routes under `/api/v1`).
 The frontend never touches network devices, the database, the LLM, or ML models
-directly — everything goes through the REST API. Uploads are analyzed locally and
+directly - everything goes through the REST API. Uploads are analyzed locally and
 remediation Apply is always a dry run (`device_touched: false`).
 
 Full user walkthrough (login → upload → audit → results → remediation):
@@ -31,7 +31,7 @@ uv sync
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Demo login: `admin@example.com` / `admin123` (email pre-filled — type the password).
+Demo login: `admin@example.com` / `admin123` (email pre-filled - type the password).
 
 ## Environment variables
 
@@ -41,7 +41,7 @@ Demo login: `admin@example.com` / `admin123` (email pre-filled — type the pass
 | `.env.production` | Backend URL baked in at `npm run build` / Docker build | `VITE_API_BASE_URL=https://api.yourdomain.com/api/v1` (edit before building) |
 
 After editing env files, restart `npm run dev`. For Docker/single-domain hosting,
-`docker-compose.yml` accepts a `VITE_API_BASE_URL` build arg — see `../DEPLOY.md`.
+`docker-compose.yml` accepts a `VITE_API_BASE_URL` build arg - see `../DEPLOY.md`.
 
 ## Scripts
 
@@ -91,5 +91,5 @@ Authoritative endpoint list: `../backend/docs/API_REFERENCE.md`
 | Upload rejected (empty / too large) | Backend limit is 5 MB, non-empty UTF-8 text; `.txt .cfg .conf .json .xml .text .log` natively accepted (others accepted with a warning). |
 | Audit stuck in QUEUED/RUNNING | Backend runs audits synchronously in-process; keep the backend terminal alive and retry. Check backend logs. |
 | No findings / score looks wrong | Confirm **Canonical IR** tab is non-empty and frameworks/engines were checked at Start Audit. Re-run with all boxes ticked. |
-| Blank pages / 404 on refresh | SPA — serve via `npm run dev`, not by opening files directly. |
+| Blank pages / 404 on refresh | SPA - serve via `npm run dev`, not by opening files directly. |
 | Port 5173 busy | `npm run dev -- --port 5174`. No backend change needed. |

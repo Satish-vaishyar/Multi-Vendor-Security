@@ -71,7 +71,7 @@ def _ensure_bridge() -> None:
 
 @lru_cache(maxsize=1)
 def okf_layer():
-    """Load OKF registries + engines once (102 props, 70 controls, 5 frameworks)."""
+    """Load OKF registries + engines once (103 props, 82 controls, 5 frameworks)."""
     _ensure_bridge()
     import src.property_registry as pr
     import src.control_kb as ckb_mod

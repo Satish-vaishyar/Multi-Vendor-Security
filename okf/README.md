@@ -1,4 +1,4 @@
-# OKF — Operational Knowledge Framework (complete section implementation)
+# OKF - Operational Knowledge Framework (complete section implementation)
 
 Vendor-neutral knowledge layer between Canonical IR and the engines.
 Docs: `../docs/okf.md`, `../docs/api.md §30`, `../docs/cve_okf.md`.
@@ -27,4 +27,4 @@ uvicorn main:app --reload
 ```
 
 ## Rule
-Deterministic values win; AI fills gaps. LLM never decides compliance — engines do.
+Deterministic values win; AI fills gaps. LLM never decides compliance - engines do.

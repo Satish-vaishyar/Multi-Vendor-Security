@@ -1,4 +1,4 @@
-# RTM — Official SIH26155 Problem Statement → Implementation
+# RTM - Official SIH26155 Problem Statement → Implementation
 
 Source: **SIH26155 · AI-Driven Multi-Vendor Network Security Compliance Auditor**,
 National Technical Research Organisation (NTRO), Software / Blockchain & Cybersecurity,
@@ -22,13 +22,13 @@ Legend: ✅ implemented + tested · 🟡 partial / roadmap noted · ⬜ pending 
 | PS-R7 | **Deviation analysis** vs chosen framework (e.g. `ssh_version == 2` per CIS) | OKF rule DSL (EQUALS/IN/GTE/… compounds) + evidence `{observed → expected}` + `/evidence` chain | ✅ | secure-vs-insecure score test |
 | PS-R8 | **AI (pattern recognition, NLP)** for unseen syntax | M1 rules+LogReg, M2 OOV (ML+novelty), M3 kNN mapping, M4 LLM parser (Featherless `gpt-oss-120b`, offline fallback) | ✅ | M2 oov_score on unknowns; M3 suggestions; live LLM verified in models |
 | PS-R9 | Suggested stack: Netmiko/NAPALM collection; Python custom logic; ReportLab/FPDF per-model/version PDFs | Python custom logic ✅; ReportLab per-vendor/version PDFs ✅; **file-upload ingestion** (the PS's required feature) ✅; live SSH/Netmiko collection → roadmap | 🟡 | roadmap noted; upload path is the PS-mandated interface |
-| PS-R10 | Device coverage: firewalls/SASE, routers/switches, white-box/SONiC, cloud-native SGs — “**any** network device” | deterministic parsers: cisco/juniper/fortinet/paloalto/arista; **anything else → unknown-vendor AI loop** (never a hard failure) | ✅ | unknown pipeline + vendor detector `UNKNOWN@0.31` routing |
+| PS-R10 | Device coverage: firewalls/SASE, routers/switches, white-box/SONiC, cloud-native SGs - “**any** network device” | deterministic parsers: cisco/juniper/fortinet/paloalto/arista; **anything else → unknown-vendor AI loop** (never a hard failure) | ✅ | unknown pipeline + vendor detector `UNKNOWN@0.31` routing |
 
 ## B. Core challenge / operational gap coverage
 
 | PS text | Implementation |
 |---|---|
-| Syntactic diversity (same setting, different CLI per vendor) | Canonical IR: all vendors → same 102 properties before any engine runs (arch §11 diagram) |
+| Syntactic diversity (same setting, different CLI per vendor) | Canonical IR: all vendors → same 103 properties before any engine runs (arch §11 diagram) |
 | Adaptation to new/proprietary hardware | M2 detect → M3/LLM suggest → human approve → registry → auto-recognized (arch §8 loop) |
 | Centralized source of truth | `GET /dashboard/summary` + unified findings across 4 engines |
 | Manual checklist / vendor-locked suites | vendor-neutral deterministic engines + evidence chain |
@@ -40,7 +40,7 @@ Legend: ✅ implemented + tested · 🟡 partial / roadmap noted · ⬜ pending 
 | Source code link | ✅ this repo (`backend/` + `okf/` + `models/`) |
 | Readme with setup instructions | ✅ `README.md` + `backend/docs/SETUP.md` |
 | Architecture document (max 2 pages) | ✅ `backend/docs/ARCHITECTURE.md` |
-| Demo video (max 2 min) | ⬜ to record (script: `USER_GUIDE.md` §2 + arch §63 steps 1–9) |
+| Demo video (max 2 min) | ⬜ to record (script: `USER_GUIDE.md` §2 + arch §63 steps 1-9) |
 | Technical presentation (max 5 slides) | ⬜ to build (storyline: problem → canonical-IR architecture → AI learning loop → 4-engine evidence → demo) |
 
 ## D. Honest gaps (nothing hidden)
@@ -52,7 +52,7 @@ Legend: ✅ implemented + tested · 🟡 partial / roadmap noted · ⬜ pending 
    (`docs/IMPLEMENTATION.md §9`).
 3. **Async workers at scale**: synchronous audits (job-id pattern already on
    CVE-sync/fleet/reports); Celery/Redis in production.
-4. Quantum models (M9–M13) are **research-only by design** (models RTM) and correctly
+4. Quantum models (M9-M13) are **research-only by design** (models RTM) and correctly
    excluded from the audit path.
 
 **Verdict: 10/10 functional requirements ✅ (1 with noted roadmap), knowledge/model

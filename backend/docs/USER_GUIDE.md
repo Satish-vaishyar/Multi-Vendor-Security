@@ -1,4 +1,4 @@
-# User guide — starting the application and using it
+# User guide - starting the application and using it
 
 ## 1. Start the server
 
@@ -8,16 +8,16 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Open **http://127.0.0.1:8000/ui** (test console) and log in (top bar)
-with `admin@example.com` / `admin123`. Login is optional for most reads —
+with `admin@example.com` / `admin123`. Login is optional for most reads -
 the console works anonymously and attaches the token automatically after login.
 The base-URL box (default `http://127.0.0.1:8000`) lets the page talk to a
 server on any host/port. “Check API” should report `healthy`.
 
-> Prefer Swagger? Use **/docs** — every endpoint below is tryable there.
+> Prefer Swagger? Use **/docs** - every endpoint below is tryable there.
 
 ## 2. Guided demo (5 min, insecure Cisco router)
 
-### Tab 1 — Upload & Audit
+### Tab 1 - Upload & Audit
 1. *Create demo asset* → note the `AST-…` id.
 2. *Insecure Cisco* sample is pre-loaded (SSHv1, Telnet, HTTP, public SNMP,
    logging off, IOS-XE 17.9.2). Press *Upload* → header shows
@@ -29,26 +29,26 @@ server on any host/port. “Check API” should report `healthy`.
    (control → property → observed vs expected → source line);
    *Canonical IR* shows the normalized vendor-neutral device view.
 
-### Tab 2 — Findings
+### Tab 2 - Findings
 *Refresh*, then filter by severity/engine. Pick any finding → *select* →
 *Get plan → approve → dry-run apply*: shows vendor fix steps, an approval id,
 and a simulated apply that **never touches a device** (`device_touched: false`).
 
-### Tab 3 — Training (adaptive-vendor loop)
+### Tab 3 - Training (adaptive-vendor loop)
 *Load queue* lists unknown lines from your upload → pick a training id →
 *Suggest* (AI proposes canonical mappings) → set property/value → *Approve*.
 The mapping is persisted to `okf/knowledge/mappings/learned/`; re-running the
 audit recognizes the line automatically.
 
-### Tab 4 — PQC / CBOM
+### Tab 4 - PQC / CBOM
 *Load for last audit*: readiness score, algorithm table
 (RSA/SSHv1/TLS rows flagged `MIGRATION_REQUIRED`), migration recommendations.
 
-### Tab 5 — Reports
+### Tab 5 - Reports
 *Generate* → *Download*: a PDF with executive summary, scores and the findings
 table (first 80 rows).
 
-### Tab 0 — Dashboard
+### Tab 0 - Dashboard
 *Refresh*: asset totals, overall compliance, finding counts by severity,
 CVE critical/high, pending training items.
 
@@ -85,13 +85,13 @@ curl -s -o audit.pdf $BASE/api/v1/reports/REP-…/download
 
 - **Insecure Cisco** (console preset): SSHv1 + Telnet + HTTP + `public` SNMP + no logging.
 - **Secure Cisco** (console preset): SSHv2 + Telnet/HTTP off + SNMPv3-priv + syslog.
-- **Juniper** (console preset): `set system services …` syntax — exercises cross-vendor normalization.
+- **Juniper** (console preset): `set system services …` syntax - exercises cross-vendor normalization.
 - **Unknown vendor**: paste proprietary-looking lines (e.g. `secure-mgmt ssh protocol v2`)
   and drive the Training tab to teach the system.
 
 ## 6. Rules of the road
 
-- Remediation is **simulation only** — approve → dry-run → optional re-audit diff.
+- Remediation is **simulation only** - approve → dry-run → optional re-audit diff.
 - Deterministic values win over AI (`arch.md` §7): the LLM only fills gaps the
   parsers cannot cover, and never decides compliance.
 - Stores are in-memory: restarting the server clears assets/audits/findings.
