@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 Severity = Literal["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
 Op = Literal["EQUALS", "NOT_EQUALS", "GTE", "LTE", "GT", "LT", "IN", "NOT_IN", "CONTAINS", "EXISTS"]
-FindingStatus = Literal["PASS", "FAIL", "PARTIAL", "UNKNOWN"]
+FindingStatus = Literal["PASS", "FAIL", "PARTIAL", "UNKNOWN", "NOT_APPLICABLE"]
 
 
 class CanonicalProperty(BaseModel):
@@ -31,8 +31,12 @@ class Control(BaseModel):
     category: str = "general"
     severity: Severity = "MEDIUM"
     version: str = "1.0"
-    frameworks: Dict[str, str] = Field(default_factory=dict)  # e.g. {"NIST": "AC-17", "CIS": "CIS-SSH-001"}
+    frameworks: Dict[str, Any] = Field(default_factory=dict)  # e.g. {"NIST": "AC-17"} or {"ISO27001": ["A.8.20", "A.8.21"]}
     condition: Dict[str, Any] = Field(default_factory=dict)   # {all:[...]} / {any:[...]} / single condition
+    # Platform applicability (SCAP CPE-style): which device vendors/platforms
+    # this control can ever apply to. Empty lists = applies to all targets.
+    # The engine skips non-matching targets as NOT_APPLICABLE (never scored).
+    applies_to: Dict[str, List[str]] = Field(default_factory=dict)
     evidence_type: str = "CONFIGURATION"
     remediation_id: Optional[str] = None
     references: List[str] = []
@@ -72,7 +76,7 @@ class Finding(BaseModel):
     evidence: Evidence | Dict[str, Any] = Field(default_factory=dict)
     remediation: Dict[str, Any] = Field(default_factory=dict)
     confidence: float = 1.0
-    frameworks: Dict[str, str] = Field(default_factory=dict)
+    frameworks: Dict[str, Any] = Field(default_factory=dict)
 
 
 class VendorMapping(BaseModel):

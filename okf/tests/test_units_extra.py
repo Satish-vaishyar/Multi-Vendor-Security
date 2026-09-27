@@ -218,7 +218,14 @@ def test_inventory_extract():
     comps = extract(cfg, default_vendor="cisco")
     kinds = {(c["vendor"], c["product"]) for c in comps}
     assert ("cisco", "ios-xe") in kinds and ("juniper", "junos") in kinds
-    assert ("openbsd", "openssh") in kinds  # service hint
+    # A bare "ssh" keyword is NOT evidence of OpenBSD OpenSSH (e.g. Cisco IOS
+    # implements SSH inside the OS) — it must not fabricate an unversioned
+    # component that can never correlate.
+    assert ("openbsd", "openssh") not in kinds
+    # ...but a real OpenSSH banner carrying a version is picked up.
+    banner = {(c["vendor"], c["product"], c["version"])
+              for c in extract("SSH-2.0-OpenSSH_8.9p1 Debian-3", default_vendor="cisco")}
+    assert ("openbsd", "openssh", "8.9p1") in banner
     assert sum(1 for c in comps if c["version"] == "17.9.2" and c["product"] == "ios-xe") == 1
     assert extract("nothing here", default_vendor="cisco") == []
 
@@ -236,8 +243,8 @@ def test_cbom_classify_and_build():
     assert build_cbom("A", [], None) == []
 
 
-# ---------------- correlator substring + findings ----------------
-def test_correlator_substring_branches():
+# ---------------- correlator scoping + findings ----------------
+def test_correlator_product_scoping():
     kb = VulnKB()
     kb.records = [{
         "cve_id": "CVE-T-9", "cvss": {}, "references": [],
@@ -255,7 +262,62 @@ def test_correlator_substring_branches():
     kb._index()
     corr = correlate([{"vendor": "Cisco", "product": "IOS-XE", "version": "17.9.2",
                        "component_type": "operating_system"}], asset_id="R", kb=kb)
-    assert corr["summary"]["vulnerable"] == 2  # direct + CPE-substring; juniper skipped
+    # strict product scoping: only the ios_xe entry matches; same-vendor
+    # "other" and juniper entries must NOT leak in (that exploded real NVD
+    # KBs into millions of false rows).
+    assert corr["summary"]["vulnerable"] == 1
+    assert [m["cve_id"] for m in corr["matches"]] == ["CVE-T-9"]
+
+
+def test_correlator_dedupe_and_exact_version():
+    from src.cve.version_normalizer import normalize as _norm
+    # NVD CPE escapes must compare equal to plain installed versions.
+    assert _norm("12.0\\(32\\)S12") == _norm("12.0(32)s12")
+    kb = VulnKB()
+    kb.records = [{
+        "cve_id": "CVE-T-10", "cvss": {"severity": "HIGH"}, "references": [],
+        "affected": [
+            {"vendor": "cisco", "product": "ios_xe", "cpe": "cpe:2.3:o:cisco:ios_xe:17.9.2:*:*",
+             "affected_versions": [{"start": "17.9.2", "start_inclusive": True,
+                                    "end": "17.9.2", "end_inclusive": True}]},
+            {"vendor": "cisco", "product": "ios_xe", "cpe": "cpe:2.3:o:cisco:ios_xe:17.9.3:*:*",
+             "affected_versions": [{"start": "17.9.3", "start_inclusive": True,
+                                    "end": "17.9.3", "end_inclusive": True}]},
+        ]}]
+    kb._index()
+    comp = {"vendor": "cisco", "product": "ios_xe", "component_type": "operating_system"}
+    hit = correlate([{**comp, "version": "17.9.2"}], kb=kb)
+    assert len(hit["matches"]) == 1 and hit["matches"][0]["status"] == "VULNERABLE"
+    miss = correlate([{**comp, "version": "17.9.5"}], kb=kb)
+    assert len(miss["matches"]) == 1 and miss["matches"][0]["status"] == "NOT_AFFECTED"
+
+
+def test_miss_carries_own_product_range():
+    # Regression: CVE-2010-2830-style multi-product record showed IOS 12.2's
+    # range on an ios-xe assessment because misses stored matched_rule=None
+    # and the detail layer backfilled the CVE's first (other-product) entry.
+    from src.cve.version_range import match_record as _mr
+    assert _mr("17.9.2", [{"start": "2.5.0", "end": "2.5.0"}])["matched_rule"] == \
+        {"start": "2.5.0", "end": "2.5.0"}
+    kb = VulnKB()
+    kb.records = [{
+        "cve_id": "CVE-T-11", "cvss": {"severity": "HIGH"}, "references": [],
+        "affected": [
+            {"vendor": "cisco", "product": "ios", "cpe": "cpe:2.3:o:cisco:ios:12.2:*:*",
+             "affected_versions": [{"start": "12.2", "start_inclusive": True,
+                                    "end": "12.2", "end_inclusive": True}]},
+            {"vendor": "cisco", "product": "ios_xe", "cpe": "cpe:2.3:o:cisco:ios_xe:2.5.0:*:*",
+             "affected_versions": [{"start": "2.5.0", "start_inclusive": True,
+                                    "end": "2.5.0", "end_inclusive": True}]},
+        ]}]
+    kb._index()
+    corr = correlate([{"vendor": "cisco", "product": "ios_xe", "version": "17.9.2",
+                       "component_type": "operating_system"}], kb=kb)
+    assert len(corr["matches"]) == 1
+    m = corr["matches"][0]
+    assert m["status"] == "NOT_AFFECTED"
+    assert (m["matched_rule"] or {}).get("start") == "2.5.0"  # own product, not 12.2
+    assert m["installed_cpe"] == "cpe:2.3:o:cisco:ios_xe:17.9.2:*:*:*:*:*:*:*"
 
 
 def test_to_findings_branches():

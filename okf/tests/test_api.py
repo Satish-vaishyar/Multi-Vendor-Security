@@ -125,11 +125,14 @@ def test_cve_endpoints(client, monkeypatch):
                           "config_text": "Cisco IOS-XE version 17.9.2"}).json()
     assert a["success"] and a["data"]["summary"]["vulnerable"] >= 1
     assert a["data"]["findings"] and a["data"]["cbom"]
-    # explicit-only component (no config text)
+    # explicit-only component (no config text) — production path matches real
+    # NVD records only; seeds never appear even though they are in the file.
     b = client.post("/api/v1/okf/cve/audit",
                     json={"asset_id": "X", "vendor": "cisco", "product": "ios_xe",
                           "version": "17.9.4", "config_text": ""}).json()
-    assert b["success"] and b["data"]["summary"]["vulnerable"] == 0
+    assert b["success"]
+    assert not [m for m in b["data"]["matches"]
+                if str(m.get("cve_id", "")).startswith("CVE-2024-9990")]
     kb = client.get("/api/v1/okf/cve/kb").json()["data"]
     assert kb["records"] >= 5
     import src.cve.api as capi

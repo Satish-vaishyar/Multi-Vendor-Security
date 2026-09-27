@@ -104,5 +104,5 @@ def test_sync_added_and_updated(monkeypatch):
     monkeypatch.setattr("src.cve.kb.VulnKB", lambda: fake)
     monkeypatch.setattr(httpx, "get",
                         lambda *a, **k: FakeResp({"vulnerabilities": pages.pop(0)}))
-    out = sync(pages=2, results_per_page=2)
-    assert out == {"added": 2, "updated": 1, "total": 2} and fake.saved == 1
+    out = sync(pages=2, results_per_page=2, delay=0)
+    assert out == {"added": 2, "updated": 1, "dropped_seeds": 0, "total": 2} and fake.saved == 1

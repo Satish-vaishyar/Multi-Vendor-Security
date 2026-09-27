@@ -131,15 +131,38 @@ def count_by(entity: str, cols: Any, **filters: Any) -> List[Dict[str, Any]]:
     return [dict(zip(cols + ["n"], r)) for r in rows]
 
 
+def count(entity: str, **filters: Any) -> int:
+    """SELECT COUNT(*) with key-column equality filters (no row transfer)."""
+    s = _SCHEMA[entity]
+    clauses = [f"UPPER({k}::text)=UPPER(%s)" for k in filters]
+    vals = list(filters.values())
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    with dbmod.get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) FROM {s['table']} {where}", vals)
+        r = cur.fetchone()
+    return int(r[0]) if r else 0
+
+
+def _select_key(col: str) -> str:
+    """Dict key for a projected column; supports 'expr AS alias' projections."""
+    low = col.lower()
+    if " as " in low:
+        return col[low.index(" as ") + 4:].strip().strip('"')
+    return col.split(".")[-1].strip('"')
+
+
 def select(entity: str, columns: List[str], order: str = "created_at DESC",
            limit: int = 50, **filters: Any) -> List[Dict[str, Any]]:
     """Projected list read — only the given columns, no heavy inflate.
 
-    JSONB columns come back parsed. Used for list/picker endpoints so they
-    never drag full record payloads (findings snapshots, canonical IR).
+    Plain JSONB columns come back parsed. Items may also be raw SQL
+    projections with aliases (e.g. "data->'flat_ir' AS flat_ir") — callers
+    pass code constants only, never user input.
     """
     s = _SCHEMA[entity]
     cols = ", ".join(columns)
+    keys = [_select_key(c) for c in columns]
     clauses = [f"UPPER({k}::text)=UPPER(%s)" for k in filters]
     vals = list(filters.values())
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
@@ -147,7 +170,7 @@ def select(entity: str, columns: List[str], order: str = "created_at DESC",
         cur = conn.cursor()
         cur.execute(f"SELECT {cols} FROM {s['table']} {where} ORDER BY {order} LIMIT {int(limit)}", vals)
         rows = cur.fetchall()
-    return [dict(zip(columns, r)) for r in rows]
+    return [dict(zip(keys, r)) for r in rows]
 
 
 def find(entity: str, order: str = "ASC", **filters: Any) -> List[Dict[str, Any]]:

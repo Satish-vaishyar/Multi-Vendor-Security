@@ -76,10 +76,11 @@ curl -s localhost:8000/api/v1/configurations/CFG-…/canonical-ir | python -m js
 
 | Method | Path |
 |---|---|
-| GET | `/api/v1/vulnerabilities/{audit_id}` — `{summary{total,critical,high,medium,low},items[]}` |
+| GET | `/api/v1/vulnerabilities/{audit_id}` — `{summary{total,critical,high,medium,low,unknown},items[]}` |
 | GET | `/api/v1/vulnerabilities/{audit_id}/{finding_id}` — CVE detail (affected range, fixed version, CVSS, CPE, references) |
 | GET | `/api/v1/vulnerabilities/cves?cve_id=&vendor=&product=&severity=` — local KB browser (max 200 rows) |
-| POST | `/api/v1/vulnerabilities/sync` — `{"keyword","pages":1,"results_per_page":20}` → `{job_id,status}` (NVD fetch) |
+| POST | `/api/v1/vulnerabilities/sync` — `{"keyword","pages":1,"results_per_page":200,"products":["cisco ios xe"],"drop_seeds":false}` → `{job_id,status}` (NVD fetch; big pages + paced requests stay under rate limits) |
+| GET | `/api/v1/vulnerabilities/kb/status` — `{records,nvd_records,seed_records,real_world}` (production matching uses NVD records only; seeds are offline fixtures) |
 | GET | `/api/v1/vulnerabilities/sync/{job_id}` — sync job status |
 | POST | `/api/v1/vulnerabilities/blast-radius` — `{"cve_id","assets":[{asset_id,vendor,product,version}]}` → per-asset VULNERABLE/NOT_AFFECTED/UNKNOWN |
 

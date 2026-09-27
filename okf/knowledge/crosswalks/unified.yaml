@@ -7,3 +7,15 @@ crosswalk:
     mappings: [{framework: CIS, control_id: CIS-LOG-002}, {framework: NIST, control_id: AU-9}, {framework: STIG, control_id: V-220701}]
   - canonical_property: CRYPTO.WEAK_ALGO
     mappings: [{framework: NIST, control_id: SC-12}, {framework: ISO27001, control_id: A.8.24}, {framework: CIS, control_id: CIS-CRYPTO-001}]
+  - canonical_property: AAA.TACACS_CONFIGURED
+    mappings: [{framework: CIS, control_id: CIS-AAA-002}, {framework: NIST, control_id: IA-2}, {framework: ISO27001, control_id: A.5.15}]
+  - canonical_property: AAA.ACCOUNTING
+    mappings: [{framework: CIS, control_id: CIS-AAA-003}, {framework: NIST, control_id: AU-2}, {framework: ISO27001, control_id: A.8.15}]
+  - canonical_property: HTTPS.ENABLED
+    mappings: [{framework: CIS, control_id: CIS-HTTPS-001}, {framework: NIST, control_id: SC-8}, {framework: ISO27001, control_id: A.8.20}]
+  - canonical_property: SNMP.ACL_RESTRICTED
+    mappings: [{framework: CIS, control_id: CIS-SNMP-005}, {framework: NIST, control_id: AC-3}, {framework: ISO27001, control_id: A.8.3}]
+  - canonical_property: SSH.MACS_STRONG
+    mappings: [{framework: CIS, control_id: CIS-SSH-004}, {framework: NIST, control_id: SC-12}, {framework: ISO27001, control_id: A.8.24}]
+  - canonical_property: DOS.PROTECTION
+    mappings: [{framework: CIS, control_id: CIS-DOS-001}, {framework: NIST, control_id: SC-5}, {framework: ISO27001, control_id: A.8.20}]

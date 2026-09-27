@@ -55,6 +55,7 @@ orchestrates `okf/` + `models/`, owns auth, audit pipeline, findings, PDF report
 cd backend
 copy .env.example .env   # defaults work offline; see env table in §8
 uv sync --group dev      # creates .venv/, installs runtime + pytest/httpx
+uv run python ../models/scripts/download_minilm.py  # one-time vendoring (~90 MB) of the MiniLM embedding weights into models/artifacts/minilm/ — needs network once; the app reuses it offline on every start
 uv run pytest -q         # tests must pass before first run
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 # add --reload for development auto-reload

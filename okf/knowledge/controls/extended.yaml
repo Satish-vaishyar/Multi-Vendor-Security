@@ -1,190 +1,404 @@
 controls:
-  - control_id: OKF-AUTH-002
-    title: "Account lockout must be configured for repeated failures"
-    description: "Throttles brute-force attempts on management access."
-    category: authentication
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-AUTH-002, NIST: AC-7, STIG: V-220741, ISO27001: A.5.17, CERT-In: CERTIN-AUTH-02}
-    condition: {property: AAA.LOCKOUT_ENABLED, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-PASS-002
-    title: "Passwords must be stored encrypted, not in cleartext"
-    description: "enable secret / secret 9 over type-7/plaintext."
-    category: authentication
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-PASS-002, NIST: IA-5, STIG: V-220742, ISO27001: A.5.17, CERT-In: CERTIN-AUTH-01}
-    condition: {property: PASSWORD.ENCRYPTED, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-PASS-003
-    title: "Service password-encryption must be enabled"
-    description: "Obfuscates reversible passwords in configuration."
-    category: authentication
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-PASS-003, NIST: IA-5, STIG: V-220743, ISO27001: A.5.17}
-    condition: {property: SERVICE.PASSWORD_ENCRYPTION, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-USER-001
-    title: "Default vendor accounts must not exist"
-    description: "Remove admin/cisco/root/guest defaults."
-    category: authentication
-    severity: CRITICAL
-    version: "1.0"
-    frameworks: {CIS: CIS-USER-001, NIST: IA-4, STIG: V-220744, ISO27001: A.5.17}
-    condition: {property: USER.DEFAULT_ACCOUNTS, operator: EQUALS, value: false}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-SSH-003
-    title: "SSH session controls (timeout/retries) must be set"
-    description: "Limits idle sessions and auth retry abuse."
-    category: remote_access
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-SSH-003, NIST: AC-12, STIG: V-220624, ISO27001: A.8.20}
-    condition: {all: [{property: SSH.TIMEOUT_SET, operator: EQUALS, value: true}, {property: SSH.RETRIES_LIMITED, operator: EQUALS, value: true}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-VTY-001
-    title: "VTY lines must have ACL and exec timeout"
-    description: "Restricts and times out remote terminal sessions."
-    category: remote_access
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-VTY-001, NIST: AC-3, STIG: V-220625, ISO27001: A.8.3}
-    condition: {all: [{property: VTY.ACL_APPLIED, operator: EQUALS, value: true}, {property: VTY.TIMEOUT_SET, operator: EQUALS, value: true}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-FTP-001
-    title: "Cleartext file transfer (FTP/TFTP) must be disabled"
-    description: "Use SCP/SFTP instead of FTP/TFTP."
-    category: remote_access
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-FTP-001, NIST: CM-7, STIG: V-220626, ISO27001: A.8.20}
-    condition: {all: [{property: FTP.ENABLED, operator: EQUALS, value: false}, {property: TFTP.ENABLED, operator: EQUALS, value: false}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-SNMP-003
-    title: "SNMPv3 with privacy must be used for SNMP management"
-    description: "authPriv protects management traffic."
-    category: monitoring
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-SNMP-003, NIST: SC-8, STIG: V-220685, ISO27001: A.8.20, CERT-In: CERTIN-NET-03}
-    condition: {any: [{property: SNMP.ENABLED, operator: EQUALS, value: false}, {property: SNMP.V3_PRIV, operator: EQUALS, value: true}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-SNMP-004
-    title: "SNMP write access must not be enabled"
-    description: "Read-only SNMP unless operationally required."
-    category: monitoring
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-SNMP-004, NIST: CM-7, STIG: V-220686, ISO27001: A.8.3}
-    condition: {property: SNMP.READWRITE, operator: EQUALS, value: false}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-IP-001
-    title: "IP source routing must be disabled"
-    description: "Prevents source-routing attacks."
-    category: network
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-IP-001, NIST: SC-7, STIG: V-220731, ISO27001: A.8.20}
-    condition: {property: IP.SOURCE_ROUTE_DISABLED, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-IP-002
-    title: "ICMP redirects and proxy ARP must be disabled"
-    description: "Reduces traffic-redirection attack surface."
-    category: network
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-IP-002, NIST: SC-7, STIG: V-220732, ISO27001: A.8.20}
-    condition: {all: [{property: IP.REDIRECTS_DISABLED, operator: EQUALS, value: true}, {property: PROXY_ARP.DISABLED, operator: EQUALS, value: true}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-RTG-001
-    title: "Routing protocol authentication must be enabled"
-    description: "Authenticates OSPF/BGP peers."
-    category: network
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-RTG-001, NIST: SC-8, STIG: V-220733, ISO27001: A.8.20}
-    condition: {any: [{property: ROUTING.AUTH_ENABLED, operator: EQUALS, value: true}, {property: ROUTING.OSPF_AUTH, operator: EQUALS, value: true}, {property: ROUTING.BGP_AUTH, operator: EQUALS, value: true}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-SWITCH-001
-    title: "Layer-2 protections (DHCP snooping / port-security / BPDU guard) must be enabled"
-    description: "Mitigates rogue DHCP, CAM flooding, STP manipulation."
-    category: network
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-SW-001, NIST: SC-7, STIG: V-220734, ISO27001: A.8.20}
-    condition: {any: [{property: DHCP.SNOOPING, operator: EQUALS, value: true}, {property: PORT_SECURITY.ENABLED, operator: EQUALS, value: true}, {property: STP.BPDU_GUARD, operator: EQUALS, value: true}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-CRYPTO-002
-    title: "IKEv2 must be used instead of IKEv1"
-    description: "IKEv1 has known weaknesses."
-    category: crypto
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-CRYPTO-002, NIST: SC-12, STIG: V-220721, ISO27001: A.8.24, CERT-In: CERTIN-CRYPTO-01}
-    condition: {any: [{property: CRYPTO.IPSEC_ENABLED, operator: EQUALS, value: false}, {property: CRYPTO.IKE_VERSION, operator: EQUALS, value: 2}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-CRYPTO-003
-    title: "RSA keys must be at least 2048 bits"
-    description: "Short keys are brute-forceable."
-    category: crypto
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-CRYPTO-003, NIST: SC-12, STIG: V-220722, ISO27001: A.8.24}
-    condition: {any: [{property: CRYPTO.RSA_KEY_SIZE, operator: EQUALS, value: null}, {property: CRYPTO.RSA_KEY_SIZE, operator: GTE, value: 2048}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-CDP-001
-    title: "Discovery protocols must be disabled on edge ports"
-    description: "CDP/LLDP leak topology to untrusted segments."
-    category: network
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-CDP-001, NIST: CM-7, STIG: V-220735, ISO27001: A.8.20}
-    condition: {property: CDP.DISABLED_EDGE, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-LOG-003
-    title: "Log timestamps must be enabled"
-    description: "Correlatable audit records."
-    category: logging
-    severity: LOW
-    version: "1.0"
-    frameworks: {CIS: CIS-LOG-003, NIST: AU-8, STIG: V-220702, ISO27001: A.8.15, CERT-In: CERTIN-LOG-01}
-    condition: {property: LOGGING.TIMESTAMPS, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-NTP-002
-    title: "Authenticated NTP must be configured"
-    description: "Prevents time-shifting attacks on audit data."
-    category: system
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-NTP-002, NIST: AU-8, STIG: V-220711, ISO27001: A.8.15}
-    condition: {any: [{property: NTP.ENABLED, operator: EQUALS, value: false}, {property: NTP.AUTHENTICATED, operator: EQUALS, value: true}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-DNS-001
-    title: "DNS lookup on CLI must be disabled"
-    description: "Prevents typo-triggered exfiltration/delays."
-    category: system
-    severity: LOW
-    version: "1.0"
-    frameworks: {CIS: CIS-DNS-001, NIST: CM-7, ISO27001: A.8.20}
-    condition: {property: DNS.LOOKUP_DISABLED, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-ACL-002
-    title: "Overly permissive permit-any rules must not exist"
-    description: "Default-deny with scoped permits."
-    category: access_control
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-ACL-002, NIST: AC-3, STIG: V-220736, ISO27001: A.8.3}
-    condition: {property: ACL.PERMIT_ANY, operator: EQUALS, value: false}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-MGMT-001
-    title: "Management sessions must time out"
-    description: "Idle admin sessions are hijack targets."
-    category: management
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-MGMT-001, NIST: AC-12, STIG: V-220737, ISO27001: A.8.5}
-    condition: {property: MGMT.SESSION_TIMEOUT, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
+- control_id: OKF-AUTH-002
+  title: Account lockout must be configured for repeated failures
+  description: Throttles brute-force attempts on management access.
+  category: authentication
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-AUTH-002
+    NIST: AC-7
+    STIG: V-220741
+    ISO27001: A.5.17
+    CERT-In: CERTIN-AUTH-02
+  condition:
+    property: AAA.LOCKOUT_ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-PASS-002
+  title: Passwords must be stored encrypted, not in cleartext
+  description: enable secret / secret 9 over type-7/plaintext.
+  category: authentication
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-PASS-002
+    NIST: IA-5
+    STIG: V-220742
+    ISO27001: A.5.17
+    CERT-In: CERTIN-AUTH-01
+  condition:
+    property: PASSWORD.ENCRYPTED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-PASS-003
+  title: Service password-encryption must be enabled
+  description: Obfuscates reversible passwords in configuration.
+  category: authentication
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-PASS-003
+    NIST: IA-5
+    STIG: V-220743
+    ISO27001: A.5.17
+  condition:
+    property: SERVICE.PASSWORD_ENCRYPTION
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-USER-001
+  title: Default vendor accounts must not exist
+  description: Remove admin/cisco/root/guest defaults.
+  category: authentication
+  severity: CRITICAL
+  version: '1.0'
+  frameworks:
+    CIS: CIS-USER-001
+    NIST: IA-4
+    STIG: V-220744
+    ISO27001:
+    - A.5.17
+    - A.5.18
+  condition:
+    property: USER.DEFAULT_ACCOUNTS
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-SSH-003
+  title: SSH session controls (timeout/retries) must be set
+  description: Limits idle sessions and auth retry abuse.
+  category: remote_access
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SSH-003
+    NIST: AC-12
+    STIG: V-220624
+    ISO27001: A.8.20
+  condition:
+    all:
+    - property: SSH.TIMEOUT_SET
+      operator: EQUALS
+      value: true
+    - property: SSH.RETRIES_LIMITED
+      operator: EQUALS
+      value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-VTY-001
+  title: VTY lines must have ACL and exec timeout
+  description: Restricts and times out remote terminal sessions.
+  category: remote_access
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-VTY-001
+    NIST: AC-3
+    STIG: V-220625
+    ISO27001:
+    - A.8.3
+    - A.5.15
+  condition:
+    all:
+    - property: VTY.ACL_APPLIED
+      operator: EQUALS
+      value: true
+    - property: VTY.TIMEOUT_SET
+      operator: EQUALS
+      value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-FTP-001
+  title: Cleartext file transfer (FTP/TFTP) must be disabled
+  description: Use SCP/SFTP instead of FTP/TFTP.
+  category: remote_access
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-FTP-001
+    NIST: CM-7
+    STIG: V-220626
+    ISO27001:
+    - A.8.20
+    - A.8.21
+  condition:
+    all:
+    - property: FTP.ENABLED
+      operator: EQUALS
+      value: false
+    - property: TFTP.ENABLED
+      operator: EQUALS
+      value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-SNMP-003
+  title: SNMPv3 with privacy must be used for SNMP management
+  description: authPriv protects management traffic.
+  category: monitoring
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SNMP-003
+    NIST: SC-8
+    STIG: V-220685
+    ISO27001:
+    - A.8.20
+    - A.8.21
+    CERT-In: CERTIN-NET-03
+  condition:
+    any:
+    - property: SNMP.ENABLED
+      operator: EQUALS
+      value: false
+    - property: SNMP.V3_PRIV
+      operator: EQUALS
+      value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-SNMP-004
+  title: SNMP write access must not be enabled
+  description: Read-only SNMP unless operationally required.
+  category: monitoring
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SNMP-004
+    NIST: CM-7
+    STIG: V-220686
+    ISO27001:
+    - A.8.3
+    - A.8.21
+  condition:
+    property: SNMP.READWRITE
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-IP-001
+  title: IP source routing must be disabled
+  description: Prevents source-routing attacks.
+  category: network
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-IP-001
+    NIST: SC-7
+    STIG: V-220731
+    ISO27001: A.8.20
+  condition:
+    property: IP.SOURCE_ROUTE_DISABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-IP-002
+  title: ICMP redirects and proxy ARP must be disabled
+  description: Reduces traffic-redirection attack surface.
+  category: network
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-IP-002
+    NIST: SC-7
+    STIG: V-220732
+    ISO27001: A.8.20
+  condition:
+    all:
+    - property: IP.REDIRECTS_DISABLED
+      operator: EQUALS
+      value: true
+    - property: PROXY_ARP.DISABLED
+      operator: EQUALS
+      value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-RTG-001
+  title: Routing protocol authentication must be enabled
+  description: Authenticates OSPF/BGP peers.
+  category: network
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-RTG-001
+    NIST: SC-8
+    STIG: V-220733
+    ISO27001: A.8.20
+  condition:
+    any:
+    - property: ROUTING.AUTH_ENABLED
+      operator: EQUALS
+      value: true
+    - property: ROUTING.OSPF_AUTH
+      operator: EQUALS
+      value: true
+    - property: ROUTING.BGP_AUTH
+      operator: EQUALS
+      value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-SWITCH-001
+  title: Layer-2 protections (DHCP snooping / port-security / BPDU guard) must be
+    enabled
+  description: Mitigates rogue DHCP, CAM flooding, STP manipulation.
+  category: network
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SW-001
+    NIST: SC-7
+    STIG: V-220734
+    ISO27001: A.8.20
+  condition:
+    any:
+    - property: DHCP.SNOOPING
+      operator: EQUALS
+      value: true
+    - property: PORT_SECURITY.ENABLED
+      operator: EQUALS
+      value: true
+    - property: STP.BPDU_GUARD
+      operator: EQUALS
+      value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-CRYPTO-002
+  title: IKEv2 must be used instead of IKEv1
+  description: IKEv1 has known weaknesses.
+  category: crypto
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-CRYPTO-002
+    NIST: SC-12
+    STIG: V-220721
+    ISO27001: A.8.24
+    CERT-In: CERTIN-CRYPTO-01
+  condition:
+    any:
+    - property: CRYPTO.IPSEC_ENABLED
+      operator: EQUALS
+      value: false
+    - property: CRYPTO.IKE_VERSION
+      operator: EQUALS
+      value: 2
+  evidence_type: CONFIGURATION
+- control_id: OKF-CRYPTO-003
+  title: RSA keys must be at least 2048 bits
+  description: Short keys are brute-forceable.
+  category: crypto
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-CRYPTO-003
+    NIST: SC-12
+    STIG: V-220722
+    ISO27001: A.8.24
+  condition:
+    any:
+    - property: CRYPTO.RSA_KEY_SIZE
+      operator: EQUALS
+      value: null
+    - property: CRYPTO.RSA_KEY_SIZE
+      operator: GTE
+      value: 2048
+  evidence_type: CONFIGURATION
+- control_id: OKF-CDP-001
+  title: Discovery protocols must be disabled on edge ports
+  description: CDP/LLDP leak topology to untrusted segments.
+  category: network
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-CDP-001
+    NIST: CM-7
+    STIG: V-220735
+    ISO27001:
+    - A.8.20
+    - A.8.21
+  condition:
+    property: CDP.DISABLED_EDGE
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-LOG-003
+  title: Log timestamps must be enabled
+  description: Correlatable audit records.
+  category: logging
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    CIS: CIS-LOG-003
+    NIST: AU-8
+    STIG: V-220702
+    ISO27001: A.8.15
+    CERT-In: CERTIN-LOG-01
+  condition:
+    property: LOGGING.TIMESTAMPS
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NTP-002
+  title: Authenticated NTP must be configured
+  description: Prevents time-shifting attacks on audit data.
+  category: system
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-NTP-002
+    NIST: AU-8
+    STIG: V-220711
+    ISO27001: A.8.15
+  condition:
+    any:
+    - property: NTP.ENABLED
+      operator: EQUALS
+      value: false
+    - property: NTP.AUTHENTICATED
+      operator: EQUALS
+      value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-DNS-001
+  title: DNS lookup on CLI must be disabled
+  description: Prevents typo-triggered exfiltration/delays.
+  category: system
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    CIS: CIS-DNS-001
+    NIST: CM-7
+    ISO27001:
+    - A.8.20
+    - A.8.21
+  condition:
+    property: DNS.LOOKUP_DISABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-ACL-002
+  title: Overly permissive permit-any rules must not exist
+  description: Default-deny with scoped permits.
+  category: access_control
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-ACL-002
+    NIST: AC-3
+    STIG: V-220736
+    ISO27001:
+    - A.8.3
+    - A.5.15
+  condition:
+    property: ACL.PERMIT_ANY
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-MGMT-001
+  title: Management sessions must time out
+  description: Idle admin sessions are hijack targets.
+  category: management
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-MGMT-001
+    NIST: AC-12
+    STIG: V-220737
+    ISO27001: A.8.5
+  condition:
+    property: MGMT.SESSION_TIMEOUT
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION

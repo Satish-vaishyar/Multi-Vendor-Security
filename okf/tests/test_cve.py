@@ -39,13 +39,28 @@ def test_cpe_resolver():
 def test_correlator_seed():
     kb = VulnKB().load()
     corr = correlate([{"vendor": "cisco", "product": "ios_xe", "version": "17.9.2",
-                       "component_type": "operating_system"}], asset_id="RTR-1", kb=kb)
+                       "component_type": "operating_system"}], asset_id="RTR-1", kb=kb,
+                      include_seeds=True)
     assert corr["summary"]["vulnerable"] >= 1
     corr2 = correlate([{"vendor": "cisco", "product": "ios_xe", "version": "17.9.4",
-                        "component_type": "operating_system"}], kb=kb)
-    assert corr2["summary"]["vulnerable"] == 0
+                        "component_type": "operating_system"}], kb=kb, include_seeds=True)
+    # Seed CVE-2024-99902 covers 17.6-17.9.3: 17.9.4 must have no VULNERABLE
+    # seed match (a NOT_AFFECTED transparency row is still emitted).
+    # Real NVD data may still flag it — that is asserted separately.
+    assert not [m for m in corr2["matches"]
+                if str(m.get("cve_id", "")).startswith("CVE-2024-9990")
+                and m["status"] == "VULNERABLE"]
     corr3 = correlate([{"vendor": "unknown", "product": "unknown", "version": "7.1"}], kb=kb)
     assert corr3["summary"]["unknown"] == 1
+
+
+def test_correlator_production_excludes_seeds():
+    kb = VulnKB().load()
+    assert any(r.get("source") == "OKF-SEED-SYNTHETIC" for r in kb.records)
+    corr = correlate([{"vendor": "cisco", "product": "ios_xe", "version": "17.9.2",
+                       "component_type": "operating_system"}], kb=kb)
+    assert all(not str(m.get("cve_id", "")).startswith("CVE-2024-9990")
+               for m in corr["matches"])
 
 
 def test_golden_cve():
@@ -55,7 +70,8 @@ def test_golden_cve():
     bad = []
     for c in cases:
         corr = correlate([{"vendor": c["vendor"], "product": c["product"],
-                           "version": c["installed"], "component_type": "t"}], kb=kb)
+                           "version": c["installed"], "component_type": "t"}], kb=kb,
+                          include_seeds=True)
         got = None
         for m in corr["matches"]:
             if c["cve_id"] and m["cve_id"] == c["cve_id"]:

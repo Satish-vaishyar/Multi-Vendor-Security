@@ -77,14 +77,40 @@ def eval_condition(ir: Dict[str, Any], cond: Dict[str, Any]) -> Tuple[bool | Non
     return ok, [ev]
 
 
+def control_applies(control: Control, vendor: str = "", platform: str = "") -> bool:
+    """SCAP CPE-style applicability: a control with an empty `applies_to`
+    applies to every target; otherwise the target's vendor/platform must be
+    listed (case-insensitive). Non-applicable controls are never executed."""
+    scope = control.applies_to or {}
+    vendors = [str(v).lower() for v in (scope.get("vendors") or [])]
+    platforms = [str(p).lower() for p in (scope.get("platforms") or [])]
+    if vendors and str(vendor or "").lower() not in vendors:
+        return False
+    if platforms and str(platform or "").lower() not in platforms:
+        return False
+    return True
+
+
 class ComplianceEngine:
     def __init__(self, controls: List[Control], remediation_index: Dict[str, Any] | None = None):
         self.controls = controls
         self.remediation = remediation_index or {}
 
-    def evaluate(self, canonical_ir: Dict[str, Any], asset_id: str = "ASSET-001") -> List[Finding]:
+    def evaluate(self, canonical_ir: Dict[str, Any], asset_id: str = "ASSET-001",
+                 vendor: str = "", platform: str = "") -> List[Finding]:
         findings: List[Finding] = []
         for c in self.controls:
+            if not control_applies(c, vendor, platform):
+                ev = Evidence(control_id=c.control_id, property="",
+                              status="NOT_APPLICABLE")
+                findings.append(Finding(
+                    finding_id=f"F-{c.control_id}",
+                    engine="compliance", control_id=c.control_id, title=c.title,
+                    severity=c.severity, status="NOT_APPLICABLE", asset_id=asset_id,
+                    evidence=ev, remediation=self.remediation.get(c.control_id, {}),
+                    frameworks=dict(c.frameworks),
+                ))
+                continue
             ok, evs = eval_condition(canonical_ir, c.condition or {})
             status = "PASS" if ok else ("FAIL" if ok is False else "UNKNOWN")
             ev = evs[0] if evs else Evidence(control_id=c.control_id, property="", status=status)
@@ -100,14 +126,19 @@ class ComplianceEngine:
 
     @staticmethod
     def score(findings: List[Finding]) -> Dict[str, Any]:
-        total = len(findings)
-        passed = sum(1 for f in findings if f.status == "PASS")
-        failed = sum(1 for f in findings if f.status == "FAIL")
+        # NOT_APPLICABLE controls are reported but never scored (SCAP model:
+        # only applicable checks form the denominator).
+        scored = [f for f in findings if f.status != "NOT_APPLICABLE"]
+        na = len(findings) - len(scored)
+        total = len(scored)
+        passed = sum(1 for f in scored if f.status == "PASS")
+        failed = sum(1 for f in scored if f.status == "FAIL")
         unknown = total - passed - failed
         score = round(100.0 * passed / total, 1) if total else 0.0
         sev = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-        for f in findings:
+        for f in scored:
             if f.status == "FAIL" and f.severity in sev:
                 sev[f.severity] += 1
         return {"compliance_score": score, "total": total, "passed": passed,
-                "failed": failed, "unknown": unknown, **sev}
+                "failed": failed, "unknown": unknown,
+                "not_applicable": na, **sev}

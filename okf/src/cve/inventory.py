@@ -39,8 +39,18 @@ def extract(config_text: str, default_vendor: str = "cisco",
             comps.append({"vendor": v, "product": p, "version": ver,
                           "component_type": "operating_system", "cpe": None,
                           "source": "config_regex"})
-    # service hints
-    if re.search(r"\bssh\b", config_text, re.I):
-        comps.append({"vendor": "openbsd", "product": "openssh", "version": "",
-                      "component_type": "service", "cpe": None, "source": "service_hint"})
+    # service hints: only emit a component when there is concrete evidence of
+    # the implementation AND its version (e.g. an SSH banner "SSH-2.0-OpenSSH_8.9").
+    # A bare "ssh" keyword (e.g. "ip ssh version 2" on Cisco IOS, where SSH is
+    # part of the OS — not OpenBSD OpenSSH) must not fabricate an unversioned
+    # component: it can never be correlated and only surfaces as UNKNOWN rows.
+    for m in re.finditer(r"OpenSSH[_/](\d[\w.\-]+)", config_text):
+        ver = m.group(1)
+        key = ("openbsd", "openssh", ver)
+        if key in seen:
+            continue
+        seen.add(key)
+        comps.append({"vendor": "openbsd", "product": "openssh", "version": ver,
+                      "component_type": "service", "cpe": None,
+                      "source": "service_banner"})
     return comps

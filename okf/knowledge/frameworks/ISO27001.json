@@ -1,1 +1,17 @@
-{"framework_id": "ISO27001", "name": "ISO/IEC 27001:2022 Annex A (subset)", "version": "2022", "publisher": "ISO/IEC", "source": "curated+iso_scraper", "control_ids": ["OKF-AAA-001", "OKF-LOG-001", "OKF-CRYPTO-001", "OKF-ACL-001", "OKF-PASS-001"]}
+{
+  "framework_id": "ISO27001",
+  "name": "ISO/IEC 27001:2022 Annex A (subset)",
+  "version": "2022",
+  "publisher": "ISO/IEC",
+  "source": "curated+iso_scraper",
+  "control_ids": [
+    "OKF-AAA-001",
+    "OKF-LOG-001",
+    "OKF-CRYPTO-001",
+    "OKF-ACL-001",
+    "OKF-PASS-001",
+    "OKF-NIST-CM2",
+    "OKF-NIST-SI4",
+    "OKF-TELNET-001"
+  ]
+}

@@ -17,3 +17,75 @@ remediations:
     validation: ["show running-config | include ip http"]
     rollback: ["ip http server"]
     approval_required: false
+  - control_id: OKF-AAA-002
+    title: "Point AAA at TACACS+/RADIUS servers"
+    commands: ["aaa new-model", "tacacs server CORP", "address ipv4 10.0.0.10", "key <strong>", "aaa group server tacacs+ CORP-GRP", "server name CORP", "aaa authentication login default group CORP-GRP local"]
+    validation: ["show running-config | include tacacs", "test aaa group CORP-GRP admin <password> legacy"]
+    rollback: ["no tacacs server CORP"]
+    approval_required: true
+  - control_id: OKF-AAA-003
+    title: "Enable AAA accounting"
+    commands: ["aaa accounting exec default start-stop group tacacs+", "aaa accounting commands 15 default start-stop group tacacs+"]
+    validation: ["show running-config | include aaa accounting"]
+    rollback: ["no aaa accounting exec default", "no aaa accounting commands 15 default"]
+    approval_required: false
+  - control_id: OKF-HTTPS-001
+    title: "Serve management over HTTPS only"
+    commands: ["no ip http server", "ip http secure-server"]
+    validation: ["show running-config | include ip http"]
+    rollback: ["ip http server"]
+    approval_required: false
+  - control_id: OKF-BANNER-002
+    title: "Configure EXEC banner"
+    commands: ["banner exec ^", "Authorized use only. All activity is monitored.", "^"]
+    validation: ["show running-config | include banner"]
+    rollback: ["no banner exec"]
+    approval_required: false
+  - control_id: OKF-SVC-001
+    title: "Disable finger and PAD services"
+    commands: ["no ip finger", "no service pad"]
+    validation: ["show running-config | include finger|service pad"]
+    rollback: []
+    approval_required: false
+  - control_id: OKF-IP-003
+    title: "Disable directed broadcast"
+    commands: ["interface GigabitEthernet0/0", "no ip directed-broadcast"]
+    validation: ["show running-config interface GigabitEthernet0/0"]
+    rollback: ["interface GigabitEthernet0/0", "ip directed-broadcast"]
+    approval_required: false
+  - control_id: OKF-RPF-001
+    title: "Enable unicast RPF on edge interfaces"
+    commands: ["interface GigabitEthernet0/0", "ip verify unicast source reachable-via rx"]
+    validation: ["show ip interface GigabitEthernet0/0 | include RPF"]
+    rollback: ["interface GigabitEthernet0/0", "no ip verify unicast"]
+    approval_required: true
+  - control_id: OKF-SNMP-005
+    title: "Restrict SNMP communities by ACL"
+    commands: ["ip access-list standard SNMP-ALLOW", "permit 10.0.0.0 0.0.0.255", "snmp-server community <name> RO SNMP-ALLOW"]
+    validation: ["show running-config | include snmp-server community"]
+    rollback: []
+    approval_required: true
+  - control_id: OKF-LOG-004
+    title: "Configure buffered logging"
+    commands: ["logging buffered 16384 informational"]
+    validation: ["show logging | include Buffer"]
+    rollback: ["no logging buffered"]
+    approval_required: false
+  - control_id: OKF-NTP-003
+    title: "Pin NTP source interface"
+    commands: ["ntp source Loopback0"]
+    validation: ["show running-config | include ntp source"]
+    rollback: ["no ntp source"]
+    approval_required: false
+  - control_id: OKF-SSH-004
+    title: "Restrict SSH to strong MACs"
+    commands: ["ip ssh server algorithm mac hmac-sha2-256 hmac-sha2-512"]
+    validation: ["show ip ssh"]
+    rollback: []
+    approval_required: false
+  - control_id: OKF-NIST-SC5
+    title: "Enable control-plane policing"
+    commands: ["control-plane", "service-policy input COPP-POLICY"]
+    validation: ["show policy-map control-plane"]
+    rollback: []
+    approval_required: true

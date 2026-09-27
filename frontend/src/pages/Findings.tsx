@@ -45,7 +45,7 @@ export default function Findings() {
           <input className={inputCls} placeholder="Asset ID" value={f.asset_id} onChange={set("asset_id")} />
           <input className={inputCls} placeholder="Audit ID" value={f.audit_id} onChange={set("audit_id")} />
           <select className={inputCls} value={f.status} onChange={set("status")}>
-            <option value="">Status</option>{["OPEN", "FAIL", "PASS"].map((s) => <option key={s} value={s}>{s}</option>)}
+            <option value="">Status</option>{["OPEN", "FAIL", "PASS", "UNKNOWN"].map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-onprimary hover:bg-primaryhover" onClick={() => setApplied(f)}>Apply</button>
         </div>

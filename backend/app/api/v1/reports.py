@@ -23,6 +23,27 @@ class ReportBody(BaseModel):
     sections: List[str] = ["EXECUTIVE_SUMMARY", "DEVICE", "COMPLIANCE", "CVE", "PQC", "SECURITY", "REMEDIATION", "EVIDENCE"]
 
 
+def ensure_reports_schema() -> None:
+    """Self-heal the reports table (migrate_002.sql) — idempotent.
+
+    Nothing in the app applies migrations automatically, so a database
+    provisioned from schema.sql alone is missing reports.pdf (BYTEA). That
+    column is written ONLY by report generation, which is why every other
+    route works while POST /reports fails with a 500. Running the idempotent
+    ALTERs here fixes that deployment without manual SQL.
+    """
+    try:
+        from app.core import db as dbmod
+        with dbmod.get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'")
+            cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS pdf BYTEA")
+            cur.execute("ALTER TABLE reports ADD COLUMN IF NOT EXISTS download_path TEXT")
+    except Exception as e:  # pragma: no cover - defensive: save() surfaces the real error
+        import logging
+        logging.getLogger("sih26155").warning("ensure_reports_schema skipped: %s", e)
+
+
 def _build_pdf(audit: dict) -> bytes:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
@@ -33,7 +54,10 @@ def _build_pdf(audit: dict) -> bytes:
     doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=15 * mm, bottomMargin=15 * mm)
     styles = getSampleStyleSheet()
     story = []
-    s = audit["summary"]
+    s = audit.get("summary") or {}
+    cve_summary = ((audit.get("cve") or {}).get("summary") or {})
+    pqc = audit.get("pqc") or {}
+    findings = audit.get("findings") or []
     asset = db.get("assets", audit.get("asset_id", "")) or {}
     vend = audit.get("vendor") or {}
     story += [Paragraph("Network Security Compliance Audit Report", styles["Title"]),
@@ -48,12 +72,14 @@ def _build_pdf(audit: dict) -> bytes:
     story.append(Paragraph(
         f"Compliance {s.get('compliance_score')}% · Critical {s.get('CRITICAL', 0)} · "
         f"High {s.get('HIGH', 0)} · Medium {s.get('MEDIUM', 0)} · Low {s.get('LOW', 0)} · "
-        f"CVE vulnerable {audit['cve']['summary'].get('vulnerable', 0)} · "
-        f"PQC readiness {audit['pqc'].get('readiness_score')}", styles["Normal"]))
+        f"CVE vulnerable {cve_summary.get('vulnerable', 0)} · "
+        f"PQC readiness {pqc.get('readiness_score')}", styles["Normal"]))
     story.append(Spacer(1, 8))
     rows = [["Finding", "Sev", "Status", "Title"]]
-    for f in audit["findings"][:80]:
-        rows.append([f.get("finding_id", ""), str(f.get("severity", "")),
+    for f in findings[:80]:
+        if not isinstance(f, dict):
+            continue
+        rows.append([str(f.get("finding_id", "")), str(f.get("severity", "")),
                      str(f.get("status", "")), str(f.get("title", ""))[:90]])
     t = Table(rows, repeatRows=1, colWidths=[28 * mm, 18 * mm, 18 * mm, 110 * mm])
     t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2a37")),
@@ -72,6 +98,7 @@ def create_report(body: ReportBody):
     audit = db.get("audits", body.audit_id)
     if not audit:
         raise HTTPException(404, "Audit not found")
+    ensure_reports_schema()
     rid = store.nid("REP")
     pdf = _build_pdf(audit)
     db.save("reports", {"report_id": rid, "audit_id": body.audit_id, "status": "COMPLETED",
@@ -96,5 +123,8 @@ def download_report(report_id: str):
     r = db.get("reports", report_id)
     if not r:
         raise HTTPException(404, "Report not found")
-    return Response(content=r["pdf"], media_type="application/pdf",
+    pdf = r.get("pdf")
+    if not pdf:
+        raise HTTPException(500, "Report has no PDF bytes — regenerate it via POST /reports")
+    return Response(content=bytes(pdf), media_type="application/pdf",
                     headers={"Content-Disposition": f"attachment; filename={report_id}.pdf"})

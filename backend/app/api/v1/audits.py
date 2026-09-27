@@ -80,9 +80,10 @@ def create_audit(body: AuditBody):
 
 @router.get("/{audit_id}")
 def get_audit(audit_id: str):
-    rec = db.get("audits", audit_id)
-    if not rec:
+    rows = db.select("audits", ["audit_id", "status", "progress", "stages"], limit=1, audit_id=audit_id)
+    if not rows:
         raise HTTPException(404, "Audit not found")
+    rec = rows[0]
     return cfg.ok({"audit_id": audit_id, "status": rec["status"], "progress": rec.get("progress", 100),
                    "stages": rec.get("stages", {})})
 
@@ -94,9 +95,11 @@ def get_summary(audit_id: str):
     Same brief as results but WITHOUT the heavy findings + canonical_ir
     payloads — a single audit row plus GROUP BY counts on findings.
     """
-    rec = db.get("audits", audit_id, inflate=False)
-    if not rec:
+    rows = db.select("audits", ["audit_id", "status", "progress", "summary",
+                                "by_framework", "cve"], limit=1, audit_id=audit_id)
+    if not rows:
         raise HTTPException(404, "Audit not found")
+    rec = rows[0]
     s = rec.get("summary", {}) or {}
     groups = db.count_by("findings", ["engine", "severity"], audit_id=audit_id)
     engines: dict = {}
@@ -123,34 +126,100 @@ def get_summary(audit_id: str):
 
 @router.get("/{audit_id}/results")
 def get_results(audit_id: str):
+    """Full structured result for the Results page (manager + developer view).
+
+    Returns the complete picture in one call so the UI never renders blanks:
+    executive summary, per-framework scores (with pass/total), CVE/PQC/security
+    rollups, finding distributions, provenance metadata, and the findings list.
+    Heavy per-control explanations stay on GET /compliance/{id}/controls,
+    per-CVE detail on GET /vulnerabilities/{id}, PQC detail on GET /pqc/{id}.
+    """
     rec = db.get("audits", audit_id)
     if not rec:
         raise HTTPException(404, "Audit not found")
-    s = rec["summary"]
+    s = rec.get("summary", {}) or {}
+    by_fw = rec.get("by_framework", {}) or {}
+    cve = rec.get("cve", {}) or {}
+    cve_sum = (cve.get("summary", {}) or {})
+    pqc = rec.get("pqc", {}) or {}
+    sec = rec.get("security", {}) or {}
+    findings = rec.get("findings", []) or []
+
+    # Distributions so the UI can render charts without client-side guessing.
+    by_engine: dict = {}
+    by_severity: dict = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0, "UNKNOWN": 0}
+    by_status: dict = {"FAIL": 0, "PASS": 0, "UNKNOWN": 0}
+    for f in findings:
+        e = str((f.get("engine") or f.get("type") or "UNKNOWN")).upper()
+        by_engine[e] = by_engine.get(e, 0) + 1
+        sev = str(f.get("severity") or "UNKNOWN").upper()
+        by_severity[sev] = by_severity.get(sev, 0) + 1
+        st = str(f.get("status") or "UNKNOWN").upper()
+        by_status[st] = by_status.get(st, 0) + 1
+
+    frameworks = {}
+    for k, v in by_fw.items():
+        v = v or {}
+        frameworks[k] = {"score": v.get("compliance_score", 0),
+                         "compliance_score": v.get("compliance_score", 0),
+                         "total": v.get("total", 0), "passed": v.get("passed", 0),
+                         "failed": v.get("failed", 0), "unknown": v.get("unknown", 0)}
+
     return cfg.ok({"audit_id": audit_id,
-                   "summary": {"compliance_score": s.get("compliance_score"), "critical": s.get("CRITICAL", 0),
-                               "high": s.get("HIGH", 0), "medium": s.get("MEDIUM", 0), "low": s.get("LOW", 0)},
+                   "asset_id": rec.get("asset_id"), "configuration_id": rec.get("configuration_id"),
+                   "status": rec.get("status"), "vendor": rec.get("vendor", {}),
+                   "summary": {"compliance_score": s.get("compliance_score"),
+                               "total": s.get("total", len(findings)),
+                               "passed": s.get("passed", 0), "failed": s.get("failed", 0),
+                               "unknown": s.get("unknown", 0),
+                               "critical": s.get("CRITICAL", 0),
+                               "high": s.get("HIGH", 0), "medium": s.get("MEDIUM", 0),
+                               "low": s.get("LOW", 0),
+                               "security_risk": s.get("security_risk"),
+                               "pqc_readiness": s.get("pqc_readiness"),
+                               "cve": cve_sum},
                    "config_sha256": rec.get("config_sha256"), "versions": rec.get("versions", {}),
-                   "frameworks": {k: {"score": v.get("compliance_score", 0)} for k, v in rec.get("by_framework", {}).items()},
-                   "cve": {"vulnerable": rec["cve"]["summary"].get("vulnerable", 0),
-                           "not_affected": rec["cve"]["summary"].get("not_affected", 0),
-                           "unknown": rec["cve"]["summary"].get("unknown", 0)},
-                   "pqc": {"readiness": rec["pqc"].get("readiness_score", 0)},
-                   "findings": rec["findings"],
+                   "frameworks": frameworks,
+                   "cve": {"summary": cve_sum,
+                           "vulnerable": cve_sum.get("vulnerable", 0),
+                           "not_affected": cve_sum.get("not_affected", 0),
+                           "unknown": cve_sum.get("unknown", 0),
+                           "total_matches": len(cve.get("matches", []) or []),
+                           "unresolved": len(cve.get("unresolved", []) or []),
+                           "components": len(cve.get("components", []) or [])},
+                   "pqc": {"readiness": pqc.get("readiness_score", pqc.get("readiness", 0)),
+                           "readiness_score": pqc.get("readiness_score", pqc.get("readiness", 0)),
+                           "readiness_label": pqc.get("readiness_label", ""),
+                           "counts": pqc.get("counts", {}),
+                           "algorithms_total": len(pqc.get("algorithms", []) or []),
+                           "migration_required": len([a for a in (pqc.get("algorithms", []) or [])
+                                                      if a.get("pqc_status") == "MIGRATION_REQUIRED"]),
+                           "migration_recommendations": pqc.get("migration_recommendations", [])},
+                   "security": {"risk_score": sec.get("risk_score"),
+                                "anomalies_total": len(sec.get("anomalies", []) or []),
+                                "patterns": sec.get("patterns", [])},
+                   "counts": {"total_findings": len(findings),
+                              "by_engine": by_engine, "by_severity": by_severity,
+                              "by_status": by_status},
+                   "findings": findings,
+                   "unknown_lines": rec.get("unknown_lines", []),
+                   "llm_offline": rec.get("llm_offline", True),
                    "ir_validation": rec.get("ir_validation", {}),
                    "canonical_ir": rec.get("canonical_ir", {})})
 
 
 @router.get("/{audit_id}/evidence")
 def get_evidence(audit_id: str):
-    rec = db.get("audits", audit_id)
-    if not rec:
+    # Projected reads: provenance slice + compliance findings only (no full payloads).
+    rows = db.select("audits", ["configuration_id", "data->'provenance' AS provenance"],
+                     limit=1, audit_id=audit_id)
+    if not rows:
         raise HTTPException(404, "Audit not found")
+    rec = rows[0]
+    prov = rec.get("provenance", {}) or {}
     items = []
-    prov = rec.get("provenance", {})
-    for f in rec.get("findings", []):
-        if f.get("engine") != "compliance":
-            continue
+    for f in db.select("findings", ["control_id", "evidence"], limit=1000,
+                       audit_id=audit_id, engine="compliance"):
         ev = f.get("evidence", {}) if isinstance(f.get("evidence"), dict) else {}
         prop = ev.get("property", "")
         src = prov.get(prop, {})

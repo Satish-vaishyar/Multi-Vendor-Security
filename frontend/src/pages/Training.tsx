@@ -45,6 +45,11 @@ export default function Training() {
   });
 
   const suggestions = (((sugg.data as Record<string, unknown> | undefined)?.suggestions ?? []) as Suggestion[]);
+  const modelSuggestions = (((sugg.data as Record<string, unknown> | undefined)?.model_suggestions ?? []) as (Suggestion & { evidence?: string; vendor?: string })[]);
+  const useSuggestion = (s: Suggestion) => {
+    setProp(s.canonical_property);
+    setVal(String((s.value as unknown) ?? ""));
+  };
 
   return (
     <div>
@@ -82,18 +87,26 @@ export default function Training() {
               <button className={btnPrimary} disabled={sugg.isPending} onClick={() => sugg.mutate()}>
                 {sugg.isPending ? "Generating…" : "Generate AI Suggestions"}
               </button>
-              {sugg.isSuccess && !suggestions.length && <p className="mt-2 text-xs text-ink3">No suggestions returned.</p>}
+              {sugg.isSuccess && !suggestions.length && !modelSuggestions.length && <p className="mt-2 text-xs text-ink3">No suggestions returned.</p>}
               {!!suggestions.length && (
-                <ul className="mt-3 space-y-2">
-                  {suggestions.map((s, i) => (
-                    <li key={i} className="rounded-lg bg-surface2 p-3 text-sm">
-                      <p className="font-mono text-ink">{i + 1}. {s.canonical_property} = {JSON.stringify(s.value)}</p>
-                      <p className="mt-1 text-xs text-ink3">Confidence: {s.confidence != null ? `${(Number(s.confidence) * 100).toFixed(0)}%` : "—"}</p>
-                      <button className="mt-1.5 rounded-lg border border-primary/40 bg-surface px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primarylight"
-                        onClick={() => { setProp(s.canonical_property); setVal(String((s.value as unknown) ?? "")); }}>Use this mapping</button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <p className="mb-1.5 mt-3 text-[11px] uppercase tracking-wider text-ink3">LLM / heuristic suggestions</p>
+                  <ul className="space-y-2">
+                    {suggestions.map((s, i) => (
+                      <SuggestionRow key={`h-${i}`} index={i} s={s} onUse={() => useSuggestion(s)} />
+                    ))}
+                  </ul>
+                </>
+              )}
+              {!!modelSuggestions.length && (
+                <>
+                  <p className="mb-1.5 mt-3 text-[11px] uppercase tracking-wider text-ink3">Model suggestions (M3 mapping classifier)</p>
+                  <ul className="space-y-2">
+                    {modelSuggestions.map((s, i) => (
+                      <SuggestionRow key={`m-${i}`} index={i} s={s} onUse={() => useSuggestion(s)} />
+                    ))}
+                  </ul>
+                </>
               )}
                 <div className="mt-4 grid gap-2">
                 <Field label="Canonical property (or choose different property)"><input className={inputCls} value={prop} onChange={(e) => setProp(e.target.value)} placeholder="e.g. SSH.VERSION" /></Field>
@@ -114,6 +127,22 @@ export default function Training() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function SuggestionRow({ index, s, onUse }: { index: number; s: Suggestion & { evidence?: string; vendor?: string; source?: string }; onUse: () => void }) {
+  return (
+    <li className="rounded-lg bg-surface2 p-3 text-sm">
+      <p className="font-mono text-ink">{index + 1}. {s.canonical_property} = {JSON.stringify(s.value)}</p>
+      <p className="mt-1 text-xs text-ink3">
+        Confidence: {s.confidence != null ? `${(Number(s.confidence) * 100).toFixed(0)}%` : "—"}
+        {s.source ? ` · Source: ${s.source}` : ""}
+        {s.vendor ? ` · Vendor: ${s.vendor}` : ""}
+      </p>
+      {s.evidence && <p className="mt-0.5 break-all font-mono text-[11px] text-ink3">Evidence: {s.evidence}</p>}
+      <button className="mt-1.5 rounded-lg border border-primary/40 bg-surface px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primarylight"
+        onClick={onUse}>Use this mapping</button>
+    </li>
   );
 }
 

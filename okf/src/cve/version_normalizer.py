@@ -33,6 +33,7 @@ class NormVersion:
 
 def normalize(raw: str) -> NormVersion:
     s = (raw or "").strip().lower()
+    s = re.sub(r"\\(.)", r"\1", s)               # NVD CPE escapes: 12.0\(32\)S12
     s = re.sub(r"^[vr](?=\d)", "", s)          # v7.2.1, r81.10
     train = ""
     m = re.search(r"[-+](es|s|p\d*|x|t)$", s)

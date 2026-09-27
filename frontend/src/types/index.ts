@@ -87,13 +87,33 @@ export interface AuditSummary {
   [k: string]: unknown;
 }
 
+export interface FrameworkScore {
+  score?: number;
+  compliance_score?: number;
+  total?: number;
+  passed?: number;
+  failed?: number;
+  unknown?: number;
+  [k: string]: unknown;
+}
+
 export interface AuditResults {
   audit_id: string;
+  asset_id?: string;
+  configuration_id?: string;
+  status?: string;
+  vendor?: Record<string, unknown>;
   summary?: AuditSummary;
-  frameworks?: Record<string, { score?: number; [k: string]: unknown }>;
+  frameworks?: Record<string, FrameworkScore>;
   cve?: Record<string, unknown>;
   pqc?: Record<string, unknown>;
+  security?: { risk_score?: number; anomalies_total?: number; patterns?: unknown[]; [k: string]: unknown };
+  counts?: { total_findings?: number; by_engine?: Record<string, number>; by_severity?: Record<string, number>; by_status?: Record<string, number> };
   findings?: Finding[];
+  unknown_lines?: string[];
+  llm_offline?: boolean;
+  config_sha256?: string;
+  versions?: Record<string, string>;
   canonical_ir?: Record<string, unknown>;
   ir_validation?: Record<string, unknown>;
   [k: string]: unknown;

@@ -17,12 +17,13 @@ router = APIRouter(prefix="/api/v1/remediation", tags=["remediation"])
 
 
 @router.get("/{finding_id}")
-def get_plan(finding_id: str):
+def get_plan(finding_id: string):
     f = db.get("findings", finding_id)
     if not f:
         raise HTTPException(404, "Finding not found")
-    audit = db.get("audits", f.get("audit_id", "")) or {}
-    vendor = str(((audit.get("vendor") or {}).get("vendor_id")) or "unknown").lower()
+    aud = db.select("audits", ["vendor"], limit=1, audit_id=f.get("audit_id", ""))
+    audit_vendor = ((aud[0] if aud else {}).get("vendor")) or {}
+    vendor = str(audit_vendor.get("vendor_id") or "unknown").lower()
     okf = okf_layer()
     entry = okf["rem"].index.get(f.get("control_id", ""), {})
     vendors = entry.get("vendors", {}) or {}
@@ -33,7 +34,7 @@ def get_plan(finding_id: str):
         cmds = [f"upgrade to {fixed} (vendor-validated)"] if fixed else ["follow vendor advisory upgrade path"]
     steps = [{"order": i + 1, "command": c} for i, c in enumerate(cmds)]
     return cfg.ok({"finding_id": finding_id, "vendor": vendor,
-                   "platform": (audit.get("vendor") or {}).get("platform", ""),
+                   "platform": audit_vendor.get("platform", ""),
                    "steps": steps, "validation": vend.get("validation", ["show running-config"]),
                    "rollback_available": bool(vend.get("rollback")), "approval_required": True})
 

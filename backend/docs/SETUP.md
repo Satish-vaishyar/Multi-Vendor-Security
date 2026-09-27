@@ -81,6 +81,7 @@ Then in a browser: `http://127.0.0.1:8000/health` → `{"success":true,"status":
 | `/ui` shows `{"detail":"Not Found"}` | you started uvicorn from the wrong directory — `cwd` must be `backend/` (run via `uv run` as above) |
 | LLM features say `offline` | no `FEATHERLESS_API_KEY` — expected; add key for live parsing |
 | NVD sync is slow / 403 | no/slow network or missing `NVD_API_KEY`; local seed CVE KB still works |
+| Report generation returns 500 | `reports.pdf` column missing — apply `app/db/migrate_002.sql` in Supabase SQL editor (the API also self-applies it on each `POST /reports`) |
 | Windows AV flags `.venv` | exclude the project folder from real-time scanning |
 
 ## 7. Production notes (not done here, by design)

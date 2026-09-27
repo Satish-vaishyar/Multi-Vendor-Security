@@ -24,8 +24,30 @@ from app.core import security as sec
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("sih26155")
 
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Pre-load the OKF/ML layers once at boot so no user request pays the
+    ~40 s cold-start (MiniLM weights + sklearn artifacts stay hot in-process)."""
+    t0 = time.time()
+    try:
+        from app.services import integration as integ
+        integ._ensure_bridge()
+        import src.embed as _emb
+        if getattr(_emb, "_HAS_MINI", False):
+            _emb.encode(["warmup"])
+        log.info("ML warmup complete (%sms, embeddings=%s)",
+                 round((time.time() - t0) * 1000, 1),
+                 getattr(_emb, "_MODEL_SOURCE", "tfidf"))
+    except Exception as e:
+        log.warning("ML warmup skipped: %s", e)
+    yield
+
+
 app = FastAPI(title="SIH-26155 Network Security Compliance Auditor", version="1.0.0",
-              docs_url="/docs", redoc_url="/redoc")
+              docs_url="/docs", redoc_url="/redoc", lifespan=lifespan)
 
 # CORS: wildcard is never combined with credentials (browsers reject it).
 _wildcard = "*" in cfg.CORS_ORIGINS

@@ -79,14 +79,27 @@ def normalize_nvd_item(item: Dict[str, Any]) -> Dict[str, Any]:
                 if not m.get("vulnerable", False):
                     continue
                 parts = _cpe_to_parts(m.get("criteria", ""))
+                start = m.get("versionStartIncluding") or m.get("versionStartExcluding")
+                end = m.get("versionEndIncluding") or m.get("versionEndExcluding")
+                if not start and not end:
+                    # No range bounds: the criteria names one exact vulnerable
+                    # version (e.g. ...:ios:12.0(32)S12:...). Without this the
+                    # entry is unbounded and would match EVERY installed
+                    # version as VULNERABLE. A '*'/'-' criteria version means
+                    # all versions and stays unbounded.
+                    ver = parts["version"]
+                    if ver not in ("*", "-", "", None):
+                        start = end = ver
                 affected.append({
                     "vendor": parts["vendor"], "product": parts["product"],
                     "cpe": m.get("criteria", ""),
                     "affected_versions": [{
-                        "start": m.get("versionStartIncluding") or m.get("versionStartExcluding"),
-                        "start_inclusive": "versionStartIncluding" in m,
-                        "end": m.get("versionEndIncluding") or m.get("versionEndExcluding"),
-                        "end_inclusive": "versionEndIncluding" in m,
+                        "start": start,
+                        "start_inclusive": True if (m.get("versionStartIncluding") or
+                                                   (not m.get("versionStartExcluding") and start)) else False,
+                        "end": end,
+                        "end_inclusive": True if (m.get("versionEndIncluding") or
+                                                 (not m.get("versionEndExcluding") and end)) else False,
                     }]})
     return {"cve_id": cve_id, "description": desc[:2000],
             "published": (cve.get("published", "") or "")[:10],
@@ -96,23 +109,44 @@ def normalize_nvd_item(item: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def sync(keyword: Optional[str] = None, pages: int = 1,
-         results_per_page: int = 20) -> Dict[str, Any]:
-    """Fetch pages from NVD and upsert. Returns counts. Raises on network error."""
+         results_per_page: int = 20, *, keywords: Optional[List[str]] = None,
+         drop_seeds: bool = False, delay: Optional[float] = None) -> Dict[str, Any]:
+    """Fetch pages from NVD and upsert. Returns counts. Raises on network error.
+
+    Speed design (NVD caps keyless callers at ~5 req/30s, keyed at ~50/30s):
+    - few big pages beat many small ones (results_per_page up to 2000);
+    - one shared pacing delay between requests keeps us under the limit;
+    - upserts defer the KB reindex until the single save() at the end.
+    """
+    import time as _time
     from .kb import VulnKB
+    queries = [k for k in (keywords or []) if k] or [keyword]
+    rpp = max(1, min(int(results_per_page or 20), 2000))
+    pages = max(1, int(pages or 1))
+    key = os.getenv("NVD_API_KEY", "").strip()
+    if delay is None:
+        delay = 0.0 if len(queries) * pages <= 1 else (0.7 if key else 6.5)
     kb = VulnKB().load()
     added = updated = 0
     seen_before = {r.get("cve_id") for r in kb.records}
-    for p in range(pages):
-        payload = fetch_cves(results_per_page, p * results_per_page, keyword)
-        for item in payload.get("vulnerabilities", []):
-            rec = normalize_nvd_item(item)
-            if not rec["cve_id"]:
-                continue
-            kb.upsert(rec)
-            if rec["cve_id"] in seen_before:
-                updated += 1
-            else:
-                added += 1
-                seen_before.add(rec["cve_id"])
+    first = True
+    for q in queries:
+        for p in range(pages):
+            if not first and delay:
+                _time.sleep(delay)
+            first = False
+            payload = fetch_cves(rpp, p * rpp, q)
+            for item in payload.get("vulnerabilities", []):
+                rec = normalize_nvd_item(item)
+                if not rec["cve_id"]:
+                    continue
+                kb.upsert(rec)
+                if rec["cve_id"] in seen_before:
+                    updated += 1
+                else:
+                    added += 1
+                    seen_before.add(rec["cve_id"])
+    dropped = kb.drop_seeds() if drop_seeds else 0
     kb.save()
-    return {"added": added, "updated": updated, "total": len(kb.records)}
+    return {"added": added, "updated": updated, "dropped_seeds": dropped,
+            "total": len(kb.records)}

@@ -10,10 +10,12 @@ from .version_range import match_record
 
 
 def sync_now(keyword: str | None = None, pages: int = 1,
-             results_per_page: int = 20) -> Dict[str, Any]:
+             results_per_page: int = 20, keywords: list | None = None,
+             drop_seeds: bool = False) -> Dict[str, Any]:
     try:
         from .nvd_client import sync
-        return {"ok": True, **sync(keyword, pages, results_per_page)}
+        return {"ok": True, **sync(keyword, pages, results_per_page,
+                                   keywords=keywords, drop_seeds=drop_seeds)}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 

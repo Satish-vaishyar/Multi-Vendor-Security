@@ -1,4 +1,4 @@
-import { api, unwrap } from "./client";
+import { SLOW_TIMEOUT, api, unwrap } from "./client";
 
 export async function getVulnsForAudit(auditId: string) {
   const r = await api.get(`/vulnerabilities/${auditId}`);
@@ -16,8 +16,13 @@ export async function browseCves(params: Record<string, string | number> = {}) {
 }
 
 export async function syncCves(body: Record<string, unknown> = {}) {
-  const r = await api.post("/vulnerabilities/sync", body);
+  const r = await api.post("/vulnerabilities/sync", body, { timeout: SLOW_TIMEOUT });
   return unwrap(r.data);
+}
+
+export async function kbStatus() {
+  const r = await api.get("/vulnerabilities/kb/status");
+  return unwrap<{ records: number; seed_records: number; nvd_records: number; real_world: boolean }>(r.data);
 }
 
 export async function syncStatus(jobId: string) {

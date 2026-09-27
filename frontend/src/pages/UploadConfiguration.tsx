@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { UploadCloud } from "lucide-react";
-import { createAsset, listAssets } from "../api/assets.api";
+import { createAssetFull, listAssets } from "../api/assets.api";
 import { bulkUpload, uploadConfiguration } from "../api/configurations.api";
 import { toMessage } from "../api/client";
 import { Badge, Card, Field, PageHeader, btnGhost, btnPrimary, inputCls } from "../components/common";
@@ -16,14 +16,16 @@ export default function UploadConfiguration() {
   const [platform, setPlatform] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
-  const assets = useQuery({ queryKey: ["assets", "all"], queryFn: () => listAssets({ page: 1, page_size: 100 }) });
+  const [assetNote, setAssetNote] = useState("");
+  const assets = useQuery({ queryKey: ["assets", "all"], queryFn: () => listAssets({ page: 1, page_size: 100, status: "ACTIVE" }) });
 
   const ensureAsset = async (): Promise<string> => {
     if (assetId) return assetId;
     if (!newAsset.name.trim()) throw new Error("Enter a name for the new asset (or pick an existing asset).");
-    const created = await createAsset({ ...newAsset, name: newAsset.name.trim() });
-    const id = created.asset_id as string | undefined;
+    const res = await createAssetFull({ ...newAsset, name: newAsset.name.trim() });
+    const id = res.data.asset_id as string | undefined;
     if (!id) throw new Error("Asset creation returned no id — try again.");
+    setAssetNote(res.reused ? `An asset with this name already exists — reusing ${id} instead of creating a duplicate.` : "");
     return id;
   };
 
@@ -89,6 +91,7 @@ export default function UploadConfiguration() {
               <Field label="Version"><input className={inputCls} value={newAsset.version} onChange={(e) => setNewAsset({ ...newAsset, version: e.target.value })} /></Field>
             </div>
           )}
+          {assetNote && <p className="mt-3 rounded-lg border border-line bg-surface2 p-2.5 text-xs text-ink2">{assetNote}</p>}
           <div className="mt-4 flex gap-2">
             <button className={btnPrimary} disabled={!files.length || up.isPending} onClick={() => up.mutate()}>
               {up.isPending ? "Uploading…" : `Upload ${files.length || ""}`.trim()}

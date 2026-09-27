@@ -1,1 +1,19 @@
-{"framework_id": "NIST", "name": "NIST SP 800-53 Rev.5 (OSCAL-ingested subset)", "version": "Rev.5", "publisher": "NIST", "source": "oscal+nist_oscal_scraper", "control_ids": ["OKF-SSH-001", "OKF-TELNET-001", "OKF-HTTP-001", "OKF-AAA-001", "OKF-LOG-001", "OKF-CRYPTO-001", "OKF-ACL-001"]}
+{
+  "framework_id": "NIST",
+  "name": "NIST SP 800-53 Rev.5 (OSCAL-ingested subset)",
+  "version": "Rev.5",
+  "publisher": "NIST",
+  "source": "oscal+nist_oscal_scraper",
+  "control_ids": [
+    "OKF-SSH-001",
+    "OKF-TELNET-001",
+    "OKF-HTTP-001",
+    "OKF-AAA-001",
+    "OKF-LOG-001",
+    "OKF-CRYPTO-001",
+    "OKF-ACL-001",
+    "OKF-NIST-SC5",
+    "OKF-AAA-002",
+    "OKF-SSH-004"
+  ]
+}

@@ -16,18 +16,24 @@ detect_router = APIRouter(prefix="/api/v1/detection", tags=["detection"])
 
 @dashboard_router.get("/summary")
 def summary():
-    assets = db.find("assets")
-    live = [a for a in assets if a.get("status") == "ACTIVE"]
-    findings = db.find("findings")
-    # per-asset risk from real FAIL findings (CRITICAL/HIGH -> at risk)
-    risky = {f.get("asset_id") for f in findings
-             if f.get("status") == "FAIL"
-             and str(f.get("severity", "")).upper() in ("CRITICAL", "HIGH")}
-    at_risk_ids = {a.get("asset_id") for a in live} & risky
+    # Aggregate SQL only — never full-table JSONB scans (keeps the home page fast).
+    live_rows = db.select("assets", ["asset_id", "status"], limit=500)
+    live = [a["asset_id"] for a in live_rows if a.get("status") == "ACTIVE"]
+    fb = db.count_by("findings", ["severity", "status", "engine"])
+    ab = db.count_by("findings", ["asset_id", "severity"], status="FAIL")
+
     def cnt(sev: str):
-        return sum(1 for f in findings if str(f.get("severity", "")).upper() == sev and f.get("status") == "FAIL")
-    cve_crit = sum(1 for f in findings if f.get("engine") == "cve" and f.get("severity") == "CRITICAL")
-    audits = db.find("audits")
+        return sum(g["n"] for g in fb
+                   if str(g.get("severity", "")).upper() == sev and str(g.get("status", "")).upper() == "FAIL")
+
+    def cve(sev: str):
+        return sum(g["n"] for g in fb
+                   if str(g.get("engine", "")).lower() == "cve" and str(g.get("severity", "")).upper() == sev)
+
+    # per-asset risk from real FAIL findings (CRITICAL/HIGH -> at risk)
+    risky = {g.get("asset_id") for g in ab if str(g.get("severity", "")).upper() in ("CRITICAL", "HIGH")}
+    at_risk_ids = set(live) & risky
+    audits = db.select("audits", ["summary", "by_framework", "pqc"], limit=100)
     scored = [a for a in audits if (a.get("summary") or {}).get("compliance_score") is not None]
     overall = round(sum(a["summary"]["compliance_score"] for a in scored) / len(scored), 1) if scored else 0.0
     # Aggregate per-framework scores from audits (each audit stores by_framework->{fw:{compliance_score}})
@@ -54,10 +60,9 @@ def summary():
                    "frameworks": frameworks,
                    "findings": {"critical": cnt("CRITICAL"), "high": cnt("HIGH"),
                                 "medium": cnt("MEDIUM"), "low": cnt("LOW")},
-                   "cve": {"critical": cve_crit,
-                           "high": sum(1 for f in findings if f.get("engine") == "cve" and f.get("severity") == "HIGH")},
+                   "cve": {"critical": cve("CRITICAL"), "high": cve("HIGH")},
                    "pqc": {"audits": len(audits), "readiness": pqc_avg},
-                   "training": {"pending": len(db.find("training", status="PENDING"))}})
+                   "training": {"pending": db.count("training", status="PENDING")}})
 
 
 @okf_router.get("/properties")

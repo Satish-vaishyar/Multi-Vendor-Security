@@ -79,8 +79,21 @@ def require_user(creds: Optional[HTTPAuthorizationCredentials] = Depends(_bearer
     REQUIRE_AUTH=true (production): enforces a valid JWT.
     """
     if not cfg.REQUIRE_AUTH:
+        return _admin_user()
+    return get_current_user(creds)
+
+
+# In-process cache for the hot auth path: require_user runs before EVERY
+# /api/v1 request, so it must not hit Postgres each time (2 extra roundtrips).
+_ADMIN_CACHE: Optional[Dict] = None
+
+
+def _admin_user() -> Dict:
+    """Seeded admin, loaded once per process (login/tests still use the DB)."""
+    global _ADMIN_CACHE
+    if _ADMIN_CACHE is None:
         _seed_admin()
         user = db.get("users", "USR-001")
         assert user is not None
-        return user
-    return get_current_user(creds)
+        _ADMIN_CACHE = user
+    return _ADMIN_CACHE

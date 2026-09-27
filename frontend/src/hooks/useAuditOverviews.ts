@@ -37,19 +37,32 @@ export function useAuditOverviews() {
       const pqc = Number(s.pqc_readiness ?? NaN);
       const engines: Record<string, number> = {};
       const engineSev: Record<string, Record<string, number>> = {};
+      let engTotal = 0;
       for (const [e, sevs] of Object.entries(a.engines ?? {})) {
         engineSev[e] = sevs;
-        engines[e] = Object.values(sevs).reduce((t, n) => t + Number(n), 0);
+        const n = Object.values(sevs).reduce((t, n) => t + Number(n), 0);
+        engines[e] = n;
+        engTotal += n;
       }
+      // Summary severity counts can lag/cover only FAIL verdicts — the engine
+      // totals are authoritative for how many findings an audit holds.
+      const sevTotal = crit + high + med + low;
+      const agg = (sev: string) =>
+        Object.values(engineSev).reduce((t, m) => t + Number(m[sev] ?? 0), 0);
+      const aCrit = agg("CRITICAL");
+      const aHigh = agg("HIGH");
+      const aMed = agg("MEDIUM");
+      const aLow = agg("LOW");
+      const useAgg = engTotal > 0;
       return {
         audit_id: a.audit_id,
         status: String(a.status ?? "—"),
         progress: typeof a.progress === "number" ? a.progress : undefined,
-        total: crit + high + med + low,
-        critical: crit,
-        high,
-        medium: med,
-        low,
+        total: useAgg ? engTotal : sevTotal,
+        critical: useAgg ? aCrit : crit,
+        high: useAgg ? aHigh : high,
+        medium: useAgg ? aMed : med,
+        low: useAgg ? aLow : low,
         compliance_score: s.compliance_score,
         frameworks: a.frameworks,
         risk_score: Number.isNaN(risk) ? undefined : risk,

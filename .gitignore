@@ -75,6 +75,9 @@ pgdata/
 .huggingface/
 torch_cache/
 transformers_cache/
+# Vendored MiniLM snapshot (~90 MB): downloaded once at setup via
+# models/scripts/download_minilm.py, never committed.
+models/artifacts/minilm/
 __pycache__/
 
 # ---------- Reports / generated (sample PDFs ignored; docs kept) ----------

@@ -67,6 +67,8 @@ class Crosswalk:
         if not c:
             return {"mapped_controls": []}
         out: List[Dict[str, str]] = []
-        for fw, fid in c.frameworks.items():
-            out.append({"framework": fw, "control_id": fid})
+        for fw, fid in (c.frameworks or {}).items():
+            fids = fid if isinstance(fid, list) else [fid]
+            for one in fids:
+                out.append({"framework": fw, "control_id": str(one)})
         return {"control_id": control_id, "mapped_controls": out}

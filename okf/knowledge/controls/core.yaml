@@ -1,132 +1,251 @@
 controls:
-  - control_id: OKF-SSH-001
-    title: "SSH version 2 must be enabled"
-    description: "SSHv1 has known weaknesses; require protocol version 2."
-    category: remote_access
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-SSH-001, NIST: AC-17, STIG: V-220622, ISO27001: A.8.20}
-    condition: {property: SSH.VERSION, operator: EQUALS, value: 2}
-    evidence_type: CONFIGURATION
-    remediation_id: REM-SSH-VERSION
-    references: [NIST-AC-17, CISv8-4.2]
-  - control_id: OKF-TELNET-001
-    title: "Telnet must be disabled"
-    description: "Telnet transmits credentials in cleartext."
-    category: remote_access
-    severity: CRITICAL
-    version: "1.0"
-    frameworks: {CIS: CIS-TELNET-001, NIST: CM-7, STIG: V-220681, ISO27001: A.8.20}
-    condition: {property: TELNET.ENABLED, operator: EQUALS, value: false}
-    evidence_type: CONFIGURATION
-    remediation_id: REM-TELNET
-    references: [NIST-CM-7]
-  - control_id: OKF-HTTP-001
-    title: "Cleartext HTTP management must be disabled"
-    description: "Use HTTPS instead of HTTP for management."
-    category: remote_access
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-HTTP-001, NIST: SC-8, STIG: V-220682, ISO27001: A.8.20}
-    condition: {property: HTTP.ENABLED, operator: EQUALS, value: false}
-    evidence_type: CONFIGURATION
-    remediation_id: REM-HTTP
-  - control_id: OKF-SNMP-001
-    title: "SNMP default community strings must not be used"
-    description: "'public'/'private' communities are widely abused."
-    category: monitoring
-    severity: CRITICAL
-    version: "1.0"
-    frameworks: {CIS: CIS-SNMP-001, NIST: IA-2, STIG: V-220683, ISO27001: A.5.17}
-    condition: {property: SNMP.COMMUNITY_PUBLIC, operator: EQUALS, value: false}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-SNMP-002
-    title: "SNMPv3 should be used where SNMP is required"
-    description: "SNMP v1/v2c lack encryption."
-    category: monitoring
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-SNMP-002, NIST: SC-8, STIG: V-220684, ISO27001: A.8.20}
-    condition: {any: [{property: SNMP.ENABLED, operator: EQUALS, value: false}, {property: SNMP.VERSION, operator: EQUALS, value: 3}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-AAA-001
-    title: "AAA authentication must be configured"
-    description: "Centralized authentication for admin access."
-    category: authentication
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-AAA-001, NIST: AC-2, STIG: V-220690, ISO27001: A.5.17}
-    condition: {property: AAA.AUTHENTICATION, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-LOG-001
-    title: "Logging must be enabled"
-    description: "Local audit logging is required."
-    category: logging
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-LOG-001, NIST: AU-2, STIG: V-220700, ISO27001: A.8.15}
-    condition: {property: LOGGING.ENABLED, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-LOG-002
-    title: "Remote syslog must be configured"
-    description: "Forward logs to a remote collector."
-    category: logging
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-LOG-002, NIST: AU-9, STIG: V-220701, ISO27001: A.8.15}
-    condition: {property: LOGGING.REMOTE_SERVER, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-NTP-001
-    title: "NTP must be enabled"
-    description: "Reliable time source for audit correlation."
-    category: system
-    severity: MEDIUM
-    version: "1.0"
-    frameworks: {CIS: CIS-NTP-001, NIST: AU-8, STIG: V-220710, ISO27001: A.8.15}
-    condition: {property: NTP.ENABLED, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-CRYPTO-001
-    title: "Weak cryptographic algorithms must not be used"
-    description: "DES/3DES/MD5/RC4/SHA1/DH-group1 are deprecated."
-    category: crypto
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-CRYPTO-001, NIST: SC-12, STIG: V-220720, ISO27001: A.8.24}
-    condition: {property: CRYPTO.WEAK_ALGO, operator: EQUALS, value: false}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-ACL-001
-    title: "Management access must be restricted by ACL"
-    description: "Limit VTY/management access to trusted sources."
-    category: access_control
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-ACL-001, NIST: AC-3, STIG: V-220730, ISO27001: A.8.3}
-    condition: {property: ACL.MGMT_RESTRICTED, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-PASS-001
-    title: "Strong password policy must be enforced"
-    description: "Minimum length / complexity for local credentials."
-    category: authentication
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-PASS-001, NIST: IA-5, STIG: V-220740, ISO27001: A.5.17}
-    condition: {property: PASSWORD.POLICY_STRONG, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-SSH-002
-    title: "SSH with weak ciphers must not be configured"
-    description: "Compound rule: SSH enabled -> no weak ciphers."
-    category: remote_access
-    severity: HIGH
-    version: "1.0"
-    frameworks: {CIS: CIS-SSH-002, NIST: SC-12, STIG: V-220623, ISO27001: A.8.24}
-    condition: {all: [{property: SSH.ENABLED, operator: EQUALS, value: true}, {property: SSH.WEAK_CIPHERS, operator: EQUALS, value: false}]}
-    evidence_type: CONFIGURATION
-  - control_id: OKF-BANNER-001
-    title: "Login banner should be configured"
-    description: "Legal/usage notice on management access."
-    category: system
-    severity: LOW
-    version: "1.0"
-    frameworks: {CIS: CIS-BANNER-001, NIST: AC-8, STIG: V-220750, ISO27001: A.5.10}
-    condition: {property: BANNER.MOTD_SET, operator: EQUALS, value: true}
-    evidence_type: CONFIGURATION
+- control_id: OKF-SSH-001
+  title: SSH version 2 must be enabled
+  description: SSHv1 has known weaknesses; require protocol version 2.
+  category: remote_access
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SSH-001
+    NIST: AC-17
+    STIG: V-220622
+    ISO27001: A.8.20
+  condition:
+    property: SSH.VERSION
+    operator: EQUALS
+    value: 2
+  evidence_type: CONFIGURATION
+  remediation_id: REM-SSH-VERSION
+  references:
+  - NIST-AC-17
+  - CISv8-4.2
+- control_id: OKF-TELNET-001
+  title: Telnet must be disabled
+  description: Telnet transmits credentials in cleartext.
+  category: remote_access
+  severity: CRITICAL
+  version: '1.0'
+  frameworks:
+    CIS: CIS-TELNET-001
+    NIST: CM-7
+    STIG: V-220681
+    ISO27001:
+    - A.8.20
+    - A.8.21
+  condition:
+    property: TELNET.ENABLED
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+  remediation_id: REM-TELNET
+  references:
+  - NIST-CM-7
+- control_id: OKF-HTTP-001
+  title: Cleartext HTTP management must be disabled
+  description: Use HTTPS instead of HTTP for management.
+  category: remote_access
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-HTTP-001
+    NIST: SC-8
+    STIG: V-220682
+    ISO27001:
+    - A.8.20
+    - A.8.21
+  condition:
+    property: HTTP.ENABLED
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+  remediation_id: REM-HTTP
+- control_id: OKF-SNMP-001
+  title: SNMP default community strings must not be used
+  description: '''public''/''private'' communities are widely abused.'
+  category: monitoring
+  severity: CRITICAL
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SNMP-001
+    NIST: IA-2
+    STIG: V-220683
+    ISO27001: A.5.17
+  condition:
+    property: SNMP.COMMUNITY_PUBLIC
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-SNMP-002
+  title: SNMPv3 should be used where SNMP is required
+  description: SNMP v1/v2c lack encryption.
+  category: monitoring
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SNMP-002
+    NIST: SC-8
+    STIG: V-220684
+    ISO27001: A.8.20
+  condition:
+    any:
+    - property: SNMP.ENABLED
+      operator: EQUALS
+      value: false
+    - property: SNMP.VERSION
+      operator: EQUALS
+      value: 3
+  evidence_type: CONFIGURATION
+- control_id: OKF-AAA-001
+  title: AAA authentication must be configured
+  description: Centralized authentication for admin access.
+  category: authentication
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-AAA-001
+    NIST: AC-2
+    STIG: V-220690
+    ISO27001:
+    - A.5.17
+    - A.8.5
+  condition:
+    property: AAA.AUTHENTICATION
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-LOG-001
+  title: Logging must be enabled
+  description: Local audit logging is required.
+  category: logging
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-LOG-001
+    NIST: AU-2
+    STIG: V-220700
+    ISO27001: A.8.15
+  condition:
+    property: LOGGING.ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-LOG-002
+  title: Remote syslog must be configured
+  description: Forward logs to a remote collector.
+  category: logging
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-LOG-002
+    NIST: AU-9
+    STIG: V-220701
+    ISO27001: A.8.15
+  condition:
+    property: LOGGING.REMOTE_SERVER
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-NTP-001
+  title: NTP must be enabled
+  description: Reliable time source for audit correlation.
+  category: system
+  severity: MEDIUM
+  version: '1.0'
+  frameworks:
+    CIS: CIS-NTP-001
+    NIST: AU-8
+    STIG: V-220710
+    ISO27001: A.8.15
+  condition:
+    property: NTP.ENABLED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-CRYPTO-001
+  title: Weak cryptographic algorithms must not be used
+  description: DES/3DES/MD5/RC4/SHA1/DH-group1 are deprecated.
+  category: crypto
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-CRYPTO-001
+    NIST: SC-12
+    STIG: V-220720
+    ISO27001: A.8.24
+  condition:
+    property: CRYPTO.WEAK_ALGO
+    operator: EQUALS
+    value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-ACL-001
+  title: Management access must be restricted by ACL
+  description: Limit VTY/management access to trusted sources.
+  category: access_control
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-ACL-001
+    NIST: AC-3
+    STIG: V-220730
+    ISO27001:
+    - A.8.3
+    - A.5.15
+  condition:
+    property: ACL.MGMT_RESTRICTED
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-PASS-001
+  title: Strong password policy must be enforced
+  description: Minimum length / complexity for local credentials.
+  category: authentication
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-PASS-001
+    NIST: IA-5
+    STIG: V-220740
+    ISO27001:
+    - A.5.17
+    - A.8.5
+  condition:
+    property: PASSWORD.POLICY_STRONG
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION
+- control_id: OKF-SSH-002
+  title: SSH with weak ciphers must not be configured
+  description: 'Compound rule: SSH enabled -> no weak ciphers.'
+  category: remote_access
+  severity: HIGH
+  version: '1.0'
+  frameworks:
+    CIS: CIS-SSH-002
+    NIST: SC-12
+    STIG: V-220623
+    ISO27001: A.8.24
+  condition:
+    all:
+    - property: SSH.ENABLED
+      operator: EQUALS
+      value: true
+    - property: SSH.WEAK_CIPHERS
+      operator: EQUALS
+      value: false
+  evidence_type: CONFIGURATION
+- control_id: OKF-BANNER-001
+  title: Login banner should be configured
+  description: Legal/usage notice on management access.
+  category: system
+  severity: LOW
+  version: '1.0'
+  frameworks:
+    CIS: CIS-BANNER-001
+    NIST: AC-8
+    STIG: V-220750
+    ISO27001: A.5.10
+  condition:
+    property: BANNER.MOTD_SET
+    operator: EQUALS
+    value: true
+  evidence_type: CONFIGURATION

@@ -1,7 +1,8 @@
 controls:
 - control_id: OKF-NIST-AC11
   title: 'NIST AC-11: Device Lock'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-11.
+  description: 'Device lock: the device must lock management sessions after a defined
+    idle period so unattended admin sessions cannot be hijacked.'
   category: management
   severity: MEDIUM
   version: '1.0'
@@ -14,7 +15,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AC12
   title: 'NIST AC-12: Session Termination'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-12.
+  description: 'Session termination: idle management sessions must be terminated automatically
+    to stop session hijack and unattended access.'
   category: management
   severity: MEDIUM
   version: '1.0'
@@ -27,7 +29,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AC17
   title: 'NIST AC-17: Remote Access'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-17.
+  description: 'Remote access: remote administration must use an encrypted, authenticated
+    channel (SSHv2) instead of cleartext or weak protocols.'
   category: remote_access
   severity: HIGH
   version: '1.0'
@@ -40,12 +43,16 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AC2
   title: 'NIST AC-2: Account Management'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-2.
+  description: 'Account management: centralized AAA authentication must be configured
+    so every admin logon is individually authenticated and auditable.'
   category: authentication
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: AC-2
+    ISO27001:
+    - A.5.15
+    - A.5.16
   condition:
     property: AAA.AUTHENTICATION
     operator: EQUALS
@@ -53,12 +60,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AC3
   title: 'NIST AC-3: Access Enforcement'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-3.
+  description: 'Access enforcement: management access must be restricted by ACL so
+    only trusted hosts can reach VTY/management interfaces.'
   category: access_control
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: AC-3
+    ISO27001:
+    - A.5.15
   condition:
     property: ACL.MGMT_RESTRICTED
     operator: EQUALS
@@ -66,7 +76,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AC7
   title: 'NIST AC-7: Unsuccessful Logon Attempts'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-7.
+  description: 'Unsuccessful logon attempts: account lockout/throttling must be configured
+    to blunt brute-force and password-spraying attacks.'
   category: authentication
   severity: MEDIUM
   version: '1.0'
@@ -79,12 +90,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AC8
   title: 'NIST AC-8: System Use Notification'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AC-8.
+  description: 'System use notification: a login banner must be shown so unauthorized
+    users are warned and legal notice requirements are met.'
   category: system
   severity: LOW
   version: '1.0'
   frameworks:
     NIST: AC-8
+    ISO27001:
+    - A.5.10
   condition:
     property: BANNER.LOGIN_SET
     operator: EQUALS
@@ -92,12 +106,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AU2
   title: 'NIST AU-2: Event Logging'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-2.
+  description: 'Event logging: local audit logging must be enabled so security-relevant
+    events are recorded on the device.'
   category: logging
   severity: MEDIUM
   version: '1.0'
   frameworks:
     NIST: AU-2
+    ISO27001:
+    - A.8.15
   condition:
     property: LOGGING.ENABLED
     operator: EQUALS
@@ -105,12 +122,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AU3
   title: 'NIST AU-3: Content of Audit Records'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-3.
+  description: 'Content of audit records: audit records must capture what happened
+    (logging enabled) so events are reconstructable during review.'
   category: logging
   severity: MEDIUM
   version: '1.0'
   frameworks:
     NIST: AU-3
+    ISO27001:
+    - A.8.15
   condition:
     property: LOGGING.ENABLED
     operator: EQUALS
@@ -118,12 +138,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AU4
   title: 'NIST AU-4: Audit Log Storage Capacity'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-4.
+  description: 'Audit storage: logs must be forwarded to a remote syslog collector
+    so a local compromise or rotation cannot destroy the audit trail.'
   category: logging
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: AU-4
+    ISO27001:
+    - A.8.15
   condition:
     property: LOGGING.REMOTE_SERVER
     operator: EQUALS
@@ -131,12 +154,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AU6
   title: 'NIST AU-6: Audit Record Review, Analysis, and Reporting'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-6.
+  description: 'Audit review: logging must be enabled so audit records exist for review,
+    analysis and incident reporting.'
   category: logging
   severity: MEDIUM
   version: '1.0'
   frameworks:
     NIST: AU-6
+    ISO27001:
+    - A.8.15
   condition:
     property: LOGGING.ENABLED
     operator: EQUALS
@@ -144,7 +170,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AU8
   title: 'NIST AU-8: Time Stamps'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-8.
+  description: 'Time stamps: NTP must be enabled so log timestamps are reliable and
+    events correlate across devices.'
   category: system
   severity: MEDIUM
   version: '1.0'
@@ -157,12 +184,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-AU9
   title: 'NIST AU-9: Protection of Audit Information'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 AU-9.
+  description: 'Protection of audit information: logs must be sent to a protected
+    remote collector so audit data cannot be tampered with locally.'
   category: logging
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: AU-9
+    ISO27001:
+    - A.8.15
   condition:
     property: LOGGING.REMOTE_SERVER
     operator: EQUALS
@@ -170,12 +200,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-CM2
   title: 'NIST CM-2: Baseline Configuration'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-2.
+  description: 'Baseline configuration: the running configuration must be archived/versioned
+    so drift and unauthorized change are detectable.'
   category: logging
   severity: LOW
   version: '1.0'
   frameworks:
     NIST: CM-2
+    ISO27001:
+    - A.8.9
   condition:
     property: AUDIT.CONFIG_ARCHIVED
     operator: EQUALS
@@ -183,12 +216,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-CM6
   title: 'NIST CM-6: Configuration Settings'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-6.
+  description: 'Configuration settings: managed configuration settings must be recorded
+    (config archived) so the enforced baseline is verifiable.'
   category: logging
   severity: LOW
   version: '1.0'
   frameworks:
     NIST: CM-6
+    ISO27001:
+    - A.8.9
   condition:
     property: AUDIT.CONFIG_ARCHIVED
     operator: EQUALS
@@ -196,7 +232,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-CM7
   title: 'NIST CM-7: Least Functionality'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-7.
+  description: 'Least functionality: Telnet and other unnecessary cleartext services
+    must be disabled, leaving only required secure services.'
   category: remote_access
   severity: CRITICAL
   version: '1.0'
@@ -209,12 +246,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-CM8
   title: 'NIST CM-8: System Component Inventory'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 CM-8.
+  description: 'Component inventory: the device configuration must be archived so
+    the system component inventory stays current and auditable.'
   category: logging
   severity: LOW
   version: '1.0'
   frameworks:
     NIST: CM-8
+    ISO27001:
+    - A.8.9
   condition:
     property: AUDIT.CONFIG_ARCHIVED
     operator: EQUALS
@@ -222,7 +262,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-IA2
   title: 'NIST IA-2: Identification and Authentication (Organizational Users)'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 IA-2.
+  description: 'Identification and authentication: every organizational user must
+    authenticate via AAA before gaining management access.'
   category: authentication
   severity: HIGH
   version: '1.0'
@@ -235,12 +276,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-IA4
   title: 'NIST IA-4: Identifier Management'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 IA-4.
+  description: 'Identifier management: default vendor accounts (admin/cisco/root/guest)
+    must be removed so shared default credentials cannot be abused.'
   category: authentication
   severity: CRITICAL
   version: '1.0'
   frameworks:
     NIST: IA-4
+    ISO27001:
+    - A.5.18
   condition:
     property: USER.DEFAULT_ACCOUNTS
     operator: EQUALS
@@ -248,12 +292,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-IA5
   title: 'NIST IA-5: Authenticator Management'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 IA-5.
+  description: 'Authenticator management: passwords must be stored encrypted (secret/strong
+    hash), never in cleartext or reversible form.'
   category: authentication
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: IA-5
+    ISO27001:
+    - A.5.17
   condition:
     property: PASSWORD.ENCRYPTED
     operator: EQUALS
@@ -261,12 +308,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-MA4
   title: 'NIST MA-4: Nonlocal Maintenance'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 MA-4.
+  description: 'Nonlocal maintenance: remote maintenance must run over encrypted-only
+    management channels, never cleartext protocols.'
   category: management
   severity: MEDIUM
   version: '1.0'
   frameworks:
     NIST: MA-4
+    ISO27001:
+    - A.8.20
   condition:
     property: MGMT.ENCRYPTED_ONLY
     operator: EQUALS
@@ -274,7 +324,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-PE17
   title: 'NIST PE-17: Alternate Work Site'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 PE-17.
+  description: 'Alternate work site / console: the console port must be secured (password/timeout)
+    so physical-access bypass is blocked.'
   category: remote_access
   severity: MEDIUM
   version: '1.0'
@@ -287,12 +338,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SC10
   title: 'NIST SC-10: Network Disconnect'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-10.
+  description: 'Network disconnect: denial-of-service protections (CoPP/rate-limiting)
+    must be configured so management stays reachable under attack.'
   category: network
   severity: MEDIUM
   version: '1.0'
   frameworks:
     NIST: SC-10
+    ISO27001:
+    - A.8.20
   condition:
     property: DOS.PROTECTION
     operator: EQUALS
@@ -300,12 +354,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SC12
   title: 'NIST SC-12: Cryptographic Key Establishment and Management'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-12.
+  description: 'Cryptographic management: weak algorithms (DES/3DES/MD5/RC4/SHA1/DH-group1)
+    must not be configured; use strong modern ciphers.'
   category: crypto
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: SC-12
+    ISO27001:
+    - A.8.24
   condition:
     property: CRYPTO.WEAK_ALGO
     operator: EQUALS
@@ -313,12 +370,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SC17
   title: 'NIST SC-17: Public Key Infrastructure Certificates'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-17.
+  description: 'PKI certificates: device keys and certificates must be stored securely
+    (encrypted key storage, trusted CA chain) so identity cannot be stolen or forged.'
   category: crypto
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: SC-17
+    ISO27001:
+    - A.8.24
   condition:
     property: KEY.STORED_SECURE
     operator: EQUALS
@@ -326,12 +386,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SC28
   title: 'NIST SC-28: Protection of Information at Rest'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-28.
+  description: 'Protection at rest: private keys and sensitive configuration data
+    must be stored encrypted so offline config theft leaks nothing usable.'
   category: crypto
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: SC-28
+    ISO27001:
+    - A.8.24
   condition:
     property: KEY.STORED_SECURE
     operator: EQUALS
@@ -339,7 +402,8 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SC7
   title: 'NIST SC-7: Boundary Protection'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-7.
+  description: 'Boundary protection: IP source routing must be disabled so attackers
+    cannot dictate packet paths and bypass boundary controls.'
   category: network
   severity: HIGH
   version: '1.0'
@@ -352,12 +416,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SC8
   title: 'NIST SC-8: Transmission Confidentiality and Integrity'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SC-8.
+  description: 'Transmission confidentiality: management traffic must be encrypted-only
+    (SSH/HTTPS/SNMPv3) so credentials and config cannot be sniffed.'
   category: management
   severity: HIGH
   version: '1.0'
   frameworks:
     NIST: SC-8
+    ISO27001:
+    - A.8.20
   condition:
     property: MGMT.ENCRYPTED_ONLY
     operator: EQUALS
@@ -365,12 +432,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SI2
   title: 'NIST SI-2: Flaw Remediation'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SI-2.
+  description: 'Flaw remediation: flow telemetry (NetFlow) must be enabled so anomalous
+    traffic from exploited flaws is visible for remediation.'
   category: monitoring
   severity: LOW
   version: '1.0'
   frameworks:
     NIST: SI-2
+    ISO27001:
+    - A.8.16
   condition:
     property: MONITORING.NETFLOW
     operator: EQUALS
@@ -378,12 +448,15 @@ controls:
   evidence_type: CONFIGURATION
 - control_id: OKF-NIST-SI4
   title: 'NIST SI-4: System Monitoring'
-  description: OSCAL-normalized from NIST SP 800-53 Rev.5 SI-4.
+  description: 'System monitoring: network monitoring telemetry must be enabled so
+    malicious activity is detected and reported.'
   category: monitoring
   severity: LOW
   version: '1.0'
   frameworks:
     NIST: SI-4
+    ISO27001:
+    - A.8.16
   condition:
     property: MONITORING.NETFLOW
     operator: EQUALS

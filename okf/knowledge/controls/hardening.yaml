@@ -1,0 +1,109 @@
+controls:
+  - control_id: OKF-AAA-002
+    title: "TACACS+ or RADIUS authentication servers must be configured"
+    description: "Centralized authentication servers give per-admin accountability and instant deprovisioning."
+    category: authentication
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CIS: CIS-AAA-002, NIST: IA-2, ISO27001: A.5.15, CERT-In: CERTIN-AUTH-01}
+    condition: {any: [{property: AAA.TACACS_CONFIGURED, operator: EQUALS, value: true}, {property: AAA.RADIUS_CONFIGURED, operator: EQUALS, value: true}]}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-AAA-003
+    title: "AAA accounting must be enabled"
+    description: "Accounting records who did what and when for audit and forensics."
+    category: authentication
+    severity: MEDIUM
+    version: "1.0"
+    frameworks: {CIS: CIS-AAA-003, NIST: AU-2, ISO27001: A.8.15, CERT-In: CERTIN-LOG-01}
+    condition: {property: AAA.ACCOUNTING, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-HTTPS-001
+    title: "Device management must run over HTTPS, never cleartext HTTP"
+    description: "HTTPS protects admin credentials and sessions; cleartext HTTP leaks them to sniffers."
+    category: remote_access
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CIS: CIS-HTTPS-001, NIST: SC-8, ISO27001: A.8.20, CERT-In: CERTIN-NET-01}
+    condition: {any: [{property: HTTP.ENABLED, operator: EQUALS, value: false}, {property: HTTPS.ENABLED, operator: EQUALS, value: true}]}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-BANNER-002
+    title: "EXEC banner must be configured"
+    description: "Warning banner shown before EXEC sessions for legal notice."
+    category: system
+    severity: LOW
+    version: "1.0"
+    frameworks: {CIS: CIS-BANNER-002, NIST: AC-8, ISO27001: A.5.10}
+    condition: {property: BANNER.EXEC_SET, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-SVC-001
+    title: "Unneeded small services (finger, PAD) must be disabled"
+    description: "Finger and PAD leak usernames and give unneeded remote access paths."
+    category: system
+    severity: MEDIUM
+    version: "1.0"
+    frameworks: {CIS: CIS-SVC-001, NIST: CM-7, ISO27001: A.8.21}
+    condition: {all: [{property: SERVICE.PAD_DISABLED, operator: EQUALS, value: true}, {property: SERVICE.FINGER_DISABLED, operator: EQUALS, value: true}]}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-IP-003
+    title: "Directed broadcast must be disabled"
+    description: "Directed broadcast enables Smurf-style amplification attacks."
+    category: network
+    severity: MEDIUM
+    version: "1.0"
+    frameworks: {CIS: CIS-IP-003, NIST: SC-7, ISO27001: A.8.20}
+    condition: {property: IP.DIRECTED_BROADCAST_DISABLED, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-RPF-001
+    title: "Unicast reverse-path forwarding must be enabled"
+    description: "uRPF drops spoofed-source packets at ingress."
+    category: network
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CIS: CIS-RPF-001, NIST: SC-7, ISO27001: A.8.20}
+    condition: {property: URPF.ENABLED, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-SNMP-005
+    title: "SNMP community access must be restricted by ACL"
+    description: "Community strings without source ACLs are probed from anywhere."
+    category: monitoring
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CIS: CIS-SNMP-005, NIST: AC-3, ISO27001: A.8.3}
+    condition: {property: SNMP.ACL_RESTRICTED, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-LOG-004
+    title: "Buffered logging must be configured"
+    description: "Local log buffer preserves evidence across collector outages."
+    category: logging
+    severity: LOW
+    version: "1.0"
+    frameworks: {CIS: CIS-LOG-004, NIST: AU-2, ISO27001: A.8.15, CERT-In: CERTIN-LOG-01}
+    condition: {property: LOGGING.BUFFERED, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-NTP-003
+    title: "NTP source interface must be pinned"
+    description: "A fixed NTP source keeps time sync stable and auditable."
+    category: system
+    severity: LOW
+    version: "1.0"
+    frameworks: {CIS: CIS-NTP-003, NIST: AU-8, ISO27001: A.8.15, CERT-In: CERTIN-LOG-02}
+    condition: {property: NTP.SOURCE_SET, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-SSH-004
+    title: "SSH must offer only strong MACs"
+    description: "Weak SSH MACs (MD5/SHA1) allow session integrity attacks."
+    category: remote_access
+    severity: HIGH
+    version: "1.0"
+    frameworks: {CIS: CIS-SSH-004, NIST: SC-12, ISO27001: A.8.24}
+    condition: {property: SSH.MACS_STRONG, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION
+  - control_id: OKF-NIST-SC5
+    title: "NIST SC-5: Denial-of-Service Protection"
+    description: "Control-plane policing keeps management reachable under traffic floods."
+    category: network
+    severity: MEDIUM
+    version: "1.0"
+    frameworks: {CIS: CIS-DOS-001, NIST: SC-5, ISO27001: A.8.20}
+    condition: {property: DOS.PROTECTION, operator: EQUALS, value: true}
+    evidence_type: CONFIGURATION

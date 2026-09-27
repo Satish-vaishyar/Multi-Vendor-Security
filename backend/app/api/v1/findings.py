@@ -17,7 +17,10 @@ def list_findings(severity: Optional[str] = None, type: Optional[str] = None,
     filters = {k: v for k, v in {"severity": severity, "type": type, "asset_id": asset_id,
                                  "status": status, "audit_id": audit_id,
                                  "engine": engine}.items() if v}
-    items = db.find("findings", **filters)
+    # Projected read: list views never drag full evidence JSONB payloads.
+    items = db.select("findings", ["finding_id", "type", "title", "severity",
+                                   "asset_id", "status", "audit_id"],
+                      limit=500, **filters)
     if dedupe and len(items) > 1:
         from app.services.integration import m8_dedup
         keep = set(m8_dedup([f"{f.get('title','')} {f.get('severity','')}" for f in items]))

@@ -16,6 +16,7 @@ properties:
   - {property_id: DNS.LOOKUP_DISABLED, category: system, datatype: boolean, security_level: LOW, description: "DNS lookup disabled on CLI", default_expected: true}
   - {property_id: SERVICE.PASSWORD_ENCRYPTION, category: system, datatype: boolean, security_level: HIGH, description: "Service password-encryption enabled", default_expected: true}
   - {property_id: SERVICE.PAD_DISABLED, category: system, datatype: boolean, security_level: LOW, description: "PAD service disabled", default_expected: true}
+  - {property_id: SERVICE.FINGER_DISABLED, category: system, datatype: boolean, security_level: LOW, description: "Finger service disabled", default_expected: true}
   - {property_id: BANNER.LOGIN_SET, category: system, datatype: boolean, security_level: LOW, description: "Login banner configured", default_expected: true}
   - {property_id: BANNER.EXEC_SET, category: system, datatype: boolean, security_level: LOW, description: "EXEC banner configured", default_expected: true}
   - {property_id: CLOCK.TIMEZONE_SET, category: system, datatype: boolean, security_level: LOW, description: "Timezone/clock configured", default_expected: true}

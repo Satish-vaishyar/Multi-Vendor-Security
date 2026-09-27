@@ -44,13 +44,17 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
     # — Engine 1: Compliance (OKF deterministic control packs) —
     controls = okf["ckb"].for_frameworks(frameworks) if hasattr(okf["ckb"], "for_frameworks") else okf["ckb"].all()
     comp_eng = okf["ComplianceEngine"](controls, {k: v for k, v in okf["rem"].index.items()})
-    comp_findings = comp_eng.evaluate(nested, asset_id=asset_id)
+    # Platform-scoped evaluation (SCAP CPE model): controls that cannot apply
+    # to this vendor/platform evaluate to NOT_APPLICABLE and leave the score.
+    comp_findings = comp_eng.evaluate(nested, asset_id=asset_id,
+                                      vendor=vendor, platform=str(det.get("platform") or ""))
     comp_score = okf["ComplianceEngine"].score(comp_findings)
     stages["compliance"] = "COMPLETED"
 
     # — Engine 4: CVE (needs software inventory from config) —
     cve_out: Dict[str, Any] = {"summary": {"vulnerable": 0, "not_affected": 0, "unknown": 0},
-                               "matches": [], "findings": [], "components": [], "cbom": []}
+                               "matches": [], "unresolved": [],
+                               "findings": [], "components": [], "cbom": []}
     if run_cve:
         stages["cve"] = "RUNNING"
         cve = cve_layer()
@@ -61,13 +65,16 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
                           "component_type": "operating_system", "cpe": None, "source": "detector"})
         corr = cve["correlator"].correlate(comps, asset_id=asset_id)
         cve_out = {"summary": corr["summary"], "matches": corr["matches"],
+                   "unresolved": corr.get("unresolved", []),
                    "findings": cve["correlator"].to_findings(corr, asset_id),
                    "components": corr["components"],
                    "cbom": cve["build_cbom"](asset_id, corr["components"])}
         stages["cve"] = "COMPLETED"
 
     # — Engine 2: PQC —
-    pqc_out: Dict[str, Any] = {"readiness_score": 0.0, "counts": {}, "algorithms": []}
+    pqc_out: Dict[str, Any] = {"readiness_score": 0.0, "readiness": 0.0, "readiness_label": "At risk",
+                               "counts": {}, "algorithms": [], "weak_algorithms": [],
+                               "migration_recommendations": []}
     if run_pqc:
         stages["pqc"] = "RUNNING"
         cbom = pqc_eng.build_cbom(asset_id, flat, cve_out.get("components", []))
@@ -82,6 +89,11 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
         stages["security"] = "COMPLETED"
 
     # — Unified findings (common schema) + risk —
+    # audit_id derives from config content so re-uploads of the same config
+    # map to the same audit; finding_ids key off audit_id (not configuration_id)
+    # so re-runs upsert the same rows instead of accumulating duplicates
+    # (which previously made the picker CVE count drift from the detail table).
+    audit_id = f"AUD-{hashlib.sha256(config_text.encode()).hexdigest()[:8].upper()}"
     stages["risk"] = "RUNNING"
     internet_exposed = flat.get("MGMT.INTERNET_EXPOSED") is True
     unified: List[Dict[str, Any]] = []
@@ -91,7 +103,7 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
         rule_risk = m6_rule_score(str(fd.get("severity", "medium")).lower(),
                                   "internet" if internet_exposed else "internal",
                                   asset_criticality.lower(), float(fd.get("confidence", 0.9) or 0.9))
-        fid = _fid("F", configuration_id, fd.get("control_id", "?"), i)
+        fid = _fid("F", audit_id, fd.get("control_id", "?"), i)
         unified.append({"finding_id": fid, "type": "COMPLIANCE", "engine": "compliance",
                         "severity": fd.get("severity"), "title": fd.get("title"),
                         "control_id": fd.get("control_id"), "status": fd.get("status"),
@@ -102,12 +114,16 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
                                         "detail": fd.get("remediation", {})},
                         "source": {"control": fd.get("control_id")}})
     for i, m in enumerate(cve_out.get("matches", [])):
-        sev = str((m.get("cvss") or {}).get("severity", "HIGH")).upper()
-        fid = _fid("F-CVE", configuration_id, str(m.get("cve_id", "UNK")), i)
-        risk = {"risk_score": float((m.get("cvss") or {}).get("score", 7.0)),
+        # Keep UNKNOWN honest: a match without CVSS severity must stay UNKNOWN
+        # so the findings GROUP BY agrees with GET /vulnerabilities/{audit_id}
+        # (which buckets by match cvss.severity). Never inflate to HIGH here.
+        raw_sev = str((m.get("cvss") or {}).get("severity", "")).upper()
+        sev = raw_sev if raw_sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW") else "UNKNOWN"
+        fid = _fid("F-CVE", audit_id, str(m.get("cve_id", "UNK")), i)
+        risk = {"risk_score": float((m.get("cvss") or {}).get("score", 7.0) or 0.0),
                 "priority": sev, "factors": {"source": "CVSS"}}
         unified.append({"finding_id": fid, "type": "VULNERABILITY", "engine": "cve",
-                        "severity": sev if sev in ("CRITICAL", "HIGH", "MEDIUM", "LOW") else "HIGH",
+                        "severity": sev,
                         "title": f"{m.get('cve_id')}: {m.get('product')} {m.get('installed_version')} {m.get('status')}",
                         "status": "FAIL" if m.get("status") == "VULNERABLE" else ("PASS" if m.get("status") == "NOT_AFFECTED" else "UNKNOWN"),
                         "asset_id": asset_id, "evidence": {"property": "SOFTWARE.VERSION",
@@ -118,7 +134,7 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
                                                       "fixed_version": m.get("fixed_version")},
                         "source": {"cve": m.get("cve_id")}})
     for i, a in enumerate(sec_out.get("anomalies", [])):
-        fid = _fid("F-SEC", configuration_id, a.get("type", "?"), i)
+        fid = _fid("F-SEC", audit_id, a.get("type", "?"), i)
         unified.append({"finding_id": fid, "type": "SECURITY", "engine": "security",
                         "severity": a.get("severity", "MEDIUM"), "title": f"{a.get('type')}: {a.get('property')}",
                         "status": "FAIL", "asset_id": asset_id,
@@ -127,12 +143,15 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
                         "remediation": {"available": False}, "source": {"analytics": a.get("type")}})
     for i, row in enumerate(pqc_out.get("algorithms", [])):
         if row.get("pqc_status") == "MIGRATION_REQUIRED":
-            fid = _fid("F-PQC", configuration_id, row.get("algorithm", "?"), i)
+            fid = _fid("F-PQC", audit_id, row.get("algorithm", "?"), i)
+            # Deprecated / broken crypto is exploitable today -> HIGH;
+            # other quantum-only risk stays MEDIUM.
+            sev = "HIGH" if str(row.get("klass", "")).startswith("deprecated") else "MEDIUM"
             unified.append({"finding_id": fid, "type": "PQC", "engine": "pqc",
-                            "severity": "MEDIUM", "title": f"PQC migration: {row.get('algorithm')} ({row.get('protocol')})",
+                            "severity": sev, "title": f"PQC migration: {row.get('algorithm')} ({row.get('protocol')})",
                             "status": "FAIL", "asset_id": asset_id,
                             "evidence": {"property": "CRYPTO", "observed": row},
-                            "confidence": 0.95, "risk": {"risk_score": 5.0, "priority": "MEDIUM"},
+                            "confidence": 0.95, "risk": {"risk_score": 7.5 if sev == "HIGH" else 5.0, "priority": sev},
                             "remediation": {"available": True, "migration": row.get("migration")},
                             "source": {"cbom": True}})
     stages["risk"] = "COMPLETED"
@@ -146,7 +165,6 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
         rel = [f for f in comp_findings
                if fw.upper() in (str(k).upper() for k in ((f.frameworks if hasattr(f, "frameworks") else {}) or {}))]
         by_fw[fw] = okf["ComplianceEngine"].score(rel) if rel else {"compliance_score": 0.0, "total": 0}
-    audit_id = f"AUD-{hashlib.sha256(config_text.encode()).hexdigest()[:8].upper()}"
     try:  # arch.md §55-56: version every knowledge input for reproducibility
         import yaml as _yaml
         from app.core import config as _cfg
@@ -173,6 +191,15 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
               "findings": unified, "duration_s": round(time.time() - t0, 2),
               "created_at": store.now()}
     db.save("audits", record)
+    # Drop stale findings from earlier runs of this audit (e.g. match count
+    # shrank) so per-engine GROUP BY counts agree with the stored matches.
+    try:
+        new_ids = {u["finding_id"] for u in unified}
+        for row in db.select("findings", ["finding_id"], limit=5000, audit_id=audit_id):
+            if row.get("finding_id") not in new_ids:
+                db.delete("findings", row["finding_id"])
+    except Exception:
+        pass
     for u in unified:
         db.save("findings", {**u, "audit_id": audit_id})
     return record

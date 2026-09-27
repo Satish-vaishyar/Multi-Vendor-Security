@@ -1,1 +1,21 @@
-{"framework_id": "CIS", "name": "CIS Benchmarks (network devices, curated subset)", "version": "v8", "publisher": "Center for Internet Security", "source": "curated+cis_scraper", "control_ids": ["OKF-SSH-001", "OKF-TELNET-001", "OKF-HTTP-001", "OKF-SNMP-001", "OKF-AAA-001", "OKF-LOG-001", "OKF-CRYPTO-001"]}
+{
+  "framework_id": "CIS",
+  "name": "CIS Benchmarks (network devices, curated subset)",
+  "version": "v8",
+  "publisher": "Center for Internet Security",
+  "source": "curated+cis_scraper",
+  "control_ids": [
+    "OKF-SSH-001",
+    "OKF-TELNET-001",
+    "OKF-HTTP-001",
+    "OKF-SNMP-001",
+    "OKF-AAA-001",
+    "OKF-LOG-001",
+    "OKF-CRYPTO-001",
+    "OKF-AAA-002",
+    "OKF-HTTPS-001",
+    "OKF-SNMP-005",
+    "OKF-SSH-004",
+    "OKF-SVC-001"
+  ]
+}

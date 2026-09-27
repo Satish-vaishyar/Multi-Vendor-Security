@@ -27,7 +27,7 @@ export function statusColor(s?: string): string {
     return "bg-okbg text-ok border-ok/30";
   if (["FAIL", "FAILED", "VULNERABLE", "AT_RISK", "CRITICAL"].includes(v))
     return "bg-dangerbg text-danger border-danger/30";
-  if (["RUNNING", "PENDING", "QUEUED", "GENERATING", "TRANSITION", "PARTIAL", "UNKNOWN"].includes(v))
+  if (["RUNNING", "PENDING", "QUEUED", "GENERATING", "TRANSITION", "PARTIAL", "UNKNOWN", "GAP"].includes(v))
     return "bg-warnbg text-warn border-warn/30";
   return "bg-surface2 text-ink2 border-line";
 }
