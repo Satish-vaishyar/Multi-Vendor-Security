@@ -122,16 +122,34 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
         fid = _fid("F-CVE", audit_id, str(m.get("cve_id", "UNK")), i)
         risk = {"risk_score": float((m.get("cvss") or {}).get("score", 7.0) or 0.0),
                 "priority": sev, "factors": {"source": "CVSS"}}
+        _refs: list[str] = []
+        for _r in list(m.get("references") or []):
+            _u = _r if isinstance(_r, str) else (_r.get("url") if isinstance(_r, dict) else str(_r))
+            if _u and _u not in _refs:
+                _refs.append(_u)
+        _fixed = m.get("fixed_version")
+        _rec = (f"Upgrade {m.get('product')} from {m.get('installed_version')} to {_fixed} (or a later fixed release)."
+                if _fixed else
+                f"No fixed release recorded for {m.get('cve_id')} — open the vendor advisory links below to pick the fixed release for {m.get('product')}.")
         unified.append({"finding_id": fid, "type": "VULNERABILITY", "engine": "cve",
                         "severity": sev,
                         "title": f"{m.get('cve_id')}: {m.get('product')} {m.get('installed_version')} {m.get('status')}",
                         "status": "FAIL" if m.get("status") == "VULNERABLE" else ("PASS" if m.get("status") == "NOT_AFFECTED" else "UNKNOWN"),
                         "asset_id": asset_id, "evidence": {"property": "SOFTWARE.VERSION",
                                                            "observed": m.get("installed_version"),
-                                                           "cpe": m.get("cpe"), "matched_rule": m.get("matched_rule")},
+                                                           "product": m.get("product"),
+                                                           "installed_version": m.get("installed_version"),
+                                                           "cpe": m.get("cpe"),
+                                                           "installed_cpe": m.get("installed_cpe") or m.get("cpe"),
+                                                           "matched_rule": m.get("matched_rule"),
+                                                           "cvss": m.get("cvss") or {},
+                                                           "references": _refs},
                         "confidence": (m.get("confidence") or {}).get("correlation", 0.9) if isinstance(m.get("confidence"), dict) else 0.9,
-                        "risk": risk, "remediation": {"available": bool(m.get("fixed_version")),
-                                                      "fixed_version": m.get("fixed_version")},
+                        "risk": risk, "remediation": {"available": bool(_fixed or m.get("status") == "VULNERABLE"),
+                                                      "fixed_version": _fixed,
+                                                      "cve_id": m.get("cve_id"),
+                                                      "recommendation": _rec,
+                                                      "references": _refs},
                         "source": {"cve": m.get("cve_id")}})
     for i, a in enumerate(sec_out.get("anomalies", [])):
         fid = _fid("F-SEC", audit_id, a.get("type", "?"), i)

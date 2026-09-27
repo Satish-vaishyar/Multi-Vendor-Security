@@ -793,12 +793,82 @@ def pqc_for_audit(audit_id: str):
                    "migration_recommendations": p.get("migration_recommendations", [])})
 
 
+# Risk-score deduction per severity (mirrors engines.security.analyze) and
+# per-signal remediation guidance so the analytics UI can explain every flag.
+SEV_DEDUCT = {"CRITICAL": 20, "HIGH": 10, "MEDIUM": 5, "LOW": 2}
+_SEC_FIX = {
+    ("LEGACY_SERVICE", "TELNET.ENABLED"): "Disable Telnet; use SSHv2 for remote admin.",
+    ("LEGACY_SERVICE", "HTTP.ENABLED"): "Disable HTTP management; use HTTPS only.",
+    ("LEGACY_SERVICE", ""): "Disable the legacy cleartext service; use its encrypted equivalent.",
+    ("WEAK_CRYPTO", "SSH.VERSION"): "Upgrade to SSHv2; disable SSHv1 fallback.",
+    ("WEAK_CRYPTO", ""): "Remove DES/3DES/RC4/MD5/SHA1/DH-group1; use AES-GCM/ChaCha20 + SHA-256.",
+    ("WEAK_CREDENTIAL", "SNMP.COMMUNITY_PUBLIC"): "Replace 'public' community with SNMPv3 authPriv credentials.",
+    ("WEAK_CREDENTIAL", ""): "Enable password encryption / secret storage for all credentials.",
+    ("LOGGING_GAP", ""): "Enable logging with a remote syslog server for a tamper-resistant trail.",
+    ("WEAK_AUTH", ""): "Enable AAA authentication (RADIUS/TACACS+) for all access.",
+    ("PERMISSIVE_ACCESS", "ACL.PERMIT_ANY"): "Remove 'permit ip any any'; scope ACLs to required hosts.",
+    ("PERMISSIVE_ACCESS", ""): "Restrict the management plane with a dedicated management ACL.",
+    ("EXPOSURE", ""): "Remove management from internet reachability (VPN/bastion + ACL).",
+}
+
+
 @analytics_router.get("/{audit_id}")
 def analytics_for_audit(audit_id: str):
-    rec = _audit_cols(audit_id, ["security"])
+    rec = _audit_cols(audit_id, ["security", "data->'flat_ir' AS flat_ir"])
     s = rec["security"] or {}
+    flat = rec.get("flat_ir") or {}
+    # Unified findings for this audit (engine=security) so each anomaly links
+    # to its finding_id, confidence, risk and remediation pointer.
+    try:
+        sec_findings = db.find("findings", audit_id=audit_id, engine="security")
+    except Exception:
+        sec_findings = []
+    by_key = {}
+    for f in sec_findings:
+        src = f.get("source") or {}
+        ev = f.get("evidence") or {}
+        by_key[(str(src.get("analytics") or ""), str(ev.get("property") or ""))] = f
+
+    def _finding_for(atype: str, prop: str) -> dict:
+        f = by_key.get((atype, prop)) or by_key.get((atype, "")) or {}
+        rem = f.get("remediation") or {}
+        return {"finding_id": f.get("finding_id"),
+                "confidence": f.get("confidence"),
+                "risk": f.get("risk") or {},
+                "remediation_available": bool(rem.get("available"))}
+
+    def _enrich_anomaly(a: dict) -> dict:
+        atype, prop = str(a.get("type") or ""), str(a.get("property") or "")
+        observed = flat.get(prop, "—")
+        sev = str(a.get("severity") or "MEDIUM")
+        f = _finding_for(atype, prop)
+        return {**a, "observed": observed,
+                "why": (f"Flagged because {prop} was observed as "
+                        f"{observed!r} ({a.get('detail') or 'posture issue'}). "
+                        f"This deducts {SEV_DEDUCT.get(sev, 5)} points from the "
+                        f"100-point security risk score."),
+                "remediation_hint": _SEC_FIX.get((atype, prop), _SEC_FIX.get((atype, ""), "")),
+                **f}
+
+    def _enrich_pattern(p: dict) -> dict:
+        contributors = p.get("contributors") or []
+        states = {c: flat.get(c) for c in contributors}
+        state_txt = "; ".join(
+            f"{c}={v if v is not None else 'not observed (counts as weak)'}"
+            for c, v in states.items())
+        related = [f.get("finding_id") for (t, _), f in by_key.items()
+                   if f.get("finding_id") and (f.get("evidence") or {}).get("property") in contributors]
+        return {**p, "observed": states,
+                "why": (f"Combination pattern '{p.get('pattern')}' fired because "
+                        f"multiple weak signals coincide — {state_txt}. "
+                        f"{p.get('detail') or ''} Deducts 15 points from the risk score."),
+                "remediation_hint": ("Disable cleartext admin (Telnet/HTTP), enforce AAA/MFA, "
+                                     "and restrict the management plane with an ACL."),
+                "related_findings": related}
+
     return cfg.ok({"audit_id": audit_id, "risk_score": s.get("risk_score"),
-                   "anomalies": s.get("anomalies", []), "patterns": s.get("patterns", [])})
+                   "anomalies": [_enrich_anomaly(a) for a in s.get("anomalies", [])],
+                   "patterns": [_enrich_pattern(p) for p in s.get("patterns", [])]})
 
 
 class FleetBody(BaseModel):

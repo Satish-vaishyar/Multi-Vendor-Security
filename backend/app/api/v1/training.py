@@ -51,11 +51,21 @@ def approve(training_id: str, body: ApproveBody):
     if not t:
         raise HTTPException(404, "Training item not found")
     okf = okf_layer()
-    pattern = t["raw_command"].strip().replace(" ", r"\s+")
+    pattern = (t.get("raw_command") or "").strip().replace(" ", r"\s+") or (t.get("raw_command") or "")
     m = okf["maps"].approve(t.get("vendor") or "unknown", t.get("platform") or "any",
                             pattern, body.canonical_property, body.canonical_value)
     mid = store.nid("MAP")
-    db.save("mappings", {"id": mid, "mapping_id": mid, **m.model_dump(),
+    dump = m.model_dump()
+    db.save("mappings", {"id": mid, "mapping_id": mid,
+                         "vendor": dump.get("vendor"),
+                         "platform": dump.get("platform"),
+                         # DB column is source_token (NOT NULL); OKF model calls it
+                         # raw_command_pattern — map it explicitly.
+                         "source_token": dump.get("raw_command_pattern") or pattern,
+                         "canonical_property": dump.get("canonical_property"),
+                         "canonical_value": dump.get("canonical_value"),
+                         "confidence": dump.get("confidence", 1.0),
+                         "status": dump.get("status", "approved"),
                          "comment": body.comment, "created_at": store.now()})
     pending = len(db.find("training", status="PENDING")) - 1  # this one just got approved
     db.update("training", training_id, {"status": "APPROVED", "mapping_id": mid})

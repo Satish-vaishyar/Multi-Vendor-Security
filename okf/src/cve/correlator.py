@@ -93,8 +93,12 @@ def to_findings(corr: Dict[str, Any], asset_id: str = "ASSET-001") -> List[Dict[
                     "severity": sev, "status": "FAIL", "asset_id": asset_id,
                     "evidence": m.get("evidence", {}), "confidence": 0.97,
                     "remediation": {"recommendation":
-                        f"Upgrade to {m['fixed_version']}" if m.get("fixed_version")
-                        else "See vendor advisory for fixed release",
-                        "fixed_version": m.get("fixed_version")},
+                        f"Upgrade {m.get('product', '')} {m.get('installed_version', '')} to {m['fixed_version']} (or later)".strip()
+                        if m.get("fixed_version")
+                        else (f"No fixed release recorded for {m.get('cve_id')} — open the vendor advisory "
+                              f"{((m.get('references') or [{}])[0].get('url') if isinstance((m.get('references') or [{}])[0], dict) else (m.get('references') or [''])[0]) or ''} "
+                              f"to pick the fixed release for {m.get('product', '')}".strip()),
+                        "fixed_version": m.get("fixed_version"),
+                        "references": [r.get("url") if isinstance(r, dict) else r for r in (m.get("references") or [])]},
                     "risk": {}})
     return out

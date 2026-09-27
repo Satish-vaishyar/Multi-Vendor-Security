@@ -30,19 +30,31 @@ def _verify(password: str, stored: str) -> bool:
         return False
 
 
-def _seed_admin() -> None:
-    if not db.find("users", email=cfg.ADMIN_EMAIL):
-        db.save("users", {
-            "id": "USR-001", "name": "Admin", "email": cfg.ADMIN_EMAIL,
-            "password_hash": _hash(cfg.ADMIN_PASSWORD), "role": "ADMIN",
-        })
-
-_seed_admin()
+def _seed_admin() -> bool:
+    """Ensure the seeded admin exists. Never raises — returns False when the
+    DB is unreachable so importing this module (and booting uvicorn) can never
+    crash on a DB outage; /readyz still reports the DB as down."""
+    try:
+        if not db.find("users", email=cfg.ADMIN_EMAIL):
+            db.save("users", {
+                "id": "USR-001", "name": "Admin", "email": cfg.ADMIN_EMAIL,
+                "password_hash": _hash(cfg.ADMIN_PASSWORD), "role": "ADMIN",
+            })
+        return True
+    except Exception as e:
+        import logging as _logging
+        _logging.getLogger("sih26155").warning("admin seed skipped (db unreachable): %s", e)
+        return False
 
 
 def authenticate(email: str, password: str) -> Optional[Dict]:
-    _seed_admin()
-    for u in db.find("users"):
+    if not _seed_admin():
+        return None
+    try:
+        users = db.find("users")
+    except Exception:
+        return None
+    for u in users:
         if u["email"].lower() == email.lower() and _verify(password, u["password_hash"]):
             return u
     return None
@@ -65,7 +77,10 @@ def get_current_user(creds: Optional[HTTPAuthorizationCredentials] = Depends(_be
         raise HTTPException(status_code=401, detail="Token expired")
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
-    user = db.get("users", payload.get("sub", ""))
+    try:
+        user = db.get("users", payload.get("sub", ""))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     return user
@@ -89,11 +104,22 @@ _ADMIN_CACHE: Optional[Dict] = None
 
 
 def _admin_user() -> Dict:
-    """Seeded admin, loaded once per process (login/tests still use the DB)."""
+    """Seeded admin, loaded once per process (login/tests still use the DB).
+
+    When the DB is unreachable (local dev without network), falls back to an
+    ephemeral in-memory admin so REQUIRE_AUTH=false routes keep working and
+    the process never crashes at import/request time.
+    """
     global _ADMIN_CACHE
     if _ADMIN_CACHE is None:
-        _seed_admin()
-        user = db.get("users", "USR-001")
-        assert user is not None
-        _ADMIN_CACHE = user
+        if _seed_admin():
+            try:
+                user = db.get("users", "USR-001")
+            except Exception:
+                user = None
+            assert user is not None
+            _ADMIN_CACHE = user
+        else:
+            return {"id": "USR-001", "name": "Admin",
+                    "email": cfg.ADMIN_EMAIL, "role": "ADMIN"}
     return _ADMIN_CACHE

@@ -23,3 +23,35 @@ mappings:
   confidence: 1.0
   source: human_verified
   status: approved
+- vendor: CISCO
+  platform: IOS-XE
+  raw_command_pattern: hostname\s+Core-Router-01
+  canonical_property: net.hostname_lookup
+  canonical_value: true
+  confidence: 1.0
+  source: human_verified
+  status: approved
+- vendor: CISCO
+  platform: IOS-XE
+  raw_command_pattern: hostname\s+Core-Router-01
+  canonical_property: net.hostname_lookup
+  canonical_value: true
+  confidence: 1.0
+  source: human_verified
+  status: approved
+- vendor: CISCO
+  platform: IOS-XE
+  raw_command_pattern: line\s+vty\s+0\s+4
+  canonical_property: services.telnet
+  canonical_value: true
+  confidence: 1.0
+  source: human_verified
+  status: approved
+- vendor: CISCO
+  platform: IOS-XE
+  raw_command_pattern: hostname\s+Core-Router-01
+  canonical_property: net.hostname_lookup
+  canonical_value: true
+  confidence: 1.0
+  source: human_verified
+  status: approved
