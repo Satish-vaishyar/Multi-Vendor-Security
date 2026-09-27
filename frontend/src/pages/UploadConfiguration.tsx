@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { UploadCloud } from "lucide-react";
 import { createAssetFull, listAssets } from "../api/assets.api";
@@ -9,6 +9,7 @@ import { Badge, Card, Field, PageHeader, btnGhost, btnPrimary, inputCls } from "
 
 export default function UploadConfiguration() {
   const nav = useNavigate();
+  const qc = useQueryClient();
   const [files, setFiles] = useState<File[]>([]);
   const [assetId, setAssetId] = useState("");
   const [newAsset, setNewAsset] = useState({ name: "", vendor: "", product: "", version: "", criticality: "MEDIUM" });
@@ -26,6 +27,9 @@ export default function UploadConfiguration() {
     const id = res.data.asset_id as string | undefined;
     if (!id) throw new Error("Asset creation returned no id — try again.");
     setAssetNote(res.reused ? `An asset with this name already exists — reusing ${id} instead of creating a duplicate.` : "");
+    // Keep the existing-asset dropdown in sync so a retry uploads against the id just created.
+    setAssetId(id);
+    void qc.invalidateQueries({ queryKey: ["assets", "all"] });
     return id;
   };
 

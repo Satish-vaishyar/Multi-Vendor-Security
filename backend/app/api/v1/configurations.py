@@ -68,7 +68,23 @@ def _needs_human_approval(line: str, oov: dict) -> tuple[bool, str]:
     return True, "critical:routing/security-impact:needs-human-approval"
 
 
+def _require_asset(asset_id: str) -> dict:
+    """Fail fast with a clear 404 when the target asset does not exist.
+
+    Without this, the insert hits the configurations_asset_id_fkey foreign
+    key and surfaces as a 500 'Internal error', which is what users see when
+    they upload against a stale/default asset id on a fresh database.
+    """
+    asset = db.get("assets", asset_id) if asset_id else None
+    if not asset:
+        raise HTTPException(
+            404, f"Asset '{asset_id or '—'}' not found — create it first "
+                 "via POST /assets (or pick an existing asset on the upload page)")
+    return asset
+
+
 def _register(filename: str, content: bytes, asset_id: str, hint_vendor: str = "", hint_platform: str = "") -> dict:
+    _require_asset(asset_id)
     v = ingestion.validate_upload(filename, content)
     det = vendor_detector.detect_vendor(v["text"], hint_vendor)
     cid = store.nid("CFG")
@@ -102,6 +118,7 @@ async def upload(file: UploadFile = File(...), asset_id: str = Form("AST-001"),
 async def bulk_upload(files: List[UploadFile] = File(...), asset_id: str = Form("AST-001")):
     if len(files) > cfg.MAX_BULK_FILES:
         raise HTTPException(400, f"Too many files (max {cfg.MAX_BULK_FILES})")
+    _require_asset(asset_id)
     batch_id = store.nid("BATCH")
     out, rejected = [], 0
     for f in files:
@@ -133,7 +150,9 @@ def get_configuration(configuration_id: str):
     rec = db.get("configurations", configuration_id)
     if not rec:
         raise HTTPException(404, "Configuration not found")
-    view = {k: v for k, v in rec.items() if k != "config_text"}
+    # Keep config_text: the details page renders a read-only raw viewer from
+    # it, and without it uploads land on a page saying raw text is missing.
+    view = dict(rec)
     view["parser"] = {"type": "KNOWN_VENDOR" if rec["detected_vendor"] != "UNKNOWN" else "AI_PIPELINE",
                       "confidence": rec["detection"]["confidence"]}
     return cfg.ok(view)
