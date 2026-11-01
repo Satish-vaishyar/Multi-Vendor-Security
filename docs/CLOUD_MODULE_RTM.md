@@ -47,9 +47,11 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S14/S24 Findings UI: separate `/cloud` page + nav entry (shows 'not enabled' when the flag is off; existing dashboards untouched). Lint (pre-existing warnings only) and production build pass locally; not exercised against a running backend | 🟡 | `frontend/src/pages/CloudSecurity.tsx`, `frontend/src/api/cloud.api.ts` |
 | S23 audit-log entry on scan creation is done; schedules, webhooks and opt-in asset links are not | 🟡 | `backend/app/api/v1/cloud.py` |
 | S34 (customer rule packs) private pack of CUSTOM-* controls over existing properties, severity overrides, justified disables that are always reported in coverage; no code, mappings or extractors; bounded; on-prem packaging not done | 🟡 | `cloud/rules/customer.py` |
-| S29-S33 | ⬜ not started | - |
+| S30 India provider discovery: evidence framework and decision rule only; NO provider conclusions are written (they need primary sources the study has not collected) | 🟡 | `docs/CLOUD_INDIA_PROVIDER_DISCOVERY.md` |
+| S31/S32 foundations (no cloud client, no network): read-only operation guard, authorisation record, un-leakable Secret, static/live reconcile giving PASS_LIVE / FAIL_LIVE / CONFLICT. Real AWS/Azure/GCP connectors need a test cloud account and are not built | 🟡 | `cloud/live.py` |
+| S29, S33 | ⬜ not started (S29 platforms and S33 inventory need schemas / accounts we do not have) | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (391 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (395 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)
