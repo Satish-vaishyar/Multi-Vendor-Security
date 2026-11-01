@@ -35,7 +35,7 @@ class Detection:
 
 
 FORMATS = ("terraform_hcl", "terraform_json", "terraform_plan", "terraform_state", "cloudformation", "arm", "bicep",
-           "ros", "heat", "kubernetes", "helm_chart", "pulumi", "rego", "cloud_init", "ansible", "unknown")
+           "ros", "heat", "kubernetes", "helm_chart", "pulumi", "pulumi_export", "rego", "cloud_init", "ansible", "unknown")
 
 
 def _add(out: List[str], provider: Optional[str]) -> None:
@@ -92,6 +92,8 @@ def _from_structured(path: str, data: Any) -> Optional[Detection]:
         return Detection(path, "terraform_plan", provs)
     if "terraform_version" in data and "resources" in data and ("serial" in data or "lineage" in data):
         return Detection(path, "terraform_state", [], "contains secrets; opt-in required")
+    if isinstance(data.get("deployment"), dict) and isinstance(data["deployment"].get("resources"), list) and "version" in data:
+        return Detection(path, "pulumi_export", ["aws"], "Pulumi stack export")
     if "kind" in data and "apiVersion" in data:
         return Detection(path, "kubernetes", ["kubernetes"])
     if "resource" in data or "provider" in data or "terraform" in data:

@@ -382,6 +382,10 @@ _FW_SPECS: Dict[str, Dict[str, Any]] = {
                                          "proto": "ip_protocol", "ports": ("port_range",)},
     "huaweicloud_networking_secgroup_rule": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "any_unless": "remote_group_id", "proto": "protocol",
                                              "minmax": ("port_range_min", "port_range_max")},
+    "OS::Neutron::SecurityGroup": {"block": "rules", "gate": ("direction", ("ingress",), False), "src": ("remote_ip_prefix",), "any_unless": "remote_group_id",
+                                   "proto": "protocol", "minmax": ("port_range_min", "port_range_max")},
+    "ovh_ip_firewall_rule": {"gate": ("action", ("permit",), True), "src": ("source",), "src_default": "0.0.0.0/0", "proto": "protocol",
+                             "ports": ("destination_port",)},
     "openstack_networking_secgroup_rule_v2": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "any_unless": "remote_group_id", "proto": "protocol",
                                               "minmax": ("port_range_min", "port_range_max")},
 }

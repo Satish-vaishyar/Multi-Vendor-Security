@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from cloud import detect, graph, intake, scanners, secret_scan
 from cloud.ir import Finding, Resource, jsonable, resource_to_dict, validate_resource
-from cloud.parsers import arm, cloudformation, kubernetes, terraform
+from cloud.parsers import ansible, arm, cloudformation, heat, kubernetes, pulumi, terraform
 from cloud.rules.engine import evaluate
 from cloud.rules.customer import load_effective_pack
 from cloud.rules.pack import Pack
@@ -112,6 +112,12 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
             results.append(arm.parse_arm(d.path, text))
         elif d.format == "cloudformation":
             results.append(cloudformation.parse_cloudformation(d.path, text))
+        elif d.format == "heat":
+            results.append(heat.parse_heat(d.path, text))
+        elif d.format == "ansible":
+            results.append(ansible.parse_ansible(d.path, text))
+        elif d.format == "pulumi_export":
+            results.append(pulumi.parse_pulumi(d.path, text))
         elif d.format == "kubernetes":
             results.append(kubernetes.parse_kubernetes(d.path, text))
     for r in results:
@@ -131,8 +137,8 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
 
     by_state = Counter(f.evidence_state for f in findings)
     by_severity = Counter(f.severity for f in findings if f.evidence_state == "FAIL_STATIC")
-    unsupported_formats = Counter(d.format for d in detections if d.format in ("unknown", "bicep", "ros", "heat", "pulumi", "rego",
-                                                                               "ansible", "cloud_init", "helm_chart"))
+    unsupported_formats = Counter(d.format for d in detections if d.format in ("unknown", "bicep", "ros", "rego",
+                                                                               "cloud_init", "helm_chart"))
     coverage = {**evaluated.coverage, "files_received": len(taken.files) + len(taken.rejected), "files_accepted": len(taken.files),
                 "files_rejected": len(taken.rejected) + taken.rejected_overflow, "files_not_text": len(skipped),
                 "formats": dict(Counter(d.format for d in detections)), "providers": detect.providers_of(detections),

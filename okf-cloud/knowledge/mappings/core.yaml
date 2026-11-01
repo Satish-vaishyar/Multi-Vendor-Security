@@ -24,6 +24,8 @@ mappings:
       - tencentcloud_security_group_rule
       - huaweicloud_networking_secgroup_rule
       - openstack_networking_secgroup_rule_v2
+      - OS::Neutron::SecurityGroup
+      - ovh_ip_firewall_rule
     extractors: [network_ingress]
 
   # ------------------------------------------------------------------ identity
