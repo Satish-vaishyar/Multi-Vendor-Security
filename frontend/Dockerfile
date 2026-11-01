@@ -10,7 +10,7 @@ RUN npm run build
 
 # ---- serve ----
 # nginx-unprivileged: master AND workers run as uid 101 (no root process, no extra capabilities needed), listens on 8080.
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY frontend/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /web/dist /usr/share/nginx/html
