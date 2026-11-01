@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import time
 from collections import Counter
 from pathlib import Path
@@ -32,6 +33,20 @@ def _decode(data: bytes) -> Optional[str]:
         return data.decode("utf-8-sig")
     except UnicodeDecodeError:
         return None
+
+
+_USERINFO = re.compile(r"(://)[^/@\s]+@")
+
+
+def _safe_text(value: Any) -> Any:
+    """Redact secrets and strip URL userinfo from any string that came from the upload (module sources, parser errors)."""
+    if isinstance(value, str):
+        return _USERINFO.sub(r"\1", secret_scan.redact(value))
+    if isinstance(value, dict):
+        return {k: _safe_text(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_safe_text(v) for v in value]
+    return value
 
 
 def _statement(fails: int, unknowns: int) -> str:
@@ -128,6 +143,7 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
             "rejected": [{"path": x.path, "reason": x.reason} for x in taken.rejected] + skipped,
             "resources": [resource_to_dict(r) for r in resources[:MAX_RESOURCES_IN_REPORT]],
             "findings": [f.to_dict() for f in findings], "coverage": coverage,
-            "unresolved": jsonable(unresolved), "errors": errors + ([{"file": "", "error": "; ".join(problems[:5])}] if problems else []),
+            "unresolved": _safe_text(jsonable(unresolved, redact=True)),
+            "errors": _safe_text(errors + ([{"file": "", "error": "; ".join(problems[:5])}] if problems else [])),
             "summary": {"states": dict(by_state), "failed_by_severity": dict(by_severity), "resources": len(resources)},
             "statement": _statement(by_state.get("FAIL_STATIC", 0), by_state.get("UNKNOWN_STATIC", 0))}

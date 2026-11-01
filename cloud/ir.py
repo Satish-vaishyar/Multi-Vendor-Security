@@ -108,6 +108,7 @@ class Finding:
     frameworks: List[Dict[str, Any]] = field(default_factory=list)
     remediation: Dict[str, Any] = field(default_factory=dict)
     notes: List[str] = field(default_factory=list)
+    exception: Dict[str, Any] = field(default_factory=dict)      # set by exceptions.apply_exceptions; never changes evidence_state
 
     @property
     def dedupe_key(self) -> str:
@@ -121,7 +122,7 @@ class Finding:
                 "resource_type": self.resource_type, "provider": self.provider, "evidence": jsonable(self.evidence),
                 "source": self.source, "rule_version": self.rule_version, "engine": self.engine,
                 "frameworks": self.frameworks, "remediation": self.remediation, "notes": self.notes,
-                "dedupe_key": self.dedupe_key}
+                "exception": self.exception, "dedupe_key": self.dedupe_key}
 
 
 def jsonable(value: Any, redact: bool = False) -> Any:
