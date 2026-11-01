@@ -125,14 +125,14 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
       - name: Scan backend image (fail on fixable HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: nsca-backend:ci
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
       - name: Scan frontend image (fail on fixable HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: nsca-frontend:ci
           severity: HIGH,CRITICAL
@@ -140,13 +140,13 @@ jobs:
           exit-code: "1"
 
       - name: Generate SBOM (CycloneDX) for the backend image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: nsca-backend:ci
           format: cyclonedx
           output: sbom-backend.cdx.json
       - name: Generate SBOM (CycloneDX) for the frontend image
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: nsca-frontend:ci
           format: cyclonedx
