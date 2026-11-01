@@ -45,7 +45,7 @@ jobs:
       - name: Tests + coverage gate (fail_under in pyproject.toml)
         working-directory: backend
         run: uv run pytest -q -W ignore --cov=app --cov-report=term --cov-report=xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: backend/coverage.xml
@@ -152,7 +152,7 @@ jobs:
           format: cyclonedx
           output: sbom-frontend.cdx.json
       - name: Publish SBOMs as build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom-*.cdx.json
