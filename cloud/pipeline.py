@@ -16,7 +16,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from cloud import detect, intake, scanners, secret_scan
+from cloud import detect, graph, intake, scanners, secret_scan
 from cloud.ir import Finding, Resource, jsonable, resource_to_dict, validate_resource
 from cloud.parsers import cloudformation, kubernetes, terraform
 from cloud.rules.engine import evaluate
@@ -119,6 +119,7 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
 
     evaluated = evaluate(resources, pack)
     findings = _secret_findings(secrets) + evaluated.findings
+    exposure = graph.annotate(findings, resources, incomplete=bool(unresolved) or truncated)
     engine_runs = []
     for name in engines:
         run = scanners.run_engine(name, str(workdir))
@@ -133,7 +134,7 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
                 "files_rejected": len(taken.rejected) + taken.rejected_overflow, "files_not_text": len(skipped),
                 "formats": dict(Counter(d.format for d in detections)), "providers": detect.providers_of(detections),
                 "unsupported_formats": dict(unsupported_formats), "modules_not_resolved": len(unresolved),
-                "expansion_truncated": truncated, "external_engines": engine_runs,
+                "expansion_truncated": truncated, "effective_exposure": exposure, "external_engines": engine_runs,
                 "not_assessed": ["live cloud state", "organisation-wide policies", "runtime and image vulnerabilities",
                                  "controls with no rule in this pack"]}
     problems = [p for r in resources for p in validate_resource(r)]

@@ -37,9 +37,10 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S25 scan-to-scan drift | ✅ engine side | `cloud/drift.py` |
 | S26 capability matrix generated from the pack | ✅ | `cloud/capability.py` |
 | S20 JSON / CSV / SARIF export (PDF not produced) | ✅ | `cloud/export.py` |
-| S14 backend API + findings UI, S15-S17, S19, S20, S22-S24, S27-S34 | ⬜ not started | - |
+| S17 relationship graph + effective exposure (note only; evidence state untouched) | ✅ | `cloud/graph.py` |
+| S14 backend API + findings UI, S15, S16, S19, S22-S24, S27-S34 | ⬜ not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (320 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (324 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)

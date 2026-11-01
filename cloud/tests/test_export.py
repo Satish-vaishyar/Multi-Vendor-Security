@@ -42,3 +42,11 @@ def test_json_and_sarif_redact_keys_nested_values_and_locations():
     rep = {"rule_pack_version": key, "findings": [{"control_id": key, "title": "t", "severity": "HIGH", "evidence_state": "FAIL_STATIC",
                                                    "source": {"file": key + ".tf", "line_start": 2}}]}
     assert key not in export.to_sarif(rep) and key not in export.to_json({"x": object()})
+
+
+def test_json_redacts_values_by_key_context():
+    out = json.loads(export.to_json({"password": "hunter2", "aws_secret_access_key": "abc", "private_key_id": "k1", "name": "web",
+                                     "n": {"api_key": "zzz", "empty": "", "title": "ok"}, "tags": ["a"]}))
+    assert out["password"] == out["aws_secret_access_key"] == out["private_key_id"] == out["n"]["api_key"] == "[REDACTED]"
+    assert out["name"] == "web" and out["n"]["empty"] == "" and out["tags"] == ["a"]
+    assert export._redact_entry("note", 'password = "hunter2hunter2"') in ("[REDACTED]", 'password = "hunter2hunter2"')

@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import re
 from typing import Any, Dict, List
 
 from cloud import secret_scan
@@ -25,16 +26,30 @@ def csv_cell(value: Any) -> str:
     return "'" + text if text.startswith(_FORMULA_LEAD) else text
 
 
+_SENSITIVE_KEY = re.compile(r"pass(word|wd)?|secret|token|credential|private[_-]?key|access[_-]?key|api[_-]?key|auth", re.I)
+
+
 def _redact(value: Any) -> Any:
     """Redact every string (keys and values) of the structure itself; never run the regex over serialised JSON, where
     escaping could split a credential from the pattern that matches it."""
     if isinstance(value, str):
         return secret_scan.redact(value)
     if isinstance(value, dict):
-        return {secret_scan.redact(str(k)): _redact(v) for k, v in value.items()}
+        return {secret_scan.redact(str(k)): _redact_entry(str(k), v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [_redact(v) for v in value]
     return value if value is None or isinstance(value, (bool, int, float)) else secret_scan.redact(str(value))
+
+
+def _redact_entry(key: str, value: Any) -> Any:
+    """A value under a credential-looking key is dropped outright (the key is the context the value-only scan lacks); other
+    strings are also scanned as `key = "value"` so assignment-shaped secrets are caught."""
+    if isinstance(value, str) and value and _SENSITIVE_KEY.search(key):
+        return "[REDACTED]"
+    if isinstance(value, str):
+        scanned = secret_scan.redact(f'{key} = "{value}"')
+        return secret_scan.redact(value) if scanned == f'{key} = "{value}"' else "[REDACTED]"
+    return _redact(value)
 
 
 def to_json(report: Dict[str, Any]) -> str:
