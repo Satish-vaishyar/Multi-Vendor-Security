@@ -1,0 +1,157 @@
+# Security-analytics rules (engine 3). Posture signals + attack-path combinations, evaluated against the
+# canonical flat IR. Edit this file to change what is flagged - no code change needed.
+#
+# condition leaves:  {prop: X, is_true|is_false|missing|present: true}  |  {prop: X, eq|ne|gte|lt: V}  |  {prop: X, in: [..]}
+# condition groups:  all: [...]  any: [...]  not: <cond>
+# signal   = one finding per rule.     path = attack-path combination: fires when `min_signals` of `signals` hold
+#            (plus the optional `requires` condition) and always explains its contributors.
+# severity is lowered one level when every property that triggered the rule is an ASSUMED platform default
+# rather than something read from the configuration (basis: assumed).
+
+signals:
+  - id: SA-LEGACY-TELNET
+    type: LEGACY_SERVICE
+    severity: HIGH
+    when: {prop: TELNET.ENABLED, is_true: true}
+    detail: Cleartext remote admin enabled
+    why: Telnet sends credentials and sessions unencrypted; anyone on the path can capture them.
+    fix: Disable Telnet; use SSHv2 for remote admin.
+  - id: SA-LEGACY-HTTP
+    type: LEGACY_SERVICE
+    severity: MEDIUM
+    when: {prop: HTTP.ENABLED, is_true: true}
+    detail: Unencrypted web management enabled
+    why: HTTP management exposes logins and configuration to interception.
+    fix: Disable HTTP management; use HTTPS only.
+  - id: SA-CRYPTO-SSH1
+    type: WEAK_CRYPTO
+    severity: HIGH
+    when: {prop: SSH.VERSION, eq: 1}
+    detail: SSHv1 in use
+    why: SSHv1 has known protocol weaknesses allowing session recovery and injection.
+    fix: Upgrade to SSHv2; disable SSHv1 fallback.
+  - id: SA-CRYPTO-WEAKALGO
+    type: WEAK_CRYPTO
+    severity: HIGH
+    when: {prop: CRYPTO.WEAK_ALGO, is_true: true}
+    detail: DES/3DES/RC4/MD5/SHA1/DH-group1 present
+    why: Broken or deprecated primitives can be attacked offline today.
+    fix: Remove DES/3DES/RC4/MD5/SHA1/DH-group1; use AES-GCM/ChaCha20 + SHA-256.
+  - id: SA-CRED-SNMP-PUBLIC
+    type: WEAK_CREDENTIAL
+    severity: HIGH
+    when: {prop: SNMP.COMMUNITY_PUBLIC, is_true: true}
+    detail: Default SNMP community 'public'
+    why: A guessable community lets anyone read (or, if RW, change) device state.
+    fix: Replace the community with SNMPv3 authPriv credentials.
+  - id: SA-CRED-CLEARTEXT
+    type: WEAK_CREDENTIAL
+    severity: HIGH
+    when: {prop: PASSWORD.ENCRYPTED, is_false: true}
+    detail: Cleartext passwords stored
+    why: Anyone with read access to the configuration or a backup recovers working credentials.
+    fix: Enable password encryption / secret storage for all credentials.
+  - id: SA-LOG-DISABLED
+    type: LOGGING_GAP
+    severity: MEDIUM
+    when: {prop: LOGGING.ENABLED, is_false: true}
+    detail: Device logging disabled
+    why: Without logs, intrusion and misconfiguration go unnoticed.
+    fix: Enable logging with a remote syslog server for a tamper-resistant trail.
+  - id: SA-LOG-NOREMOTE
+    type: LOGGING_GAP
+    severity: MEDIUM
+    when: {any: [{prop: LOGGING.REMOTE_SERVER, is_false: true}, {prop: LOGGING.ENABLED, is_false: true}]}
+    prop: LOGGING.REMOTE_SERVER
+    detail: No remote syslog - no tamper-resistant audit trail
+    why: Local-only logs can be wiped by an attacker who gains access.
+    fix: Send logs to a remote syslog/SIEM collector.
+  - id: SA-AUTH-NOAAA
+    type: WEAK_AUTH
+    severity: HIGH
+    when: {prop: AAA.AUTHENTICATION, is_false: true}
+    detail: No AAA authentication
+    why: Local-only accounts cannot be centrally revoked, audited or protected by MFA.
+    fix: Enable AAA authentication (RADIUS/TACACS+) for all access.
+  - id: SA-ACL-MGMT-OPEN
+    type: PERMISSIVE_ACCESS
+    severity: MEDIUM
+    when: {prop: ACL.MGMT_RESTRICTED, is_false: true}
+    detail: Management plane not ACL-restricted
+    why: Any reachable host can attempt to log in to the device.
+    fix: Restrict the management plane with a dedicated management ACL.
+  - id: SA-ACL-PERMIT-ANY
+    type: PERMISSIVE_ACCESS
+    severity: HIGH
+    when: {prop: ACL.PERMIT_ANY, is_true: true}
+    detail: permit ip any any present
+    why: An allow-all rule defeats the access policy it sits in.
+    fix: Remove 'permit ip any any'; scope ACLs to required hosts.
+  - id: SA-EXPOSE-MGMT
+    type: EXPOSURE
+    severity: CRITICAL
+    when: {prop: MGMT.INTERNET_EXPOSED, is_true: true}
+    detail: Management interface internet-facing
+    why: Internet-reachable management is continuously scanned and attacked.
+    fix: Remove management from internet reachability (VPN/bastion + ACL).
+
+paths:
+  - id: AP-EXPOSED-ADMIN
+    name: Exposed Administrative Access
+    severity: CRITICAL
+    requires: {prop: TELNET.ENABLED, is_true: true}
+    min_signals: 2
+    signals:
+      - {any: [{prop: SSH.ENABLED, in: [true, null]}, {prop: SSH.VERSION, present: true}]}
+      - {any: [{prop: AAA.MFA, is_false: true}, {prop: AAA.MFA, missing: true}]}
+      - {any: [{prop: MGMT.INTERNET_EXPOSED, is_true: true}, {prop: ACL.MGMT_RESTRICTED, is_false: true}]}
+    contributors: [TELNET.ENABLED, AAA.MFA, ACL.MGMT_RESTRICTED]
+    detail: Telnet/cleartext admin + weak AAA boundary - treat as high-priority exposure
+    fix: Disable Telnet, restrict management to a bastion/management ACL, and require MFA via AAA.
+  - id: AP-CLEARTEXT-NOAAA
+    name: Cleartext management without central authentication
+    severity: CRITICAL
+    min_signals: 2
+    signals:
+      - {any: [{prop: TELNET.ENABLED, is_true: true}, {prop: HTTP.ENABLED, is_true: true}]}
+      - {prop: AAA.AUTHENTICATION, is_false: true}
+      - {prop: PASSWORD.ENCRYPTED, is_false: true}
+    requires: {any: [{prop: TELNET.ENABLED, is_true: true}, {prop: HTTP.ENABLED, is_true: true}]}
+    contributors: [TELNET.ENABLED, HTTP.ENABLED, AAA.AUTHENTICATION, PASSWORD.ENCRYPTED]
+    detail: Credentials cross the network in clear and the device has no central account control - a sniffed login cannot be revoked centrally.
+    fix: Move management to SSH/HTTPS and put authentication behind TACACS+/RADIUS.
+  - id: AP-INTERNET-MGMT-WEAK
+    name: Internet-facing management with weak access control
+    severity: CRITICAL
+    min_signals: 1
+    requires: {prop: MGMT.INTERNET_EXPOSED, is_true: true}
+    signals:
+      - {any: [{prop: AAA.MFA, is_false: true}, {prop: AAA.MFA, missing: true}]}
+      - {prop: ACL.MGMT_RESTRICTED, is_false: true}
+      - {prop: AAA.AUTHENTICATION, is_false: true}
+    contributors: [MGMT.INTERNET_EXPOSED, AAA.MFA, ACL.MGMT_RESTRICTED, AAA.AUTHENTICATION]
+    detail: Management is reachable from the internet and nothing but a password stands in front of it.
+    fix: Put management behind a VPN/bastion, restrict by ACL and require MFA.
+  - id: AP-GUESSABLE-SNMP-OPEN
+    name: Guessable SNMP community on an unrestricted management plane
+    severity: HIGH
+    min_signals: 1
+    requires: {prop: SNMP.COMMUNITY_PUBLIC, is_true: true}
+    signals:
+      - {prop: ACL.MGMT_RESTRICTED, is_false: true}
+      - {prop: MGMT.INTERNET_EXPOSED, is_true: true}
+    contributors: [SNMP.COMMUNITY_PUBLIC, ACL.MGMT_RESTRICTED, MGMT.INTERNET_EXPOSED]
+    detail: Anyone who can reach the device can read its state with a default community string.
+    fix: Move to SNMPv3 authPriv and ACL-restrict SNMP to the monitoring hosts.
+  - id: AP-BLIND-DEVICE
+    name: Weakly protected device with no audit trail
+    severity: HIGH
+    min_signals: 1
+    requires: {any: [{prop: LOGGING.ENABLED, is_false: true}, {prop: LOGGING.REMOTE_SERVER, is_false: true}]}
+    signals:
+      - {prop: AAA.AUTHENTICATION, is_false: true}
+      - {prop: MGMT.INTERNET_EXPOSED, is_true: true}
+      - {prop: TELNET.ENABLED, is_true: true}
+    contributors: [LOGGING.ENABLED, LOGGING.REMOTE_SERVER, AAA.AUTHENTICATION, MGMT.INTERNET_EXPOSED, TELNET.ENABLED]
+    detail: A compromise of this device would leave no tamper-resistant record to investigate.
+    fix: Enable remote logging first - it is the cheapest control that makes every other weakness detectable.

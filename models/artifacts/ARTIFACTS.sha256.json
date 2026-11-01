@@ -1,0 +1,12 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "emb_tfidf.pkl": "9aa95a885678ca799a386d33eb7ef0b8c446b6a2af01f14865c444fe4bb1920b",
+    "m1_clf.pkl": "869abac3571d4914f6728cf3d6d01f989895ad230ee372fb1fa58c4aa569005c",
+    "m1_vec.pkl": "188b5921d9c1f24d263f1fb24d109d18dbfc6b220e213d7a7a72dae76153d547",
+    "m2_clf.pkl": "2acf7345d0fcab186c7b66108a372a6665324f687eb212b9579ae191d3e0ee62",
+    "m3_index.pkl": "74e87c1dbcf8a9cd881bc43e39b8e30a2303d1ad34835b8ac001be419c695603",
+    "m6_xgb.pkl": "68f6d4e37eea07f4cebf7f9b63265c78fe1478e179d7050af794b6fbf9575dc1",
+    "m7_cluster.pkl": "32c9c4eb625e53aebd6017ac7cd675c55965e4fe1cf9e7c8f436347cc1f51099"
+  }
+}

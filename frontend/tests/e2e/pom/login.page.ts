@@ -1,7 +1,7 @@
 import { Page, expect } from '@playwright/test';
 
-export const DEMO_EMAIL = 'admin@example.com';
-export const DEMO_PASSWORD = 'admin123';
+export const DEMO_EMAIL = process.env.QA_ADMIN_EMAIL ?? 'qa-admin@example.com';
+export const DEMO_PASSWORD = process.env.QA_ADMIN_PASSWORD ?? 'QaAdmin-Passw0rd!2026';
 
 /** Login Page Object (POM) — resilient locators: data-testid first, role fallback. */
 export class LoginPage {

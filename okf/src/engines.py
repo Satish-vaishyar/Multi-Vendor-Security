@@ -77,6 +77,12 @@ def eval_condition(ir: Dict[str, Any], cond: Dict[str, Any]) -> Tuple[bool | Non
     return ok, [ev]
 
 
+def condition_properties(cond: Dict[str, Any]) -> List[str]:
+    if "all" in cond or "any" in cond:
+        return [p for c in cond.get("all", []) + cond.get("any", []) for p in condition_properties(c)]
+    return [cond["property"]] if cond.get("property") else []
+
+
 def control_applies(control: Control, vendor: str = "", platform: str = "") -> bool:
     """SCAP CPE-style applicability: a control with an empty `applies_to`
     applies to every target; otherwise the target's vendor/platform must be
@@ -97,9 +103,27 @@ class ComplianceEngine:
         self.remediation = remediation_index or {}
 
     def evaluate(self, canonical_ir: Dict[str, Any], asset_id: str = "ASSET-001",
-                 vendor: str = "", platform: str = "") -> List[Finding]:
+                 vendor: str = "", platform: str = "",
+                 not_applicable: Dict[str, str] | None = None,
+                 provenance: Dict[str, Dict[str, Any]] | None = None) -> List[Finding]:
+        """not_applicable: {property: reason} declared by the vendor parser (property cannot exist on
+        this platform/role). A control whose every property is non-applicable is NOT_APPLICABLE and leaves
+        the score. provenance: {property: {basis, note, ...}} - copied onto each finding's evidence so
+        reports can separate "observed in config" from "assumed platform default"."""
+        na = not_applicable or {}
+        prov = provenance or {}
         findings: List[Finding] = []
         for c in self.controls:
+            props = condition_properties(c.condition or {})
+            if props and all(p in na and _get(canonical_ir, p) is None for p in props):
+                ev = Evidence(control_id=c.control_id, property=props[0], status="NOT_APPLICABLE",
+                              note=na[props[0]])
+                findings.append(Finding(
+                    finding_id=f"F-{c.control_id}", engine="compliance", control_id=c.control_id,
+                    title=c.title, severity=c.severity, status="NOT_APPLICABLE", asset_id=asset_id,
+                    evidence=ev, remediation=self.remediation.get(c.control_id, {}),
+                    frameworks=dict(c.frameworks)))
+                continue
             if not control_applies(c, vendor, platform):
                 ev = Evidence(control_id=c.control_id, property="",
                               status="NOT_APPLICABLE")
@@ -115,6 +139,11 @@ class ComplianceEngine:
             status = "PASS" if ok else ("FAIL" if ok is False else "UNKNOWN")
             ev = evs[0] if evs else Evidence(control_id=c.control_id, property="", status=status)
             ev.control_id = c.control_id
+            used = [prov.get(e.property, {}) for e in evs if e.observed_value is not None]
+            if used:   # one assumed default among the deciding properties makes the verdict "assumed"
+                ev.basis = "default" if any(u.get("basis") == "default" for u in used) else "config"
+                notes = [u.get("note") for u in used if u.get("note")]
+                ev.note = notes[0] if notes else ""
             findings.append(Finding(
                 finding_id=f"F-{c.control_id}",
                 engine="compliance", control_id=c.control_id, title=c.title,
@@ -135,10 +164,20 @@ class ComplianceEngine:
         failed = sum(1 for f in scored if f.status == "FAIL")
         unknown = total - passed - failed
         score = round(100.0 * passed / total, 1) if total else 0.0
+        assessed = passed + failed
+        def _basis(f: Finding) -> str:
+            ev = f.evidence
+            return getattr(ev, "basis", "") if not isinstance(ev, dict) else str(ev.get("basis", ""))
+        assumed = sum(1 for f in scored if f.status in ("PASS", "FAIL") and _basis(f) == "default")
         sev = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
         for f in scored:
             if f.status == "FAIL" and f.severity in sev:
                 sev[f.severity] += 1
         return {"compliance_score": score, "total": total, "passed": passed,
                 "failed": failed, "unknown": unknown,
-                "not_applicable": na, **sev}
+                "not_applicable": na,
+                # How much of the verdict is evidence vs. gaps/assumptions (see docs/product_readiness_gaps.md P1-4)
+                "assessed": assessed, "not_assessed": unknown, "assumed": assumed,
+                "coverage_pct": round(100.0 * assessed / total, 1) if total else 0.0,
+                "observed_pct": round(100.0 * (assessed - assumed) / total, 1) if total else 0.0,
+                **sev}

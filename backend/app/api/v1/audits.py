@@ -1,12 +1,13 @@
 """Audits: POST /audits, GET /audits/{id}, GET /audits/{id}/results, GET /audits/{id}/evidence (api.md §10-12, §31)."""
 from __future__ import annotations
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 
 from app.core import config as cfg
 from app.core import persist as db
 from app.services import audit_service
+from app.api.v1.paging import Pager, envelope, pager, paged
 
 router = APIRouter(prefix="/api/v1/audits", tags=["audits"])
 
@@ -22,15 +23,20 @@ class AuditBody(BaseModel):
 
 
 @router.get("")
-def list_audits():
+def list_audits(status: Optional[str] = None, asset_id: Optional[str] = None,
+                p: Pager = Depends(pager(200))):
     """Lightweight audit list for pickers/dashboards.
 
     One projected audit query plus one GROUP BY over findings — no per-audit
     fan-out, no findings/canonical_ir payloads.
     """
-    rows = db.select("audits", ["audit_id", "status", "progress", "summary",
-                                "by_framework", "cve", "asset_id", "configuration_id"])
-    groups = db.count_by("findings", ["audit_id", "engine", "severity"])
+    filters = {k: v for k, v in {"status": status, "asset_id": asset_id}.items() if v}
+    rows, total = paged("audits", p, ["audit_id", "status", "progress", "summary",
+                                      "by_framework", "cve", "asset_id", "configuration_id"],
+                        search=("audit_id", "asset_id"), **filters)
+    ids = [r.get("audit_id") for r in rows if r.get("audit_id")]
+    groups = (db.count_by("findings", ["audit_id", "engine", "severity"], _in={"audit_id": ids})
+              if ids else [])
     eng: dict = {}
     for g in groups:
         aid = g.get("audit_id")
@@ -57,7 +63,7 @@ def list_audits():
                               "unknown": cve.get("unknown", 0)},
                       "engines": {e: {sev: n for sev, n in sevs.items()}
                                   for e, sevs in eng.get(r.get("audit_id"), {}).items()}})
-    return cfg.ok({"items": items, "total": len(items)})
+    return cfg.ok(envelope(items, total, p))
 
 
 @router.post("")
@@ -115,8 +121,10 @@ def get_summary(audit_id: str):
                                "critical": s.get("CRITICAL", 0), "high": s.get("HIGH", 0),
                                "medium": s.get("MEDIUM", 0), "low": s.get("LOW", 0),
                                "security_risk": s.get("security_risk"),
-                               "pqc_readiness": s.get("pqc_readiness")},
-                   "frameworks": {k: {"score": v.get("compliance_score", 0)}
+                               "pqc_readiness": s.get("pqc_readiness"),
+                               "coverage_pct": s.get("coverage_pct"), "assumed": s.get("assumed", 0)},
+                   "frameworks": {k: {"score": v.get("compliance_score", 0),
+                                      "coverage_pct": v.get("coverage_pct")}
                                   for k, v in (rec.get("by_framework", {}) or {}).items()},
                    "cve": {"vulnerable": ((rec.get("cve", {}) or {}).get("summary", {}) or {}).get("vulnerable", 0),
                            "not_affected": ((rec.get("cve", {}) or {}).get("summary", {}) or {}).get("not_affected", 0),
@@ -168,10 +176,20 @@ def get_results(audit_id: str):
     return cfg.ok({"audit_id": audit_id,
                    "asset_id": rec.get("asset_id"), "configuration_id": rec.get("configuration_id"),
                    "status": rec.get("status"), "vendor": rec.get("vendor", {}),
+                   "degraded": rec.get("degraded", []),
+                   "assessment": {"applicable": s.get("total", 0), "assessed": s.get("assessed", 0),
+                                  "not_assessed": s.get("not_assessed", s.get("unknown", 0)),
+                                  "not_applicable": s.get("not_applicable", 0),
+                                  "assumed": s.get("assumed", 0),
+                                  "coverage_pct": s.get("coverage_pct"), "observed_pct": s.get("observed_pct"),
+                                  "parser": rec.get("parser", {})},
                    "summary": {"compliance_score": s.get("compliance_score"),
                                "total": s.get("total", len(findings)),
                                "passed": s.get("passed", 0), "failed": s.get("failed", 0),
                                "unknown": s.get("unknown", 0),
+                               "assessed": s.get("assessed", 0), "assumed": s.get("assumed", 0),
+                               "not_applicable": s.get("not_applicable", 0),
+                               "coverage_pct": s.get("coverage_pct"), "observed_pct": s.get("observed_pct"),
                                "critical": s.get("CRITICAL", 0),
                                "high": s.get("HIGH", 0), "medium": s.get("MEDIUM", 0),
                                "low": s.get("LOW", 0),

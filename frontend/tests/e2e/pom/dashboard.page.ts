@@ -15,7 +15,7 @@ export class DashboardPage {
   }
 
   async expectKpisVisible() {
-    for (const kpi of ['Total Assets', 'Compliance Score', 'Critical Findings']) {
+    for (const kpi of ['Devices', 'Compliance Score', 'Critical Findings']) {
       await expect(this.page.getByText(kpi, { exact: true }).first()).toBeVisible();
     }
   }
@@ -26,6 +26,6 @@ export class DashboardPage {
 
   async gotoUpload() {
     await this.page.getByRole('link', { name: /run new audit/i }).click();
-    await expect(this.page).toHaveURL(/\/configurations\/upload/);
+    await expect(this.page).toHaveURL(/\/quick-audit/);
   }
 }

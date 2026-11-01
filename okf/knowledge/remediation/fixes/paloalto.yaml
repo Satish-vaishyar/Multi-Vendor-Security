@@ -1,0 +1,301 @@
+# Fix templates for Palo Alto Networks PAN-OS 9.1 - 11.x, keyed by canonical property. NOT lab-verified.
+vendor: paloalto
+platforms: [pan-os]
+verification: documented
+sources:
+  - PAN-OS Administrator's Guide (management interface, mgt-config, authentication, log forwarding, zone protection)
+  - PAN-OS CLI Quick Start (set commands)
+apply_notes: >-
+  Run in configuration mode ("configure"). Apply the "set"/"delete" lines, then "commit". Rules live under a vsys
+  (shown as vsys1 - change it to yours). PAN-OS syntax shifts between releases: verify any line with "set ... ?"
+  before committing, and use "commit force" only after review. Panorama-managed devices need these changes in the
+  template / device group instead.
+parameters:
+  PASSWORD_HASH: PAN-OS password hash for the new administrator (generate with request password-hash)
+  TLS_PROFILE: SSL/TLS service profile used for management
+  SYSLOG_IP: address of the central syslog / SIEM collector
+  NTP_IP_1: primary NTP server
+  NTP_IP_2: secondary NTP server
+  NTP_KEY: NTP key shared with the server
+  TACACS_IP_1: TACACS+ server address
+  TACACS_KEY: TACACS+ shared secret
+  RADIUS_IP: RADIUS server address
+  RADIUS_KEY: RADIUS shared secret
+  MGMT_SUBNET: permitted management network in CIDR form (e.g. 10.0.0.0/24)
+  NMS_IP: SNMP manager address
+  SNMP_USER: SNMPv3 user name
+  AUTH_PASSPHRASE: SNMPv3 authentication passphrase
+  PRIV_PASSPHRASE: SNMPv3 privacy passphrase
+  GATEWAY: IKE gateway name
+  NEW_ADMIN: replacement administrator name
+  COLLECTOR_IP: NetFlow collector address
+  INTERFACE: dataplane interface (e.g. ethernet1/1)
+  ZONE: security zone name
+  SRC_ADDRESS: source address object / network
+  DST_ADDRESS: destination address object / network
+  APPLICATION: application(s) required by the rule
+  BANNER_TEXT: approved legal warning text
+  TARGET: affected object
+
+fixes:
+  TELNET.ENABLED:
+    title: Disable telnet management
+    value: false
+    setup: ["set deviceconfig system service disable-telnet yes"]
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["set network profiles interface-management-profile {name} telnet no"]
+    validation: ["show deviceconfig system service", "show network profiles interface-management-profile"]
+    rollback: ["set deviceconfig system service disable-telnet no"]
+    impact: Telnet administration stops on the management port and on the listed interface profiles.
+    disruption: medium
+  HTTP.ENABLED:
+    title: Disable cleartext HTTP management
+    value: false
+    setup: ["set deviceconfig system service disable-http yes"]
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["set network profiles interface-management-profile {name} http no"]
+    validation: ["show deviceconfig system service", "show network profiles interface-management-profile"]
+    rollback: ["set deviceconfig system service disable-http no"]
+    impact: Management is HTTPS-only.
+    disruption: low
+  MGMT.ENCRYPTED_ONLY:
+    title: Allow only encrypted management protocols
+    includes: [TELNET.ENABLED, HTTP.ENABLED]
+  MGMT.INTERNET_EXPOSED:
+    title: Remove admin services from internet-facing interfaces
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["set network profiles interface-management-profile {name} ssh no", "set network profiles interface-management-profile {name} https no",
+               "set network profiles interface-management-profile {name} http no"]
+    validation: ["show network profiles interface-management-profile"]
+    rollback: []
+    impact: Remote administration over the internet interface stops - use a management VPN / jump host.
+    disruption: high
+  ACL.MGMT_RESTRICTED:
+    title: Permit management only from trusted networks
+    value: true
+    commands: ["set deviceconfig system permitted-ip <MGMT_SUBNET>"]
+    validation: ["show deviceconfig system permitted-ip"]
+    rollback: ["delete deviceconfig system permitted-ip <MGMT_SUBNET>"]
+    impact: Management logins from outside the list are refused - include the address you manage from.
+    prerequisites: ["your management source is covered by <MGMT_SUBNET>"]
+    disruption: high
+  VTY.ACL_APPLIED:
+    title: Permit management only from trusted networks
+    value: true
+    includes: [ACL.MGMT_RESTRICTED]
+  MGMT.SESSION_TIMEOUT:
+    title: Set a 10-minute management idle time-out
+    value: true
+    commands: ["set deviceconfig setting management idle-timeout 10"]
+    validation: ["show deviceconfig setting management"]
+    rollback: ["delete deviceconfig setting management idle-timeout"]
+    approval_required: false
+    disruption: low
+  VTY.TIMEOUT_SET:
+    title: Set a 10-minute management idle time-out
+    value: true
+    includes: [MGMT.SESSION_TIMEOUT]
+  AAA.LOCKOUT_ENABLED:
+    title: Lock administrators out after repeated failures
+    value: true
+    commands: ["set deviceconfig setting management admin-lockout failed-attempts 5", "set deviceconfig setting management admin-lockout lockout-time 30"]
+    validation: ["show deviceconfig setting management admin-lockout"]
+    rollback: ["delete deviceconfig setting management admin-lockout"]
+    approval_required: false
+    disruption: low
+  SSH.RETRIES_LIMITED:
+    title: Lock administrators out after repeated failures
+    value: true
+    includes: [AAA.LOCKOUT_ENABLED]
+  USER.DEFAULT_ACCOUNTS:
+    title: Replace the default "admin" administrator
+    value: false
+    per_target: true
+    manual: true
+    commands: ["set mgt-config users <NEW_ADMIN> phash <PASSWORD_HASH>", "set mgt-config users <NEW_ADMIN> permissions role-based superuser yes",
+               "! commit, log in as <NEW_ADMIN> in a NEW session, verify, then:", "delete mgt-config users {name}"]
+    validation: ["show mgt-config users"]
+    rollback: []
+    impact: Deleting the original account before the replacement is confirmed locks you out.
+    prerequisites: ["replacement administrator verified in a separate session"]
+    disruption: high
+  PASSWORD.POLICY_STRONG:
+    title: Enforce password complexity
+    value: true
+    commands: ["set mgt-config password-complexity enabled yes", "set mgt-config password-complexity minimum-length 12",
+               "set mgt-config password-complexity minimum-uppercase-letters 1", "set mgt-config password-complexity minimum-lowercase-letters 1",
+               "set mgt-config password-complexity minimum-numeric-letters 1", "set mgt-config password-complexity minimum-special-characters 1"]
+    validation: ["show mgt-config password-complexity"]
+    rollback: ["set mgt-config password-complexity enabled no"]
+    impact: Applies when passwords are next changed.
+    approval_required: false
+    disruption: low
+  AAA.TACACS_CONFIGURED:
+    title: Create a TACACS+ server profile
+    value: true
+    commands: ["set shared server-profile tacplus TAC-PROF servers TAC1 address <TACACS_IP_1> port 49 secret <TACACS_KEY>"]
+    validation: ["show shared server-profile tacplus"]
+    rollback: ["delete shared server-profile tacplus TAC-PROF"]
+    disruption: low
+  AAA.RADIUS_CONFIGURED:
+    title: Create a RADIUS server profile
+    value: true
+    commands: ["set shared server-profile radius RAD-PROF server RAD1 ip-address <RADIUS_IP> port 1812 secret <RADIUS_KEY>"]
+    validation: ["show shared server-profile radius"]
+    rollback: ["delete shared server-profile radius RAD-PROF"]
+    disruption: low
+  AAA.AUTHENTICATION:
+    title: Authenticate administrators through TACACS+
+    value: true
+    includes: [AAA.TACACS_CONFIGURED]
+    commands: ["set shared authentication-profile AUTH-TAC method tacplus server-profile TAC-PROF",
+               "set deviceconfig system authentication-profile AUTH-TAC"]
+    validation: ["show shared authentication-profile", "test authentication authentication-profile AUTH-TAC username <NEW_ADMIN> password"]
+    rollback: ["delete deviceconfig system authentication-profile"]
+    impact: Keep a local superuser as break-glass in case the TACACS+ server is unreachable.
+    prerequisites: ["TACACS+ server reachable from the management interface", "a local superuser"]
+    disruption: high
+  LOGGING.REMOTE_SERVER:
+    title: Create a syslog server profile and attach it to log forwarding
+    value: true
+    commands: ["set shared log-settings syslog SYSLOG-PROF server SIEM server <SYSLOG_IP> transport TCP port 514 format BSD facility LOG_USER",
+               "! attach SYSLOG-PROF to the system / config / traffic / threat log-settings match lists (Device > Log Settings)"]
+    validation: ["show shared log-settings syslog"]
+    rollback: ["delete shared log-settings syslog SYSLOG-PROF"]
+    approval_required: false
+    disruption: low
+  NTP.ENABLED:
+    title: Synchronise time with two NTP servers
+    value: true
+    commands: ["set deviceconfig system ntp-servers primary-ntp-server ntp-server-address <NTP_IP_1>",
+               "set deviceconfig system ntp-servers secondary-ntp-server ntp-server-address <NTP_IP_2>"]
+    validation: ["show ntp"]
+    rollback: ["delete deviceconfig system ntp-servers"]
+    approval_required: false
+    disruption: low
+  NTP.AUTHENTICATED:
+    title: Authenticate NTP with a symmetric key
+    value: true
+    commands: ["set deviceconfig system ntp-servers primary-ntp-server authentication-type symmetric-key key-id 1 algorithm sha1 authentication-key <NTP_KEY>"]
+    validation: ["show ntp"]
+    rollback: ["set deviceconfig system ntp-servers primary-ntp-server authentication-type none"]
+    prerequisites: ["the NTP server uses the same key id and key"]
+    disruption: medium
+  BANNER.LOGIN_SET:
+    title: Configure a login banner
+    value: true
+    commands: ["set deviceconfig system login-banner \"<BANNER_TEXT>\""]
+    validation: ["show deviceconfig system login-banner"]
+    rollback: ["delete deviceconfig system login-banner"]
+    approval_required: false
+    disruption: low
+  BANNER.MOTD_SET:
+    title: Configure a login banner
+    value: true
+    includes: [BANNER.LOGIN_SET]
+  BANNER.EXEC_SET:
+    title: Configure a login banner
+    value: true
+    includes: [BANNER.LOGIN_SET]
+  SSH.WEAK_CIPHERS:
+    title: Restrict management SSH to CTR ciphers
+    value: false
+    commands: ["set deviceconfig system ssh ciphers mgmt aes256-ctr", "set deviceconfig system ssh ciphers mgmt aes192-ctr", "set deviceconfig system ssh ciphers mgmt aes128-ctr"]
+    validation: ["show deviceconfig system ssh"]
+    rollback: ["delete deviceconfig system ssh ciphers"]
+    impact: SSH clients that only offer CBC ciphers can no longer connect.
+    disruption: medium
+  SSH.MACS_STRONG:
+    title: Restrict management SSH to SHA-2 MACs
+    value: true
+    commands: ["set deviceconfig system ssh mac mgmt hmac-sha2-256", "set deviceconfig system ssh mac mgmt hmac-sha2-512"]
+    validation: ["show deviceconfig system ssh"]
+    rollback: ["delete deviceconfig system ssh mac"]
+    disruption: medium
+  CRYPTO.WEAK_ALGO:
+    title: Use AES-256 / SHA-256 / DH14 crypto profiles and TLS 1.2
+    value: false
+    commands: ["set network ike crypto-profiles ike-crypto-profiles IKE-STRONG dh-group group14 hash sha256 encryption aes-256-cbc lifetime hours 8",
+               "set network ike crypto-profiles ipsec-crypto-profiles IPSEC-STRONG esp encryption aes-256-gcm dh-group group14 lifetime hours 1",
+               "set shared ssl-tls-service-profile <TLS_PROFILE> protocol-settings min-version tls1-2",
+               "! point each gateway/tunnel at IKE-STRONG / IPSEC-STRONG; remove management SSH CBC/SHA-1 algorithms"]
+    validation: ["show network ike crypto-profiles", "show shared ssl-tls-service-profile"]
+    rollback: []
+    impact: Tunnels re-negotiate; peers must support the new proposals.
+    prerequisites: ["peer support confirmed", "maintenance window"]
+    disruption: high
+  CRYPTO.IKE_VERSION:
+    title: Use IKEv2
+    value: 2
+    commands: ["set network ike gateway <GATEWAY> protocol version ikev2"]
+    validation: ["show network ike gateway <GATEWAY>"]
+    rollback: ["set network ike gateway <GATEWAY> protocol version ikev1"]
+    impact: The tunnel re-negotiates; the peer must support IKEv2.
+    disruption: high
+  SNMP.V3_PRIV:
+    title: Use SNMPv3 authPriv
+    value: true
+    commands: ["set deviceconfig system snmp-setting access-setting version v3 views SNMPV3-VIEW view ALL oid .1 option include",
+               "set deviceconfig system snmp-setting access-setting version v3 users <SNMP_USER> view SNMPV3-VIEW authpwd <AUTH_PASSPHRASE> privpwd <PRIV_PASSPHRASE>"]
+    validation: ["show deviceconfig system snmp-setting"]
+    rollback: ["delete deviceconfig system snmp-setting access-setting version v3"]
+    disruption: low
+  SNMP.VERSION:
+    title: Use SNMPv3 authPriv
+    value: 3
+    includes: [SNMP.V3_PRIV]
+  SNMP.COMMUNITY_PUBLIC:
+    title: Remove the v2c community
+    value: false
+    commands: ["delete deviceconfig system snmp-setting access-setting version v2c"]
+    validation: ["show deviceconfig system snmp-setting"]
+    rollback: []
+    impact: Monitoring that polls with the community stops - move it to SNMPv3 first.
+    prerequisites: ["SNMPv3 user created and the NMS updated"]
+    disruption: medium
+  SNMP.ENABLED:
+    title: Remove SNMP settings
+    value: false
+    commands: ["delete deviceconfig system snmp-setting"]
+    validation: ["show deviceconfig system snmp-setting"]
+    rollback: []
+    impact: All SNMP monitoring of this device stops.
+    disruption: high
+  ACL.PERMIT_ANY:
+    title: Narrow any/any allow rules
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    manual: true
+    commands: ["set vsys vsys1 rulebase security rules {name} source <SRC_ADDRESS>", "set vsys vsys1 rulebase security rules {name} destination <DST_ADDRESS>",
+               "set vsys vsys1 rulebase security rules {name} application <APPLICATION>", "set vsys vsys1 rulebase security rules {name} service application-default",
+               "set vsys vsys1 rulebase security rules {name} log-end yes"]
+    validation: ["show vsys vsys1 rulebase security rules {name}"]
+    rollback: ["set vsys vsys1 rulebase security rules {name} source any", "set vsys vsys1 rulebase security rules {name} destination any",
+               "set vsys vsys1 rulebase security rules {name} application any"]
+    impact: Traffic that no longer matches is dropped by the default deny - use the rule hit-count and traffic logs to learn the flows first.
+    prerequisites: ["traffic inventory (hit counts / logs)"]
+    disruption: high
+  DOS.PROTECTION:
+    title: Add a zone protection profile on the untrust zone
+    value: true
+    commands: ["set network profiles zone-protection-profile ZP-UNTRUST flood tcp-syn enable yes",
+               "set network profiles zone-protection-profile ZP-UNTRUST flood tcp-syn red alarm-rate 10000 activate-rate 10000 maximal-rate 40000",
+               "set vsys vsys1 zone <ZONE> network zone-protection-profile ZP-UNTRUST"]
+    validation: ["show network profiles zone-protection-profile ZP-UNTRUST"]
+    rollback: ["delete vsys vsys1 zone <ZONE> network zone-protection-profile"]
+    impact: Rates that are too low drop legitimate SYN bursts - baseline first.
+    disruption: medium
+  MONITORING.NETFLOW:
+    title: Export NetFlow to a collector
+    value: true
+    commands: ["set shared server-profile netflow NF-PROF server NF1 host <COLLECTOR_IP> port 2055",
+               "set network interface ethernet <INTERFACE> layer3 netflow-profile NF-PROF"]
+    validation: ["show shared server-profile netflow"]
+    rollback: ["delete network interface ethernet <INTERFACE> layer3 netflow-profile"]
+    approval_required: false
+    disruption: low

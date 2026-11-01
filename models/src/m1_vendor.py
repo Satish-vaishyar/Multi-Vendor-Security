@@ -52,7 +52,8 @@ def train(corpus_dir: Path):
 def predict(text: str):
     vendor_r, conf_r = rule_predict(text)
     try:
-        vec = joblib.load(VEC); clf = joblib.load(CLF)
+        from src.artifact_guard import load_verified
+        vec = load_verified(VEC); clf = load_verified(CLF)
         probs = clf.predict_proba(vec.transform([text]))[0]
         best = probs.argmax()
         vendor_m, conf_m = clf.classes_[best], float(probs[best])

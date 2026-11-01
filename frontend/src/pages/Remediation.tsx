@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { markMilestone } from "../utils/progress";
+import { useAuth } from "../stores/auth";
+import { hasRole } from "../utils/roles";
 import type { Dispatch, SetStateAction } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
@@ -35,6 +38,7 @@ interface FixOption {
 }
 
 const SOURCE_LABEL: Record<string, string> = {
+  "fix-library": "Context-aware fix (built from this device's config)",
   "okf-vendor": "OKF vendor procedure",
   "cve-advisory": "CVE advisory",
   "pqc-migration": "PQC migration guidance",
@@ -111,6 +115,7 @@ export default function Remediation() {
     paramId ? { fid: paramId, opt: "vendor" } : null,
   );
   const [manual, setManual] = useState("");
+  useEffect(() => { markMilestone("fixes"); }, []);
 
   // Keep state in sync when navigating directly between finding URLs.
   useEffect(() => {
@@ -159,6 +164,7 @@ export default function Remediation() {
               <span className="flex gap-2">
                 <input
                   className={`${inputCls} w-44`}
+                  aria-label="Open a finding by ID"
                   placeholder="…or finding ID"
                   value={manual}
                   onChange={(e) => setManual(e.target.value)}
@@ -278,6 +284,45 @@ function FindingFix({
         )}
       </div>
 
+      {p.verification && p.verification !== "legacy" && (
+        <div className="mb-3 space-y-2 text-xs">
+          <p className={`rounded-lg border p-2.5 ${p.verification === "lab-verified" ? "border-ok/30 bg-okbg text-ok" : "border-warn/30 bg-warnbg text-warn"}`}>
+            <b>{p.verification === "lab-verified" ? "Lab-verified." : "Documented, not lab-verified."}</b> {p.verification_note}
+          </p>
+          {p.impact && (
+            <p role="alert" className="rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-danger"><b>Impact:</b> {p.impact}</p>
+          )}
+          {!!(p.prerequisites ?? []).length && (
+            <div className="rounded-lg border border-line bg-surface p-2.5">
+              <p className="font-semibold text-ink">Before you apply</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-ink2">{(p.prerequisites ?? []).map((x, i) => <li key={i}>{x}</li>)}</ul>
+            </div>
+          )}
+          {!!(p.parameters ?? []).length && (
+            <div className="rounded-lg border border-line bg-surface p-2.5">
+              <p className="font-semibold text-ink">Replace these placeholders with your values</p>
+              <dl className="mt-1 grid gap-x-4 gap-y-0.5 sm:grid-cols-2">
+                {(p.parameters ?? []).map((x) => (
+                  <div key={x.name} className="flex gap-2"><dt className="font-mono text-ink">&lt;{x.name}&gt;</dt><dd className="text-ink3">{x.description}</dd></div>
+                ))}
+              </dl>
+            </div>
+          )}
+          {!!(p.manual_steps ?? []).length && (
+            <p className="rounded-lg border border-warn/30 bg-warnbg p-2.5 text-warn">
+              <b>Needs your judgement:</b> {(p.manual_steps ?? []).join(", ")} — the lines below are a starting point, not a drop-in change.
+            </p>
+          )}
+          {!!(p.manual_review ?? []).length && (
+            <p className="rounded-lg border border-line bg-surface2 p-2.5 text-ink2">
+              No template yet for: {(p.manual_review ?? []).join("; ")} — resolve these manually.
+            </p>
+          )}
+          {p.apply_notes && <p className="text-ink3"><b>How to apply:</b> {p.apply_notes}</p>}
+          {!!(p.plan_sources ?? []).length && <p className="text-[11px] text-ink3">Written from: {(p.plan_sources ?? []).join(" · ")}</p>}
+        </div>
+      )}
+
       <p className="mb-2 text-xs text-ink3">Fix steps — review, then approve below</p>
       <ol className="space-y-1.5">
         {(p.steps ?? []).map((s) => (
@@ -375,6 +420,7 @@ function FindingFix({
 }
 
 function ApplyPanel({ findingId, optionId }: { findingId: string; optionId: string }) {
+  const canApprove = hasRole(useAuth((s) => s.user?.role), "APPROVER");
   const [approvedBy, setApprovedBy] = useState("admin");
   const [approvalId, setApprovalId] = useState("");
   const [newCfg, setNewCfg] = useState("");
@@ -443,20 +489,21 @@ function ApplyPanel({ findingId, optionId }: { findingId: string; optionId: stri
         />
       </Field>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button className={btnGhost} disabled={ap.isPending} onClick={() => ap.mutate()}>
+        <button className={btnGhost} disabled={!canApprove || ap.isPending}
+          title={canApprove ? undefined : "Requires the APPROVER role"} onClick={() => ap.mutate()}>
           {ap.isPending ? "Recording…" : approvalId ? "Re-approve choice" : "Approve choice"}
         </button>
         <button
           className={btnPrimary}
-          disabled={!approvalId || !newCfg.trim() || dry.isPending}
-          title={!approvalId ? "Approve first" : !newCfg.trim() ? "Paste the fixed config to verify" : "Run simulated apply"}
+          disabled={!canApprove || !approvalId || !newCfg.trim() || dry.isPending}
+          title={!canApprove ? "Requires the APPROVER role" : !approvalId ? "Approve first" : !newCfg.trim() ? "Paste the fixed config to verify" : "Run simulated apply"}
           onClick={() => dry.mutate()}
         >
           {dry.isPending ? "Simulating…" : "Apply (Dry Run)"}
         </button>
       </div>
       {msg && <p className="mt-3 rounded-lg border border-ok/30 bg-okbg p-2.5 text-xs text-ok">{msg}</p>}
-      {err && <p className="mt-3 rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-xs text-danger">{err}</p>}
+      {err && <p role="alert" className="mt-3 rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-xs text-danger">{err}</p>}
       {result && (
         <div className="mt-3 grid gap-2 rounded-lg border border-line bg-surface p-3 text-xs md:grid-cols-4">
           <div><p className="text-[10px] uppercase tracking-wider text-ink3">Device touched</p><p className="font-semibold text-ink">{String(result.device_touched)}</p></div>

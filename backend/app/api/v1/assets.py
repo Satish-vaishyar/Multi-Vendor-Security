@@ -1,12 +1,13 @@
 """Assets CRUD (api.md §5). Backed by Supabase Postgres — no in-memory data."""
 from __future__ import annotations
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.core import config as cfg
 from app.core import persist as db
 from app.core import store
+from app.api.v1.paging import Pager, envelope, pager, paged
 
 router = APIRouter(prefix="/api/v1/assets", tags=["assets"])
 
@@ -21,6 +22,20 @@ class AssetBody(BaseModel):
     ip_address: str = Field(default="", max_length=50)
     environment: str = Field(default="", max_length=50)
     criticality: str = Field(default="MEDIUM", max_length=20)
+
+
+class AssetPatch(BaseModel):
+    """Editable asset fields ONLY. Unknown keys (status, org_id, created_at, asset_id ...) are ignored, so a PATCH can
+    neither soft-delete an asset (DELETE needs APPROVER) nor stamp foreign ownership / arbitrary data into the record."""
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    vendor: Optional[str] = Field(default=None, max_length=100)
+    product: Optional[str] = Field(default=None, max_length=100)
+    model: Optional[str] = Field(default=None, max_length=100)
+    version: Optional[str] = Field(default=None, max_length=50)
+    serial_number: Optional[str] = Field(default=None, max_length=100)
+    ip_address: Optional[str] = Field(default=None, max_length=50)
+    environment: Optional[str] = Field(default=None, max_length=50)
+    criticality: Optional[str] = Field(default=None, max_length=20)
 
 
 def _norm(v: object) -> str:
@@ -45,6 +60,20 @@ def _find_duplicate(name: str, vendor: str, product: str, serial: str) -> dict |
             continue
         return a
     return None
+
+
+def get_or_create_asset(name: str, vendor: str = "", product: str = "", criticality: str = "MEDIUM",
+                        serial: str = "") -> dict:
+    """Reuse the ACTIVE asset with the same identity or create it (used by bulk / background onboarding)."""
+    name = name.strip()[:200] or "unnamed-device"
+    dupe = _find_duplicate(name, vendor, product, serial)
+    if dupe:
+        return dupe
+    rec = {"name": name, "vendor": vendor, "product": product, "model": "", "version": "", "serial_number": serial,
+           "ip_address": "", "environment": "", "criticality": criticality, "asset_id": store.nid("AST"),
+           "status": "ACTIVE", "created_at": store.now()}
+    db.save("assets", rec)
+    return rec
 
 
 @router.post("")
@@ -100,13 +129,12 @@ def merge_duplicates():
 
 
 @router.get("")
-def list_assets(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
-                vendor: Optional[str] = None, status: Optional[str] = None):
+def list_assets(vendor: Optional[str] = None, status: Optional[str] = None,
+                p: Pager = Depends(pager(20, "desc", max_size=100))):
     filters = {k: v for k, v in {"vendor": vendor, "status": status}.items() if v}
-    items = db.find("assets", **filters)
-    total = len(items)
-    start = (page - 1) * page_size
-    return cfg.ok({"items": items[start:start + page_size], "page": page, "page_size": page_size, "total": total})
+    items, total = paged("assets", p, None, search=("name", "asset_id", "vendor", "product", "version"),
+                         **filters)
+    return cfg.ok(envelope(items, total, p))
 
 
 @router.get("/{asset_id}")
@@ -118,9 +146,11 @@ def get_asset(asset_id: str):
 
 
 @router.patch("/{asset_id}")
-def patch_asset(asset_id: str, body: dict):
-    body.pop("asset_id", None)
-    rec = db.update("assets", asset_id, body)
+def patch_asset(asset_id: str, body: AssetPatch):
+    changes = body.model_dump(exclude_unset=True, exclude_none=True)
+    if "name" in changes:
+        changes["name"] = changes["name"].strip() or "unnamed-device"
+    rec = db.update("assets", asset_id, changes)
     if not rec:
         raise HTTPException(404, "Asset not found")
     return cfg.ok(rec, "Asset updated")

@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
+import { markMilestone } from "../utils/progress";
 import { useQuery } from "@tanstack/react-query";
 import { getFinding } from "../api/findings.api";
 import { getRemediation } from "../api/remediation.api";
@@ -10,6 +12,14 @@ type Rec = Record<string, unknown>;
 function fmt(v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v.map((x) => (typeof x === "object" ? fmt(x) : String(x))).join("; ");
+  if (typeof v === "object") {
+    // Structured evidence (e.g. a crypto inventory row) reads as "key: value" pairs, not a raw JSON blob.
+    const parts = Object.entries(v as Rec)
+      .filter(([, x]) => x !== null && x !== undefined && x !== "")
+      .map(([k, x]) => `${k.replace(/_/g, " ")}: ${typeof x === "object" ? fmt(x) : String(x)}`);
+    if (parts.length) return parts.join(" · ");
+  }
   try {
     return JSON.stringify(v);
   } catch {
@@ -125,6 +135,7 @@ function actionSteps(d: Rec, plan: Rec | undefined, vuln: Rec | undefined): { st
 
 export default function FindingDetails() {
   const { findingId = "" } = useParams();
+  useEffect(() => { markMilestone("findings"); }, []);
   const q = useQuery({ queryKey: ["finding", findingId], queryFn: () => getFinding(findingId) });
   const plan = useQuery({ queryKey: ["rem", findingId], queryFn: () => getRemediation(findingId), retry: false });
   const d = (q.data ?? undefined) as unknown as Rec | undefined;
@@ -174,6 +185,12 @@ export default function FindingDetails() {
           </>
         }
       />
+      {ev.basis === "default" && (
+        <p className="mb-3 rounded-lg border border-warn/30 bg-warnbg p-2.5 text-xs text-warn">
+          <b>Assumed platform default.</b> The setting is not present in the configuration, so this verdict follows the documented default
+          {ev.note ? <>: {String(ev.note)}.</> : "."} Confirm on the device if the result matters.
+        </p>
+      )}
       <div className="mb-4 flex flex-wrap gap-2">
         <Badge value={String(d.severity ?? "?")} kind="sev" />
         <Badge value={String(d.status ?? "—")} />

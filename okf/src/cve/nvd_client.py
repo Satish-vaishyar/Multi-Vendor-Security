@@ -21,11 +21,14 @@ def _headers() -> Dict[str, str]:
 
 
 def fetch_cves(results_per_page: int = 20, start_index: int = 0,
-               keyword: Optional[str] = None, timeout: float = 60.0) -> Dict[str, Any]:
+               keyword: Optional[str] = None, timeout: float = 60.0,
+               last_mod_start: Optional[str] = None, last_mod_end: Optional[str] = None) -> Dict[str, Any]:
     import httpx
     params: Dict[str, Any] = {"resultsPerPage": results_per_page, "startIndex": start_index}
     if keyword:
         params["keywordSearch"] = keyword
+    if last_mod_start and last_mod_end:                 # NVD requires both, window <= 120 days
+        params["lastModStartDate"], params["lastModEndDate"] = last_mod_start, last_mod_end
 
     def _get(headers: Dict[str, str]) -> Dict[str, Any]:
         r = httpx.get(f"{BASE}/cves/2.0", params=params, headers=headers, timeout=timeout)
@@ -48,9 +51,10 @@ def _cpe_to_parts(cpe: str) -> Dict[str, str]:
     p = cpe.split(":")
     # cpe:2.3:part:vendor:product:version:...
     try:
-        return {"part": p[2], "vendor": p[3], "product": p[4], "version": p[5]}
+        return {"part": p[2], "vendor": p[3], "product": p[4], "version": p[5],
+                "update": p[6] if len(p) > 6 else "*"}
     except IndexError:
-        return {"part": "o", "vendor": "*", "product": "*", "version": "*"}
+        return {"part": "o", "vendor": "*", "product": "*", "version": "*", "update": "*"}
 
 
 def normalize_nvd_item(item: Dict[str, Any]) -> Dict[str, Any]:
@@ -89,6 +93,9 @@ def normalize_nvd_item(item: Dict[str, Any]) -> Dict[str, Any]:
                     # all versions and stays unbounded.
                     ver = parts["version"]
                     if ver not in ("*", "-", "", None):
+                        upd = parts.get("update", "*")
+                        if upd not in ("*", "-", "", None):
+                            ver = f"{ver}:{upd}"         # junos 20.4:r3-s2 -> 20.4R3-S2
                         start = end = ver
                 affected.append({
                     "vendor": parts["vendor"], "product": parts["product"],
@@ -100,17 +107,23 @@ def normalize_nvd_item(item: Dict[str, Any]) -> Dict[str, Any]:
                         "end": end,
                         "end_inclusive": True if (m.get("versionEndIncluding") or
                                                  (not m.get("versionEndExcluding") and end)) else False,
+                        **({"fixed": m["versionEndExcluding"]} if m.get("versionEndExcluding") else {}),
                     }]})
     return {"cve_id": cve_id, "description": desc[:2000],
             "published": (cve.get("published", "") or "")[:10],
             "last_modified": (cve.get("lastModified", "") or "")[:10],
             "source": "NVD", "cvss": cvss, "cwe": [c for c in cwe if c],
-            "references": refs, "affected": affected}
+            "references": refs, "affected": affected,
+            # CISA KEV flags ride along on NVD items; None => not in KEV
+            "exploited": bool(cve.get("cisaExploitAdd")),
+            **({"kev_added": cve["cisaExploitAdd"], "kev_due": cve.get("cisaActionDue", "")}
+               if cve.get("cisaExploitAdd") else {})}
 
 
 def sync(keyword: Optional[str] = None, pages: int = 1,
          results_per_page: int = 20, *, keywords: Optional[List[str]] = None,
-         drop_seeds: bool = False, delay: Optional[float] = None) -> Dict[str, Any]:
+         drop_seeds: bool = False, delay: Optional[float] = None,
+         since_days: Optional[int] = None) -> Dict[str, Any]:
     """Fetch pages from NVD and upsert. Returns counts. Raises on network error.
 
     Speed design (NVD caps keyless callers at ~5 req/30s, keyed at ~50/30s):
@@ -121,6 +134,13 @@ def sync(keyword: Optional[str] = None, pages: int = 1,
     import time as _time
     from .kb import VulnKB
     queries = [k for k in (keywords or []) if k] or [keyword]
+    window: Dict[str, str] = {}
+    if since_days:                                      # incremental: only CVEs modified in the last N days
+        from datetime import datetime, timedelta, timezone
+        end = datetime.now(timezone.utc)
+        start = end - timedelta(days=min(int(since_days), 120))
+        fmt = "%Y-%m-%dT%H:%M:%S.000"
+        window = {"last_mod_start": start.strftime(fmt), "last_mod_end": end.strftime(fmt)}
     rpp = max(1, min(int(results_per_page or 20), 2000))
     pages = max(1, int(pages or 1))
     key = os.getenv("NVD_API_KEY", "").strip()
@@ -135,8 +155,9 @@ def sync(keyword: Optional[str] = None, pages: int = 1,
             if not first and delay:
                 _time.sleep(delay)
             first = False
-            payload = fetch_cves(rpp, p * rpp, q)
-            for item in payload.get("vulnerabilities", []):
+            payload = fetch_cves(rpp, p * rpp, q, **window)
+            items = payload.get("vulnerabilities", [])
+            for item in items:
                 rec = normalize_nvd_item(item)
                 if not rec["cve_id"]:
                     continue
@@ -146,6 +167,8 @@ def sync(keyword: Optional[str] = None, pages: int = 1,
                 else:
                     added += 1
                     seen_before.add(rec["cve_id"])
+            if len(items) < rpp:                        # last page for this query
+                break
     dropped = kb.drop_seeds() if drop_seeds else 0
     kb.save()
     return {"added": added, "updated": updated, "dropped_seeds": dropped,

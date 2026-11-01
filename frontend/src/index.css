@@ -1,95 +1,113 @@
 @import "tailwindcss";
 
+/* Self-hosted Inter (SIL OFL 1.1, via @fontsource-variable/inter) - no third-party font requests, works air-gapped. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+/* ------------------------------------------------------------------
+   Design tokens. Calm pastel neutrals; colour is reserved for status.
+   Every text/background pair is checked for WCAG AA (4.5:1) - see docs/UI_GUIDE.md.
+   ------------------------------------------------------------------ */
 :root {
-  /* Light — warm off-white enterprise */
-  --background: #F7F7F5;
+  /* Light - soft stone neutrals */
+  --background: #F6F6F3;
   --surface: #FFFFFF;
-  --surface-secondary: #F1F2EF;
+  --surface-secondary: #EFF0EC;
 
-  --text-primary: #1C2430;
-  --text-secondary: #59616B;
-  --text-muted: #7B838C;
+  --text-primary: #1F2429;
+  --text-secondary: #4A5159;
+  --text-muted: #5F6770;
 
-  --border: #E2E4E0;
-  --border-strong: #CDD1CC;
+  --border: #E3E5E0;
+  --border-strong: #C9CDC7;
 
-  --primary: #315E9B;
-  --primary-hover: #284F86;
-  --primary-light: #EDF3FA;
+  --primary: #365F9A;
+  --primary-hover: #2C4F83;
+  --primary-light: #E8EFF8;
   --on-primary: #FFFFFF;
 
-  --ai: #5B5BD6;
-  --ai-bg: #F0F0FF;
+  --ai: #5651C9;
+  --ai-bg: #EEEDFB;
 
-  --pqc: #167C72;
-  --pqc-bg: #EAF7F5;
+  --pqc: #12726A;
+  --pqc-bg: #E5F4F1;
 
-  --success: #277A4B;
-  --success-bg: #EDF8F1;
+  --success: #25704A;
+  --success-bg: #E7F4EC;
 
-  --warning: #9A6A00;
-  --warning-bg: #FFF8E6;
+  --warning: #85600A;
+  --warning-bg: #FBF3DD;
 
-  --danger: #B23A3A;
-  --danger-bg: #FDF0F0;
+  --danger: #A83838;
+  --danger-bg: #FBECEC;
 
-  --high: #B45309;
-  --high-bg: #FFF4E5;
+  --high: #A44B0E;
+  --high-bg: #FCEEDD;
 
-  --info: #2F6F8F;
-  --info-bg: #EAF4FA;
+  --info: #2A6585;
+  --info-bg: #E5F1F8;
 
-  --chart-1: #315E9B;
-  --chart-2: #4E7FB8;
-  --chart-3: #7AA5D2;
-  --chart-4: #A9C6E4;
+  --chart-1: #4A78B5;
+  --chart-2: #7CA4D0;
+  --chart-3: #9BBFA6;
+  --chart-4: #D3B97A;
+
+  --radius: 10px;
+  --shadow-pop: 0 8px 28px rgba(31, 36, 41, 0.14);
 
   color-scheme: light;
 }
 
-[data-theme="dark"] {
-  /* Dark — charcoal enterprise SOC, never pure black + neon */
-  --background: #111315;
-  --surface: #181B1F;
-  --surface-secondary: #20242A;
+:root[data-theme="dark"] {
+  /* Dark - soft charcoal, never pure black, muted pastels */
+  --background: #121416;
+  --surface: #1A1D20;
+  --surface-secondary: #22262A;
 
-  --text-primary: #F1F3F5;
-  --text-secondary: #A7ADB5;
-  --text-muted: #7F8791;
+  --text-primary: #EDEFF1;
+  --text-secondary: #B2B8BF;
+  --text-muted: #8F97A0;
 
-  --border: #30353C;
-  --border-strong: #414750;
+  --border: #2C3136;
+  --border-strong: #3E454C;
 
-  --primary: #6B9FE8;
-  --primary-hover: #82AEED;
-  --primary-light: #1B2A40;
-  --on-primary: #0B1220;
+  --primary: #7BA6E8;
+  --primary-hover: #93B5ED;
+  --primary-light: #1E2C42;
+  --on-primary: #0C1422;
 
-  --ai: #8585E8;
-  --ai-bg: #252542;
+  --ai: #A3A0F0;
+  --ai-bg: #27264A;
 
-  --pqc: #38A69A;
-  --pqc-bg: #183330;
+  --pqc: #5CBDB0;
+  --pqc-bg: #17332F;
 
-  --success: #55B87A;
-  --success-bg: #183124;
+  --success: #6CC78F;
+  --success-bg: #17301F;
 
-  --warning: #D6A43A;
-  --warning-bg: #332B18;
+  --warning: #DDB45A;
+  --warning-bg: #332B17;
 
-  --danger: #E06B6B;
-  --danger-bg: #351D1D;
+  --danger: #EC8A8A;
+  --danger-bg: #3A1F1F;
 
-  --high: #E39A55;
-  --high-bg: #362718;
+  --high: #EBA66A;
+  --high-bg: #37271A;
 
-  --info: #6FB3E0;
-  --info-bg: #1A2E3D;
+  --info: #7DBDE6;
+  --info-bg: #1A2F3E;
 
-  --chart-1: #6B9FE8;
-  --chart-2: #5B8BD0;
-  --chart-3: #4A76B8;
-  --chart-4: #3A5F99;
+  --chart-1: #7BA6E8;
+  --chart-2: #5E8AC9;
+  --chart-3: #7DB896;
+  --chart-4: #C9AB68;
+
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.55);
 
   color-scheme: dark;
 }
@@ -134,24 +152,35 @@
   --color-infobg: var(--info-bg);
 }
 
-body {
-  background-color: var(--background);
-  color: var(--text-primary);
-  font-family: "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
-  font-size: 14px;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 4.5rem;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { text-wrap: balance; }
+  /* One consistent, always-visible keyboard focus ring. */
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 0; }
+  button:not(:disabled), [role="button"], summary, select { cursor: pointer; }
+  ::selection { background: var(--primary-light); color: var(--text-primary); }
 }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 6px;
-}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
 
 .code-view {
   font-family: ui-monospace, "SF Mono", Consolas, monospace;
@@ -159,9 +188,62 @@ body {
   line-height: 1.7;
 }
 
-.card-shadow {
-  box-shadow: 0 1px 3px rgba(28, 36, 48, 0.06);
+/* Cards are flat; a hairline border does the work. Kept as a class name used across pages. */
+.card-shadow { box-shadow: none; }
+
+/* Tables: sticky header, calm density, no heavy borders. Utilities on individual cells still win. */
+@layer components {
+  main table { width: 100%; border-collapse: collapse; }
+  main thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: inset 0 -1px 0 var(--border);
+    border-bottom: 0 !important;
+  }
+  main tbody tr { transition: background-color 120ms; }
+  main tbody td { vertical-align: top; }
+  /* Any scroll wrapper around a table scrolls inside itself so the header can stick. */
+  main .overflow-x-auto { max-height: max(20rem, calc(100vh - 9rem)); overflow-y: auto; }
+  main .overflow-x-auto:has(> pre) { max-height: none; }
+  /* Long ids/paths never push the page sideways. */
+  main td, main th, main li, main p { overflow-wrap: break-word; }
+  main pre { max-width: 100%; }
+  /* Grid children may shrink below their content so wide tables scroll inside their card, not the page. */
+  main .grid > * { min-width: 0; }
+  main .tbl-flat { overflow-x: auto; }
+  /* Phones: keep columns readable and scroll the table sideways inside its card. */
+  @media (max-width: 767px) {
+    main .overflow-x-auto > table, main .tbl-flat > table { min-width: 38rem; }
+    main tbody td:first-child { min-width: 9rem; }
+  }
 }
-[data-theme="dark"] .card-shadow {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-secondary) 25%, var(--border) 50%, var(--surface-secondary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+@keyframes skeleton { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+@keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.page-enter { animation: fade-up 180ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton { background: var(--surface-secondary); }
 }

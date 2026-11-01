@@ -2,16 +2,18 @@
 FROM node:20-slim AS build
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY frontend/ ./
-ARG VITE_API_BASE_URL=https://api.yourdomain.com/api/v1
+ARG VITE_API_BASE_URL=/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # ---- serve ----
-FROM nginx:1.27-alpine
+# nginx-unprivileged: master AND workers run as uid 101 (no root process, no extra capabilities needed), listens on 8080.
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /web/dist /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1/ || exit 1
+  CMD wget -qO- http://127.0.0.1:8080/ >/dev/null || exit 1

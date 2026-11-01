@@ -8,7 +8,7 @@ test.describe('Feature: Findings / Audits / Reports browsing', () => {
 
   test('should list audits (or empty state) without errors', async ({ page }) => {
     await page.goto('/audits');
-    await expect(page.getByRole('heading', { name: /audits/i }).first()).toBeVisible({
+    await expect(page.getByRole('heading', { name: /audit results/i }).first()).toBeVisible({
       timeout: 20_000,
     });
     // Either audit rows or the empty state — but never an infinite loader

@@ -1,7 +1,7 @@
 """Dashboard summary, OKF browser, vendor detection (api.md §29-30, §32)."""
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.core import config as cfg
@@ -16,53 +16,14 @@ detect_router = APIRouter(prefix="/api/v1/detection", tags=["detection"])
 
 @dashboard_router.get("/summary")
 def summary():
-    # Aggregate SQL only — never full-table JSONB scans (keeps the home page fast).
-    live_rows = db.select("assets", ["asset_id", "status"], limit=500)
-    live = [a["asset_id"] for a in live_rows if a.get("status") == "ACTIVE"]
-    fb = db.count_by("findings", ["severity", "status", "engine"])
-    ab = db.count_by("findings", ["asset_id", "severity"], status="FAIL")
+    """Fleet-wide aggregates (SQL GROUP BY, org-scoped, short per-org TTL cache).
 
-    def cnt(sev: str):
-        return sum(g["n"] for g in fb
-                   if str(g.get("severity", "")).upper() == sev and str(g.get("status", "")).upper() == "FAIL")
-
-    def cve(sev: str):
-        return sum(g["n"] for g in fb
-                   if str(g.get("engine", "")).lower() == "cve" and str(g.get("severity", "")).upper() == sev)
-
-    # per-asset risk from real FAIL findings (CRITICAL/HIGH -> at risk)
-    risky = {g.get("asset_id") for g in ab if str(g.get("severity", "")).upper() in ("CRITICAL", "HIGH")}
-    at_risk_ids = set(live) & risky
-    audits = db.select("audits", ["summary", "by_framework", "pqc"], limit=100)
-    scored = [a for a in audits if (a.get("summary") or {}).get("compliance_score") is not None]
-    overall = round(sum(a["summary"]["compliance_score"] for a in scored) / len(scored), 1) if scored else 0.0
-    # Aggregate per-framework scores from audits (each audit stores by_framework->{fw:{compliance_score}})
-    # Frontend Dashboard.tsx reads d.frameworks for the "Compliance by Framework" bar chart.
-    fw_sums: dict[str, float] = {}
-    fw_counts: dict[str, int] = {}
-    for a in audits:
-        by_fw = a.get("by_framework") or {}
-        for fw, v in by_fw.items():
-            try:
-                s = float((v or {}).get("compliance_score", 0))
-            except (TypeError, ValueError):
-                continue
-            fw_sums[fw] = fw_sums.get(fw, 0.0) + s
-            fw_counts[fw] = fw_counts.get(fw, 0) + 1
-    frameworks = {fw: {"score": round(fw_sums[fw] / fw_counts[fw], 1)} for fw in fw_sums}
-    # PQC readiness averaged across audits that ran the PQC engine
-    readiness = [a["pqc"]["readiness_score"] for a in audits
-                 if isinstance(a.get("pqc"), dict) and a["pqc"].get("readiness_score") is not None]
-    pqc_avg = round(sum(readiness) / len(readiness), 1) if readiness else 0.0
-    return cfg.ok({"assets": {"total": len(live), "healthy": len(live) - len(at_risk_ids),
-                              "at_risk": len(at_risk_ids)},
-                   "compliance": {"overall": overall},
-                   "frameworks": frameworks,
-                   "findings": {"critical": cnt("CRITICAL"), "high": cnt("HIGH"),
-                                "medium": cnt("MEDIUM"), "low": cnt("LOW")},
-                   "cve": {"critical": cve("CRITICAL"), "high": cve("HIGH")},
-                   "pqc": {"audits": len(audits), "readiness": pqc_avg},
-                   "training": {"pending": db.count("training", status="PENDING")}})
+    Legacy keys (assets/compliance/frameworks/findings/cve/pqc/training) are kept;
+    by_severity / by_engine / by_vendor / score_distribution / top_failing_controls /
+    trend / totals are additive.
+    """
+    from app.services import dashboard
+    return cfg.ok(dashboard.summary())
 
 
 @okf_router.get("/properties")
@@ -105,8 +66,8 @@ def okf_crosswalk(control_id: str):
 
 
 class DetectBody(BaseModel):
-    configuration_id: str = ""
-    config_text: str = ""
+    configuration_id: str = Field(default="", max_length=64)
+    config_text: str = Field(default="", max_length=5 * 1024 * 1024)   # same ceiling as a config upload
 
 
 @detect_router.post("/vendor")

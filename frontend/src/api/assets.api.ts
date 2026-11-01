@@ -7,21 +7,19 @@ export interface AssetFilters {
   vendor?: string;
   status?: string;
   q?: string;
+  sort?: string;
+  order?: "asc" | "desc";
 }
 
 export async function listAssets(f: AssetFilters = {}): Promise<Paged<Asset>> {
   const r = await api.get("/assets", {
-    params: { page: f.page ?? 1, page_size: f.page_size ?? 20, vendor: f.vendor || undefined, status: f.status || undefined },
+    params: {
+      page: f.page ?? 1, page_size: f.page_size ?? 20, vendor: f.vendor || undefined, status: f.status || undefined,
+      q: f.q || undefined, sort: f.sort || undefined, order: f.order || undefined,
+    },
   });
-  const data = unwrap<Paged<Asset>>(r.data);
-  let items = data.items ?? [];
-  if (f.q) {
-    const q = f.q.toLowerCase();
-    items = items.filter((a) =>
-      [a.name, a.asset_id, a.vendor, a.product, a.version].some((v) => String(v ?? "").toLowerCase().includes(q)),
-    );
-  }
-  return { ...data, items };
+  // search/sort/paging are all server-side now
+  return unwrap<Paged<Asset>>(r.data);
 }
 
 export async function getAsset(id: string): Promise<Asset> {

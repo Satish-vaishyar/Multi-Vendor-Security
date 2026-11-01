@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getPqc } from "../api/pqc.api";
 import { fmtScore, useAuditOverviews, useSelectedAudit } from "../hooks/useAuditOverviews";
 import { AuditPicker } from "../components/AuditPicker";
-import { Card, Empty, ErrorState, Loader, PageHeader, PqcBadge } from "../components/common";
+import { Card, Empty, ErrorState, Hint, Loader, PageHeader, PqcBadge } from "../components/common";
 
 type Row = Record<string, unknown>;
 const str = (v: unknown, fb = "—") => (v === null || v === undefined || v === "" ? fb : String(v));
@@ -118,8 +118,8 @@ export default function PQC() {
   return (
     <div>
       <PageHeader
-        title="PQC Security"
-        sub="Which encryption in this audit breaks against quantum computers, and exactly what to do about it."
+        title="Post-quantum security"
+        sub={<>Which encryption in this audit would break against quantum computers, and exactly what to do about it. <Hint term="PQC" /> <Hint term="CBOM" /></>}
       />
       <div className="mb-4">
         <AuditPicker

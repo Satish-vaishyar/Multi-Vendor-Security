@@ -26,17 +26,26 @@ PDF bytes live in Postgres (reports.pdf).
 from __future__ import annotations
 
 import datetime as _dt
+import csv
+import hashlib
 import io
-from typing import Any, Dict, List
+import json
+import re
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from xml.sax.saxutils import escape as _xesc
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from typing import List as _List
 
+from app.core import auditlog
 from app.core import config as cfg
 from app.core import persist as db
+from app.core import security as sec
 from app.core import store
+from app.api.v1.paging import Pager, envelope, pager, paged
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
@@ -226,8 +235,6 @@ def _remediation_hint(f: Dict[str, Any]) -> str:
     if str(f.get("status", "")).upper() == "PASS":
         return "No action required — retain the current configuration."
     rem = f.get("remediation") if isinstance(f.get("remediation"), dict) else {}
-    if not isinstance(rem, dict):
-        return "Remediate per the vendor hardening guide, then re-run the audit to verify."
     detail = rem.get("detail") if isinstance(rem.get("detail"), dict) else {}
     for k in ("commands", "fix_commands", "steps"):
         v = (detail or {}).get(k)
@@ -242,6 +249,43 @@ def _remediation_hint(f: Dict[str, Any]) -> str:
     return "Remediate per framework guidance and the vendor hardening guide, then re-run the audit."
 
 
+# ---------------------------------------------------- markup / header safety ---
+_TAG_SPLIT = re.compile(r"(<[^<>]*>)")
+_SAFE_TAG = re.compile(
+    r"""^(?:</?(?:b|i|u|sub|super)\s*>|<br\s*/?>|</font>"""
+    r"""|<font(?:\s+(?:color|size|face)\s*=\s*(?:"[#A-Za-z0-9.]{1,20}"|'[#A-Za-z0-9.]{1,20}'))+\s*>)$""",
+    re.IGNORECASE)
+
+
+def safe_markup(text: Any) -> str:
+    """Neutralise ReportLab paragraph markup that did not come from this module.
+
+    Paragraph() parses an XML-ish mini language; asset names, finding titles and config evidence are tenant-controlled.
+    Left raw, ``<img src=...>`` makes the PDF builder fetch/open URLs and files (SSRF / local file probing / report
+    DoS) and ``<a href>`` plants clickable links. Only formatting tags the report itself emits are kept
+    (b, i, u, sub, super, br, font with color/size/face); every other ``<...>`` is escaped to visible text.
+    """
+    out: List[str] = []
+    for part in _TAG_SPLIT.split(str(text)):
+        if part.startswith("<") and part.endswith(">") and len(part) > 2:
+            out.append(part if _SAFE_TAG.match(part) else part.replace("<", "&lt;").replace(">", "&gt;"))
+        else:
+            out.append(part.replace("<", "&lt;").replace(">", "&gt;"))
+    return "".join(out)
+
+
+def safe_paragraph(paragraph_cls):
+    """Wrap reportlab's Paragraph so every text passes through safe_markup()."""
+    def Paragraph(text, *a, **k):  # noqa: N802 - mirrors the class name it replaces
+        return paragraph_cls(safe_markup(text), *a, **k)
+    return Paragraph
+
+
+def attachment_name(name: str) -> str:
+    """A Content-Disposition filename that cannot carry CR/LF, quotes, separators or non-ASCII."""
+    return re.sub(r"[^A-Za-z0-9._-]", "_", str(name))[:120] or "download"
+
+
 # ------------------------------------------------------------ PDF builder ---
 def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
     from reportlab.lib.pagesizes import A4
@@ -251,8 +295,11 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
     from reportlab.lib import colors
     from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
                                     TableStyle, PageBreak, HRFlowable, KeepTogether)
+    Paragraph = safe_paragraph(Paragraph)      # noqa: F811 - all tenant text is markup-sanitised
 
     has = lambda s: s in sections  # noqa: E731
+    brand = _xesc(cfg.REPORT_BRAND_NAME) if cfg.REPORT_BRAND_NAME else ""        # white-label (empty = built-in branding)
+    brand_footer = cfg.REPORT_BRAND_FOOTER or "Internal — automated assessment, human approval required"
 
     audit_id = str(audit.get("audit_id", ""))
     asset_id = str(audit.get("asset_id", ""))
@@ -309,7 +356,7 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
     doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=16 * mm, bottomMargin=16 * mm,
                             leftMargin=15 * mm, rightMargin=15 * mm,
                             title=f"Network Security Compliance Audit Report - {audit_id}",
-                            author="SIH-26155 auditor")
+                            author=cfg.REPORT_BRAND_NAME or "SIH-26155 auditor")
     W = A4[0] - 30 * mm
     ss = getSampleStyleSheet()
 
@@ -461,7 +508,7 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
 
     # ================= COVER (page 1, banner chrome only) =================
     story.append(Spacer(1, 10 * mm))
-    story.append(Paragraph("Network security &nbsp;·&nbsp; Configuration audit", st_kicker))
+    story.append(Paragraph(brand or "Network security &nbsp;·&nbsp; Configuration audit", st_kicker))
     story.append(Paragraph("Compliance Audit Report", st_title))
     story.append(Paragraph(target_line, st_sub))
     story.append(Paragraph(f"Audit {audit_id} &nbsp;·&nbsp; Report {report_id} &nbsp;·&nbsp; {gen_date}", st_sub))
@@ -503,7 +550,7 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
     story.append(def_table([
         ("Version", "1.0 (initial issue)"),
         ("Date issued", gen_stamp),
-        ("Prepared by", "SIH-26155 automated auditor — configuration analysis only"),
+        ("Prepared by", (brand + " — " if brand else "SIH-26155 ") + "automated auditor — configuration analysis only"),
         ("Review status", "Pending human review; remediation requires approval before use"),
         ("Classification", "Internal — distribution controlled"),
         ("Retention", "Retain with the audit record; re-issue after each re-audit"),
@@ -543,6 +590,25 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
             f"{med} medium and {low} low — alongside {_pl(cve_vuln, 'vulnerable software component')}. "
             f"Post-quantum readiness stands at {pqc_score:.1f} out of 100 ({pqc_label.lower()}); the "
             f"security-analytics posture score is {sec_score:.0f} out of 100.", st_body))
+        degraded_notes = [str(x) for x in (audit.get("degraded") or [])]
+        if degraded_notes:
+            story.append(Paragraph(
+                "<b>Degraded audit:</b> part of the analysis pipeline was unavailable, so results may be "
+                "incomplete. " + "; ".join(degraded_notes[:4]) + ".", st_body))
+        if s.get("coverage_pct") is not None:
+            assessed_n, assumed_n = int(_num(s.get("assessed", 0))), int(_num(s.get("assumed", 0)))
+            unassessed_n = int(_num(s.get("not_assessed", s.get("unknown", 0))))
+            na_n = int(_num(s.get("not_applicable", 0)))
+            txt = (f"<b>Assessment coverage:</b> {assessed_n} of {int(_num(s.get('total', 0)))} applicable controls "
+                   f"({_num(s.get('coverage_pct')):.1f}%) could be decided from the configuration; "
+                   f"{unassessed_n} could not be assessed from the information available and {na_n} do not apply "
+                   f"to this platform. ")
+            if assumed_n:
+                txt += (f"{assumed_n} of the decided controls follow a documented platform default because the "
+                        f"setting is absent from the configuration (marked 'assumed default' in the findings); "
+                        f"only {_num(s.get('observed_pct')):.1f}% of the verdict is read directly from configuration lines. ")
+            txt += "Unassessed controls are never counted as passes."
+            story.append(Paragraph(txt, st_body))
         story.append(Paragraph(
             "The highest priority is to remove cleartext administration and internet-facing exposure, "
             "apply the vendor security releases listed in the vulnerability section, and replace "
@@ -587,7 +653,11 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
         "contacted; runtime and telemetry state are outside the scope of this report.", st_body))
     story.append(Paragraph(
         "Controls that cannot apply to this vendor and platform evaluate to <i>not applicable</i> and "
-        "are excluded from scoring rather than counted as passes or failures.", st_body))
+        "are excluded from scoring rather than counted as passes or failures. A control whose setting "
+        "cannot be read from the configuration is reported as <i>not assessed</i> and is never treated as "
+        "compliant. Where a setting is absent and the platform's documented default decides the outcome "
+        "(for example a service that is off unless configured), the verdict is labelled <i>assumed default</i>; "
+        "these should be confirmed on the device when they matter.", st_body))
     if by_fw:
         story.append(Paragraph("Frameworks in scope", st_h2))
         rows = [[Paragraph("<b>Framework</b>", st_cell_h),
@@ -828,6 +898,32 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
     story.append(grid_table(dist, [W - 60 * mm, 20 * mm, 20 * mm, 20 * mm]))
     caption("register composition by severity and verdict.")
 
+    try:
+        from app.core import risk_exceptions as _rx
+        _acc = _rx.active_keys(asset_id) if asset_id else {}
+    except Exception:  # noqa: BLE001 - acceptances are informational; never fail the report over them
+        _acc, _rx = {}, None
+    _acc_rows, _seen = [], set()
+    for f in findings:
+        k = _rx.finding_key(f) if _rx else ""
+        e = _acc.get((asset_id, k)) if k else None
+        if e and k not in _seen and str(f.get("status", "")).upper() == "FAIL":
+            _seen.add(k)
+            _acc_rows.append((f, e))
+    if _acc_rows:
+        story.append(Paragraph("Risk acceptances in force", st_h2))
+        story.append(Paragraph(
+            "These failed findings have been formally accepted by an approver until the stated date. Acceptance "
+            "does not change any verdict or score in this report; it records who accepted the residual risk and why.", st_body))
+        rows = [[Paragraph("<b>Finding</b>", st_cell_h), Paragraph("<b>Accepted by</b>", st_cell_h),
+                 Paragraph("<b>Reason</b>", st_cell_h), Paragraph("<b>Expires</b>", st_cell_h)]]
+        for f, e in _acc_rows[:40]:
+            exp = _dt.datetime.fromtimestamp(float(e.get("expires_at") or 0), tz=_dt.timezone.utc).strftime("%d %b %Y")
+            rows.append([p(_xesc(f"{_txt(f.get('control_id') or f.get('finding_id'))} — {_txt(f.get('title'))}"[:110])),
+                         p(_xesc(_txt(e.get("decided_by"))[:60])), p(_xesc(_txt(e.get("reason"))[:200])), p(exp)])
+        story.append(grid_table(rows, [W - 130 * mm, 34 * mm, 66 * mm, 30 * mm], fontsize=7.5))
+        caption(f"{len(_acc_rows)} active risk acceptance(s)" + ("; first 40 shown." if len(_acc_rows) > 40 else "."))
+
     def finding_block(f: Dict[str, Any], idx: int):
         """One flat table per finding — no nested tables (platypus cannot
         reliably lay out tables nested inside table cells)."""
@@ -1015,7 +1111,7 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
         canvas.drawRightString(A4[0] - 15 * mm, A4[1] - 10 * mm, f"{audit_id}  ·  Internal")
         canvas.setFont("Helvetica", 7)
         canvas.drawCentredString(A4[0] / 2, 12 * mm,
-                                 f"Page {doc_.page}  ·  {report_id}  ·  Internal — automated assessment, human approval required")
+                                 f"Page {doc_.page}  ·  {report_id}  ·  {brand_footer}")
         canvas.restoreState()
 
     def _cover_chrome(canvas, doc_):
@@ -1034,43 +1130,184 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
 
 
 # ----------------------------------------------------------------- routes ---
-@router.post("")
-def create_report(body: ReportBody):
-    audit = db.get("audits", body.audit_id)
+def generate_report(audit_id: str, sections: Any = None) -> Dict[str, Any]:
+    """Build + store a PDF report for an audit (shared by the API and the background worker).
+    Raises LookupError when the audit does not exist (in the caller's org)."""
+    audit = db.get("audits", audit_id)
     if not audit:
-        raise HTTPException(404, "Audit not found")
-    if str(body.format or "").upper() != "PDF":
-        raise HTTPException(400, "Only format='PDF' is supported")
-    sections = _norm_sections(body.sections)
+        raise LookupError("Audit not found")
+    sections = _norm_sections(sections)
     ensure_reports_schema()
     rid = store.nid("REP")
     pdf = _build_pdf(audit, report_id=rid, sections=sections)
     download_url = f"/api/v1/reports/{rid}/download"
-    db.save("reports", {"report_id": rid, "audit_id": body.audit_id, "status": "COMPLETED",
-                        "format": "PDF", "sections": sections,
+    digest = hashlib.sha256(pdf).hexdigest()           # integrity fingerprint, shown in the API and download headers
+    db.save("reports", {"report_id": rid, "audit_id": audit_id, "status": "COMPLETED",
+                        "format": "PDF", "sections": sections, "sha256": digest,
                         "download_url": download_url, "download_path": download_url,
                         "pdf": pdf, "created_at": store.now()})
-    return cfg.ok({"report_id": rid, "status": "COMPLETED", "audit_id": body.audit_id,
-                   "format": "PDF", "sections": sections,
-                   "download_url": download_url}, "Report generated")
+    return {"report_id": rid, "status": "COMPLETED", "audit_id": audit_id, "format": "PDF",
+            "sections": sections, "download_url": download_url, "sha256": digest}
+
+
+@router.post("")
+def create_report(body: ReportBody):
+    if str(body.format or "").upper() != "PDF":
+        if not db.get("audits", body.audit_id):
+            raise HTTPException(404, "Audit not found")
+        raise HTTPException(400, "Only format='PDF' is supported")
+    try:
+        out = generate_report(body.audit_id, body.sections)
+    except LookupError:
+        raise HTTPException(404, "Audit not found")
+    return cfg.ok(out, "Report generated")
 
 
 @router.get("")
-def list_reports(limit: int = 50):
+def list_reports(limit: Optional[int] = None, audit_id: str = "", status: str = "",
+                 p: Pager = Depends(pager(50))):
+    if limit:                       # legacy alias for page_size
+        p.page_size = max(1, min(int(limit), 200))
+    filters = {k: v for k, v in {"audit_id": audit_id, "status": status}.items() if v}
     try:
-        rows = db.select("reports", ["report_id", "audit_id", "format", "status",
-                                     "download_path", "data->'download_url' AS download_url",
-                                     "data->'sections' AS sections",
-                                     "data->'created_at' AS created_at"],
-                         limit=max(1, min(int(limit), 200)))
+        rows, total = paged("reports", p, ["report_id", "audit_id", "format", "status",
+                                           "download_path", "data->'download_url' AS download_url",
+                                           "data->'sections' AS sections",
+                                           "data->'created_at' AS created_at"],
+                            search=("report_id", "audit_id"), **filters)
+    except HTTPException:
+        raise
     except Exception:
-        rows = []
+        rows, total = [], 0
     items = [{"report_id": r.get("report_id"), "audit_id": r.get("audit_id"),
               "format": r.get("format", "PDF"), "status": r.get("status"),
               "sections": r.get("sections") or [],
               "download_url": r.get("download_url") or r.get("download_path"),
               "created_at": r.get("created_at")} for r in rows]
-    return cfg.ok({"items": items, "total": len(items)})
+    return cfg.ok(envelope(items, total, p))
+
+
+_EXPORT_COLS = ["finding_id", "engine", "type", "severity", "status", "control_id", "finding_key", "title", "asset_id",
+                "basis", "accepted", "accepted_until", "accepted_by", "acceptance_reason", "recommendation"]
+
+
+def _csv_safe(v: Any) -> str:
+    """Neutralise spreadsheet formula injection (a config-derived title starting with = + - @ would execute in Excel)."""
+    t = "" if v is None else str(v)
+    return "'" + t if t[:1] in ("=", "+", "-", "@", "\t", "\r") else t
+
+
+def export_rows(audit_id: str) -> List[Dict[str, Any]]:
+    from app.core import risk_exceptions as rx
+    audit = db.get("audits", audit_id)
+    if not audit:
+        raise LookupError("Audit not found")
+    accepted = rx.active_keys(audit.get("asset_id"))
+    rows = []
+    for f in db.find("findings", audit_id=audit_id):
+        key = rx.finding_key(f)
+        exc = accepted.get((f.get("asset_id") or audit.get("asset_id"), key))
+        ev = f.get("evidence") if isinstance(f.get("evidence"), dict) else {}
+        rem = f.get("remediation") if isinstance(f.get("remediation"), dict) else {}
+        rows.append({"finding_id": f.get("finding_id"), "engine": f.get("engine"), "type": f.get("type"),
+                     "severity": f.get("severity"), "status": f.get("status"), "control_id": f.get("control_id"),
+                     "finding_key": key, "title": f.get("title"), "asset_id": f.get("asset_id"),
+                     "basis": ev.get("basis") or ("config" if ev else ""),
+                     "accepted": bool(exc), "accepted_until": exc["expires_at"] if exc else None,
+                     "accepted_by": exc["decided_by"] if exc else None, "acceptance_reason": exc["reason"] if exc else None,
+                     "recommendation": rem.get("recommendation") or ""})
+    return rows
+
+
+@router.get("/export/{audit_id}")
+def export_findings(audit_id: str, format: str = "csv"):
+    """Findings as CSV or JSON, with risk acceptances shown next to (never instead of) each finding."""
+    fmt = (format or "csv").lower()
+    if fmt not in ("csv", "json"):
+        raise HTTPException(400, "format must be csv or json")
+    try:
+        rows = export_rows(audit_id)
+    except LookupError:
+        raise HTTPException(404, "Audit not found")
+    if fmt == "json":
+        body = json.dumps({"audit_id": audit_id, "count": len(rows), "findings": rows}, indent=1, default=str).encode()
+        media = "application/json"
+    else:
+        buf = io.StringIO()
+        w = csv.DictWriter(buf, fieldnames=_EXPORT_COLS, extrasaction="ignore")
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: _csv_safe(r.get(k)) for k in _EXPORT_COLS})
+        body, media = buf.getvalue().encode("utf-8-sig"), "text/csv"
+    return Response(content=body, media_type=media,
+                    headers={"Content-Disposition": f'attachment; filename="{attachment_name(audit_id)}-findings.{fmt}"',
+                             "X-Content-SHA256": hashlib.sha256(body).hexdigest()})
+
+
+@router.get("/fleet")
+def fleet_report(format: str = Query("json"), days: int = Query(90, ge=7, le=730)):
+    """Executive/fleet summary over every asset of the org: JSON, CSV (one row per asset) or PDF."""
+    from app.services import report_packs as rp
+    fmt = (format or "json").lower()
+    if fmt not in ("json", "csv", "pdf"):
+        raise HTTPException(400, "format must be json, csv or pdf")
+    data = rp.fleet_data(days)
+    if fmt == "pdf":
+        body, media, ext = rp.fleet_pdf(data), "application/pdf", "pdf"
+    elif fmt == "csv":
+        body, media, ext = rp.fleet_csv(data), "text/csv", "csv"
+    else:
+        body, media, ext = json.dumps(data, indent=1, default=str).encode(), "application/json", "json"
+    return Response(content=body, media_type=media,
+                    headers={"Content-Disposition": f'attachment; filename="fleet-report.{ext}"',
+                             "X-Content-SHA256": hashlib.sha256(body).hexdigest()})
+
+
+@router.get("/evidence/{audit_id}")
+def evidence_pack(audit_id: str, framework: str = Query(..., min_length=1, max_length=40), format: str = "csv"):
+    """Per-framework evidence pack: every control of the framework with its verdict, evidence, remediation and any
+    risk acceptance, plus an empty auditor sign-off column. Acceptances sit beside verdicts, never replace them."""
+    from app.services import report_packs as rp
+    fmt = (format or "csv").lower()
+    if fmt not in ("csv", "json"):
+        raise HTTPException(400, "format must be csv or json")
+    try:
+        pack = rp.evidence_pack(audit_id, framework)
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    body, media = (rp.evidence_csv(pack), "text/csv") if fmt == "csv" else \
+        (json.dumps(pack, indent=1, default=str).encode(), "application/json")
+    return Response(content=body, media_type=media,
+                    headers={"Content-Disposition": f'attachment; filename="{attachment_name(audit_id)}-{attachment_name(pack["framework"])}-evidence.{fmt}"',
+                             "X-Content-SHA256": hashlib.sha256(body).hexdigest()})
+
+
+class SignoffBody(BaseModel):
+    comment: str = Field(default="", max_length=1000)
+
+
+@router.post("/{report_id}/signoff", status_code=201)
+def sign_report(report_id: str, body: SignoffBody = SignoffBody(), user=Depends(sec.require_user)):
+    """Record an approver's sign-off, bound to the SHA-256 of the report as issued (APPROVER or higher)."""
+    from app.services import report_packs as rp
+    try:
+        rec = rp.sign(report_id, user, body.comment)
+    except LookupError:
+        raise HTTPException(404, "Report not found")
+    except rp.SignoffError as e:
+        raise HTTPException(409, str(e))
+    auditlog.record("report.signoff", actor=user, detail={"report_id": report_id, "signoff_id": rec["signoff_id"],
+                                                          "report_sha256": rec["report_sha256"],
+                                                          "comment": body.comment[:200]})
+    return cfg.ok(rec, "Report signed off")
+
+
+@router.get("/{report_id}/signoffs")
+def list_signoffs(report_id: str):
+    from app.services import report_packs as rp
+    if not db.get("reports", report_id, inflate=False):
+        raise HTTPException(404, "Report not found")
+    return cfg.ok({"items": rp.signoffs(report_id)})
 
 
 @router.get("/{report_id}")
@@ -1082,7 +1319,7 @@ def get_report(report_id: str):
     return cfg.ok({"report_id": report_id, "status": r.get("status", "COMPLETED"),
                    "audit_id": r.get("audit_id"), "format": r.get("format", "PDF"),
                    "sections": r.get("sections") or list(ALLOWED_SECTIONS),
-                   "download_url": url, "created_at": r.get("created_at")})
+                   "download_url": url, "created_at": r.get("created_at"), "sha256": r.get("sha256")})
 
 
 @router.get("/{report_id}/download")
@@ -1097,5 +1334,5 @@ def download_report(report_id: str):
     if not data.startswith(b"%PDF"):
         raise HTTPException(500, "Stored report bytes are corrupt — regenerate via POST /reports")
     return Response(content=data, media_type="application/pdf",
-                    headers={"Content-Disposition": f"attachment; filename={report_id}.pdf",
-                             "Content-Length": str(len(data))})
+                    headers={"Content-Disposition": f'attachment; filename="{attachment_name(report_id)}.pdf"',
+                             "Content-Length": str(len(data)), "X-Content-SHA256": hashlib.sha256(data).hexdigest()})

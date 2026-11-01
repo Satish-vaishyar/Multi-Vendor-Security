@@ -7,29 +7,38 @@ export function fmtNum(v: unknown, d = 1): string {
 /* Semantic severity colours — theme-aware via CSS variables.
    Red means critical, orange high, amber warning, blue low. */
 export function sevColor(sev?: string): string {
-  switch (String(sev ?? "").toUpperCase()) {
+  switch (String(sev ?? "").split(":")[0].trim().toUpperCase()) {
     case "CRITICAL":
-      return "bg-dangerbg text-danger border-danger/30";
+      return "bg-dangerbg text-danger border-danger/25";
     case "HIGH":
-      return "bg-highbg text-high border-high/30";
+      return "bg-highbg text-high border-high/25";
     case "MEDIUM":
-      return "bg-warnbg text-warn border-warn/30";
+      return "bg-warnbg text-warn border-warn/25";
     case "LOW":
-      return "bg-infobg text-info border-info/30";
+      return "bg-infobg text-info border-info/25";
     default:
       return "bg-surface2 text-ink2 border-line";
   }
 }
 
-export function statusColor(s?: string): string {
+export type Tone = "ok" | "bad" | "wait" | "none";
+
+/** Semantic tone of a status word - drives both colour and the icon (never colour alone). */
+export function statusTone(s?: string): Tone {
   const v = String(s ?? "").toUpperCase().replace(/ /g, "_");
-  if (["PASS", "COMPLETED", "APPROVED", "READY", "NOT_AFFECTED", "ACTIVE", "VALIDATED"].includes(v))
-    return "bg-okbg text-ok border-ok/30";
-  if (["FAIL", "FAILED", "VULNERABLE", "AT_RISK", "CRITICAL"].includes(v))
-    return "bg-dangerbg text-danger border-danger/30";
-  if (["RUNNING", "PENDING", "QUEUED", "GENERATING", "TRANSITION", "PARTIAL", "UNKNOWN", "GAP"].includes(v))
-    return "bg-warnbg text-warn border-warn/30";
-  return "bg-surface2 text-ink2 border-line";
+  if (["PASS", "COMPLETED", "APPROVED", "READY", "NOT_AFFECTED", "ACTIVE", "VALIDATED"].includes(v)) return "ok";
+  if (["FAIL", "FAILED", "VULNERABLE", "AT_RISK", "CRITICAL"].includes(v)) return "bad";
+  if (["RUNNING", "PENDING", "QUEUED", "GENERATING", "TRANSITION", "PARTIAL", "UNKNOWN", "GAP"].includes(v)) return "wait";
+  return "none";
+}
+
+export function statusColor(s?: string): string {
+  switch (statusTone(s)) {
+    case "ok": return "bg-okbg text-ok border-ok/25";
+    case "bad": return "bg-dangerbg text-danger border-danger/25";
+    case "wait": return "bg-warnbg text-warn border-warn/25";
+    default: return "bg-surface2 text-ink2 border-line";
+  }
 }
 
 export function shortId(id?: string): string {

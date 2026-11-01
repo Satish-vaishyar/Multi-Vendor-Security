@@ -62,10 +62,11 @@ def fit_tfidf(texts: list[str]):
 def encode(texts: list[str]) -> np.ndarray:
     if _HAS_MINI:
         return np.array(_ST.encode(texts, normalize_embeddings=True))
+    from src.artifact_guard import load_verified
     try:
-        v = joblib.load(_VEC_PATH)
+        v = load_verified(_VEC_PATH)
     except Exception:
         fit_tfidf(texts)
-        v = joblib.load(_VEC_PATH)
+        v = load_verified(_VEC_PATH)
     from sklearn.preprocessing import normalize
     return normalize(v.transform(texts).toarray())

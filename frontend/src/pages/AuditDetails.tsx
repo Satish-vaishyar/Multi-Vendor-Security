@@ -42,7 +42,7 @@ export default function AuditDetails() {
           ))}
         </ol>
         {String(a.status).toUpperCase() === "FAILED" && (
-          <p className="mt-3 rounded-lg border border-danger/30 bg-dangerbg p-3 text-xs text-danger">Audit failed. Check the configuration and retry.</p>
+          <p role="alert" className="mt-3 rounded-lg border border-danger/30 bg-dangerbg p-3 text-xs text-danger">Audit failed. Check the configuration and retry.</p>
         )}
       </Card>
     </div>

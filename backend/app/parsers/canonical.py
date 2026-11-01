@@ -8,12 +8,12 @@
 from __future__ import annotations
 from typing import Any, Dict, List
 
-from app.services.integration import okf_layer
+from app.services.integration import learning_engine, okf_layer
 
 
-def parse_to_canonical(config_text: str, vendor: str) -> Dict[str, Any]:
+def parse_to_canonical(config_text: str, vendor: str, platform: str = "") -> Dict[str, Any]:
     okf = okf_layer()
-    result = okf["learn"].audit_config(config_text, vendor=vendor.lower())
+    result = learning_engine().audit_config(config_text, vendor=vendor.lower(), platform=(platform or "").lower())
     flat: Dict[str, Any] = dict(result.get("flat_ir", {}))
     # M5-style gate: drop anything outside the property registry vocabulary
     vocab = {p.property_id for p in okf["props"].all()}
@@ -21,6 +21,8 @@ def parse_to_canonical(config_text: str, vendor: str) -> Dict[str, Any]:
     return {"flat_ir": flat,
             "nested_ir": okf["nest"](flat),
             "provenance": result.get("provenance", {}),
+            "parser": result.get("parser", {}),
+            "not_applicable": result.get("not_applicable", {}),
             "unknown_lines": result.get("unknown_lines", []),
             "llm_offline": result.get("offline", True),
             "llm": result.get("llm", {})}

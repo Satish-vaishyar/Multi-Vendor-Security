@@ -1,0 +1,42 @@
+# The build context is the repository root (see docker-compose.yml). Anything listed here is never sent to the
+# daemon and can therefore never be COPY'd into an image layer.
+
+# secrets and local environment files (the only tracked env files are *.example and the frontend build-mode files)
+**/.env
+**/.env.*
+!**/.env.example
+!frontend/.env.production
+!frontend/.env.development
+**/*.pem
+**/*.key
+secrets.json
+
+# VCS, editors, caches, virtualenvs, dependency folders
+.git
+.github
+.idea
+.vscode
+**/.venv
+**/venv
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.coverage
+**/coverage.xml
+**/htmlcov
+
+# build output / test output / large non-runtime material
+frontend/dist
+frontend/test-results
+frontend/tests
+okf/tests
+backend/tests
+test-files
+*.pptx
+*.docx
+*.pdf
+session-ses_*.md
+docs

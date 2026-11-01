@@ -1,41 +1,61 @@
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AppLayout from "./components/layout/AppLayout";
 import { useAuth } from "./stores/auth";
 import { useUi } from "./stores/ui";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Assets from "./pages/Assets";
-import AssetDetails from "./pages/AssetDetails";
-import UploadConfiguration from "./pages/UploadConfiguration";
-import ConfigurationDetails from "./pages/ConfigurationDetails";
-import Audits from "./pages/Audits";
-import AuditDetails from "./pages/AuditDetails";
-import AuditResults from "./pages/AuditResults";
-import Compliance from "./pages/Compliance";
-import Vulnerabilities from "./pages/Vulnerabilities";
-import VulnerabilityDetails from "./pages/VulnerabilityDetails";
-import PQC from "./pages/PQC";
-import SecurityAnalytics from "./pages/SecurityAnalytics";
-import Findings from "./pages/Findings";
-import FindingDetails from "./pages/FindingDetails";
-import Training from "./pages/Training";
-import Remediation from "./pages/Remediation";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
+import { hasRole } from "./utils/roles";
 import { Loader } from "./components/common";
 
+const GetStarted = lazy(() => import("./pages/GetStarted"));
+const QuickAudit = lazy(() => import("./pages/QuickAudit"));
+const Login = lazy(() => import("./pages/Login"));
+const SsoComplete = lazy(() => import("./pages/SsoComplete"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Assets = lazy(() => import("./pages/Assets"));
+const AssetDetails = lazy(() => import("./pages/AssetDetails"));
+const UploadConfiguration = lazy(() => import("./pages/UploadConfiguration"));
+const ConfigurationDetails = lazy(() => import("./pages/ConfigurationDetails"));
+const Audits = lazy(() => import("./pages/Audits"));
+const AuditDetails = lazy(() => import("./pages/AuditDetails"));
+const AuditResults = lazy(() => import("./pages/AuditResults"));
+const Compliance = lazy(() => import("./pages/Compliance"));
+const Vulnerabilities = lazy(() => import("./pages/Vulnerabilities"));
+const VulnerabilityDetails = lazy(() => import("./pages/VulnerabilityDetails"));
+const PQC = lazy(() => import("./pages/PQC"));
+const SecurityAnalytics = lazy(() => import("./pages/SecurityAnalytics"));
+const Findings = lazy(() => import("./pages/Findings"));
+const FindingDetails = lazy(() => import("./pages/FindingDetails"));
+const Training = lazy(() => import("./pages/Training"));
+const Remediation = lazy(() => import("./pages/Remediation"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Jobs = lazy(() => import("./pages/Jobs"));
+const Schedules = lazy(() => import("./pages/Schedules"));
+const Exceptions = lazy(() => import("./pages/Exceptions"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const ChangePassword = lazy(() => import("./pages/ChangePassword"));
+
 const qc = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 15000, refetchOnWindowFocus: false } },
+  defaultOptions: { queries: { retry: 1, staleTime: 60_000, refetchOnWindowFocus: false } },
 });
 
 function Guard({ children }: { children: React.ReactNode }) {
-  const { token, ready } = useAuth();
+  const { token, ready, user } = useAuth();
   const loc = useLocation();
   if (!ready) return <div className="p-6"><Loader label="Restoring session…" /></div>;
   if (!token) return <Navigate to="/login" state={{ from: loc.pathname }} replace />;
+  // A user created/reset by an admin must choose their own password before using the app.
+  if (user?.must_change_password && loc.pathname !== "/change-password") {
+    return <Navigate to="/change-password" replace />;
+  }
   return <>{children}</>;
+}
+
+function AdminOnly({ children }: { children: React.ReactNode }) {
+  const user = useAuth((s) => s.user);
+  return hasRole(user?.role, "ADMIN") ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
 function Boot() {
@@ -60,10 +80,14 @@ export default function App() {
       <BrowserRouter>
         <Boot />
         <Routes>
-          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/sso/complete" element={<Suspense fallback={null}><SsoComplete /></Suspense>} />
+          <Route path="/login" element={<Suspense fallback={null}><LoginRoute /></Suspense>} />
+          <Route path="/change-password" element={<Guard><Suspense fallback={<Loader />}><ChangePassword /></Suspense></Guard>} />
           <Route element={<Guard><AppLayout /></Guard>}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/get-started" element={<GetStarted />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/quick-audit" element={<QuickAudit />} />
             <Route path="/assets" element={<Assets />} />
             <Route path="/assets/:assetId" element={<AssetDetails />} />
             <Route path="/configurations/upload" element={<UploadConfiguration />} />
@@ -88,7 +112,12 @@ export default function App() {
             <Route path="/remediation" element={<Remediation />} />
             <Route path="/remediation/:findingId" element={<Remediation />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/schedules" element={<Schedules />} />
+            <Route path="/exceptions" element={<Exceptions />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/admin" element={<AdminOnly><Admin /></AdminOnly>} />
+            <Route path="/integrations" element={<AdminOnly><Integrations /></AdminOnly>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

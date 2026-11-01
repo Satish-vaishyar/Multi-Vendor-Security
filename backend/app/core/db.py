@@ -31,6 +31,10 @@ def _load_env() -> None:
 _load_env()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+# Row-level security binding: when on, every checked-out connection carries the caller's tenant in `app.org_id`
+# (see app/db/rls_enable.sql). Off by default; turn on only after `python -m app.cli rls-enable` and connecting as a
+# role that does not bypass RLS.
+RLS_ENABLED = os.getenv("RLS_ENABLED", "false").lower() in ("1", "true", "yes")
 
 
 def is_configured() -> bool:
@@ -48,6 +52,8 @@ def get_conn() -> Iterator[object]:
         raise RuntimeError("DATABASE_URL is not set — add it to backend/.env")
     conn = _borrow()
     try:
+        if RLS_ENABLED:
+            _bind_org(conn)
         yield conn
         conn.commit()  # type: ignore[attr-defined]
         _release(conn)
@@ -58,6 +64,19 @@ def get_conn() -> Iterator[object]:
             pass
         _discard(conn)
         raise
+
+
+def _bind_org(conn) -> None:  # type: ignore[no-untyped-def]
+    """Tell Postgres which tenant this checkout acts for ('*' = explicit system scope). One round trip, and only when
+    the pooled connection last served a different tenant."""
+    from app.core import tenancy      # lazy: tenancy -> config, never back to db
+    org = "*" if tenancy.is_unscoped() else tenancy.current_org()
+    if getattr(conn, "_rls_org", None) != org:
+        conn.cursor().execute("SELECT set_config('app.org_id', %s, false)", (org,))
+        try:
+            conn._rls_org = org
+        except Exception:     # pragma: no cover - a connection type that forbids attributes just rebinds every time
+            pass
 
 
 # --- process-wide pool (stdlib only; no extra dependency) --------------------
@@ -145,4 +164,9 @@ def ping() -> dict:
         ver, db, user = cur.fetchone()
         cur.execute("select count(*) from information_schema.tables where table_schema='public';")
         (tables,) = cur.fetchone()
-    return {"version": ver, "database": db, "user": user, "public_tables": tables}
+        # The application needs the tenancy/auth migration (org_id columns, audit_log, ...).
+        cur.execute("select to_regclass('public.organizations') is not null and exists ("
+                    "select 1 from information_schema.columns where table_name='users' and column_name='org_id')")
+        (schema_current,) = cur.fetchone()
+    return {"version": ver, "database": db, "user": user, "public_tables": tables,
+            "schema_current": bool(schema_current)}

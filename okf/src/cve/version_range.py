@@ -48,9 +48,19 @@ def match_record(installed: str, affected_versions: list) -> Dict[str, Any]:
             sv = normalize(start)
             if iv < sv or (iv == sv and not r.get("start_inclusive", True)):
                 hit = False
+        fixed = r.get("fixed")
+        fv = normalize(fixed) if fixed else None
         if hit and end:
             ev = normalize(end)
-            if ev < iv or (iv == ev and not r.get("end_inclusive", True)):
+            incl = r.get("end_inclusive", True)
+            if fv is not None and ev < fv:
+                # a post-release rebuild (17.9.4a) of the last affected build is still
+                # below the fix: the fixed version is the real exclusive upper bound
+                ev, incl = fv, False
+            if ev < iv or (iv == ev and not incl):
+                hit = False
+        elif hit and fv is not None and not end:
+            if fv < iv or iv == fv:
                 hit = False
         if hit:
             return {"affected": True, "matched_rule": r,

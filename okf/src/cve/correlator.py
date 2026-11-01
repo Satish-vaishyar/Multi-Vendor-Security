@@ -63,6 +63,7 @@ def correlate(components: List[Dict[str, Any]], asset_id: str = "ASSET-001",
                 "cpe": aff.get("cpe") or cpes[0],
                 "installed_cpe": cpes[0],
                 "references": rec.get("references", [])[:5],
+                "exploited": bool(rec.get("exploited")), "kev_due": rec.get("kev_due") or None,
                 "evidence": {"source": "configuration", "version": version},
                 "confidence": {**conf, "correlation_confidence": 0.97 if mr["affected"] else 0.90},
             }
@@ -86,10 +87,13 @@ def to_findings(corr: Dict[str, Any], asset_id: str = "ASSET-001") -> List[Dict[
         sev = ((m.get("cvss") or {}).get("severity") or "HIGH").upper()
         if sev not in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
             sev = "HIGH"
+        if m.get("exploited") and sev in ("HIGH", "MEDIUM"):
+            sev = "CRITICAL" if sev == "HIGH" else "HIGH"      # CISA KEV: exploited in the wild
         out.append({"finding_id": f"F-CVE-{i + 1:04d}", "engine": "cve",
                     "type": "VULNERABILITY", "source": "CVE",
                     "control_id": m["cve_id"] or "CVE-UNKNOWN", "cve_id": m["cve_id"],
-                    "title": f"{m['cve_id']} affects {m['product']} {m['installed_version']}",
+                    "title": f"{m['cve_id']} affects {m['product']} {m['installed_version']}"
+                         + (" (actively exploited - CISA KEV)" if m.get("exploited") else ""),
                     "severity": sev, "status": "FAIL", "asset_id": asset_id,
                     "evidence": m.get("evidence", {}), "confidence": 0.97,
                     "remediation": {"recommendation":
@@ -100,5 +104,5 @@ def to_findings(corr: Dict[str, Any], asset_id: str = "ASSET-001") -> List[Dict[
                               f"to pick the fixed release for {m.get('product', '')}".strip()),
                         "fixed_version": m.get("fixed_version"),
                         "references": [r.get("url") if isinstance(r, dict) else r for r in (m.get("references") or [])]},
-                    "risk": {}})
+                    "risk": {"exploited_in_wild": True, "kev_due": m.get("kev_due")} if m.get("exploited") else {}})
     return out

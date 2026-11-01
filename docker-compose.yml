@@ -2,9 +2,20 @@
 # Usage:
 #   1. cp backend/.env.example backend/.env   # fill JWT_SECRET, DATABASE_URL, CORS_ORIGINS
 #   2. docker compose up --build
-# Frontend: http://localhost:8080 | Backend: http://localhost:8000 | Docs: /docs
+# Frontend: http://localhost:8080 (terminate TLS in front of it) | Backend: internal only, not published.
+# No default passwords live in this file: every secret comes from backend/.env, which is git-ignored and
+# excluded from the image build context (see .dockerignore).
+x-hardening: &hardening
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 512
+  restart: unless-stopped
+
 services:
   backend:
+    <<: *hardening
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -13,18 +24,44 @@ services:
     environment:
       ENV: production
       REQUIRE_AUTH: "true"
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
+      ENABLE_DOCS: "false"
+      EMBEDDED_WORKER: "false"        # audits run in the dedicated worker service below
+    # Not published on the host: only the frontend proxy reaches the API.
+    expose:
+      - "8000"
+    tmpfs:
+      - /tmp
+
+  # Background jobs (audits, reports, fleet batches). Same image; scale with: docker compose up --scale worker=3
+  worker:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-m", "app.worker"]
+    env_file:
+      - ./backend/.env
+    environment:
+      ENV: production
+      REQUIRE_AUTH: "true"
+    healthcheck:
+      disable: true                   # the image HEALTHCHECK probes the HTTP API, which the worker does not serve
+    tmpfs:
+      - /tmp
 
   frontend:
+    <<: *hardening
     build:
       context: .
       dockerfile: frontend/Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.yourdomain.com/api/v1}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    # nginx-unprivileged listens on 8080 as a non-root user: no capabilities are added back.
     ports:
-      - "8080:80"
+      - "8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
     depends_on:
-      - backend
-    restart: unless-stopped
+      backend:
+        condition: service_healthy

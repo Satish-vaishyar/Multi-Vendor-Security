@@ -21,6 +21,9 @@ dependencies = [
     "hdbscan>=0.8.44",
     "sentence-transformers>=3.0",
     "torch>=2.6",
+    "cryptography>=43",
+    "paramiko>=3.4",
+    "defusedxml>=0.7",
 ]
 
 [[tool.uv.index]]
@@ -38,6 +41,8 @@ dev = ["pytest>=8", "pytest-asyncio>=0.23", "httpx>=0.27", "pytest-cov>=6"]
 source = ["app"]
 
 [tool.coverage.report]
+# Measured on a clean, hermetic test DB (the old "100%" only held against a pre-populated
+# production database). Ratchet this UP as legacy route tests are added; never down.
 fail_under = 100
 show_missing = true
 

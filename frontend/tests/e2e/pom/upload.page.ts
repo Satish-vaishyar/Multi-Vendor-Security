@@ -28,6 +28,8 @@ export class UploadPage {
     fs.writeFileSync(tmp, content);
     await this.page.getByTestId('upload-file-input').setInputFiles(tmp);
     await expect(this.page.getByText(filename)).toBeVisible();
+    // Advanced upload needs a target device: create one inline.
+    await this.page.getByLabel('Name', { exact: true }).fill(`e2e-${filename.replace(/\.cfg$/, '')}`);
     return tmp;
   }
 

@@ -1,12 +1,15 @@
 """Configurations: upload / bulk-upload / parse / get / canonical-ir / unknowns (api.md §6-9, §33)."""
 from __future__ import annotations
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 import re
 from typing import List, Optional
 
 from app.core import config as cfg
 from app.core import persist as db
+from app.core import rbac
+from app.core import security as sec
 from app.core import store
+from app.core.redact import redact_line, redact_secrets
 from app.parsers import ingestion, vendor_detector, canonical as canon
 
 router = APIRouter(prefix="/api/v1/configurations", tags=["configurations"])
@@ -52,6 +55,9 @@ COSMETIC_RE = re.compile(
 )
 
 
+MAX_UNKNOWN_SCORED = 2000
+
+
 def _needs_human_approval(line: str, oov: dict) -> tuple[bool, str]:
     """True only if fully critical, AI can't handle it, needs human approval."""
     s = (line or "").strip()
@@ -83,8 +89,17 @@ def _require_asset(asset_id: str) -> dict:
     return asset
 
 
+def safe_filename(name: str) -> str:
+    """Client-supplied upload name -> harmless metadata: no directory part (either separator), no control
+    characters (CR/LF/NUL), bounded length. The name is never used as a filesystem path anywhere."""
+    base = (name or "").replace("\\", "/").rsplit("/", 1)[-1]
+    base = re.sub(r"[\x00-\x1f\x7f]", "", base).strip().lstrip(".") or "config.txt"
+    return base[:255]
+
+
 def _register(filename: str, content: bytes, asset_id: str, hint_vendor: str = "", hint_platform: str = "") -> dict:
     _require_asset(asset_id)
+    filename = safe_filename(filename)
     v = ingestion.validate_upload(filename, content)
     det = vendor_detector.detect_vendor(v["text"], hint_vendor)
     cid = store.nid("CFG")
@@ -136,7 +151,8 @@ def parse(configuration_id: str):
     rec = db.get("configurations", configuration_id)
     if not rec:
         raise HTTPException(404, "Configuration not found")
-    parsed = canon.parse_to_canonical(rec["config_text"], rec["detection"]["vendor_id"])
+    parsed = canon.parse_to_canonical(rec["config_text"], rec["detection"]["vendor_id"],
+                                      rec["detection"].get("platform", ""))
     rec = db.update("configurations", configuration_id,
                     {"status": "PARSED", "canonical_ir": parsed["nested_ir"],
                      "flat_ir": parsed["flat_ir"], "unknown_lines": parsed["unknown_lines"]})
@@ -146,13 +162,16 @@ def parse(configuration_id: str):
 
 
 @router.get("/{configuration_id}")
-def get_configuration(configuration_id: str):
+def get_configuration(configuration_id: str, user=Depends(sec.require_user)):
     rec = db.get("configurations", configuration_id)
     if not rec:
         raise HTTPException(404, "Configuration not found")
     # Keep config_text: the details page renders a read-only raw viewer from
-    # it, and without it uploads land on a page saying raw text is missing.
+    # it. Secrets (passwords, communities, keys) are masked unless the caller is
+    # at least an AUDITOR; the full text is still never logged.
     view = dict(rec)
+    if not rbac.has_role(user.get("role", ""), rbac.AUDITOR):
+        view["config_text"] = redact_secrets(view.get("config_text", ""))
     view["parser"] = {"type": "KNOWN_VENDOR" if rec["detected_vendor"] != "UNKNOWN" else "AI_PIPELINE",
                       "confidence": rec["detection"]["confidence"]}
     return cfg.ok(view)
@@ -164,7 +183,8 @@ def get_canonical(configuration_id: str):
     if not rec:
         raise HTTPException(404, "Configuration not found")
     if "canonical_ir" not in rec:
-        parsed = canon.parse_to_canonical(rec["config_text"], rec["detection"]["vendor_id"])
+        parsed = canon.parse_to_canonical(rec["config_text"], rec["detection"]["vendor_id"],
+                                          rec["detection"].get("platform", ""))
         rec = db.update("configurations", configuration_id,
                         {"canonical_ir": parsed["nested_ir"], "flat_ir": parsed["flat_ir"]})
         assert rec is not None
@@ -172,12 +192,17 @@ def get_canonical(configuration_id: str):
 
 
 @router.get("/{configuration_id}/unknowns")
-def get_unknowns(configuration_id: str):
+def get_unknowns(configuration_id: str, user=Depends(sec.require_user)):
     rec = db.get("configurations", configuration_id)
     if not rec:
         raise HTTPException(404, "Configuration not found")
-    parsed = canon.parse_to_canonical(rec["config_text"], rec["detection"]["vendor_id"])
+    parsed = canon.parse_to_canonical(rec["config_text"], rec["detection"]["vendor_id"],
+                                      rec["detection"].get("platform", ""))
     from app.services.integration import m2_score_batch
+    # The ML scorer embeds every line it is given: score a bounded prefix so a file of 100k unknown lines cannot
+    # turn this GET into minutes of CPU. The full count is still reported.
+    all_unknown = parsed["unknown_lines"]
+    parsed["unknown_lines"] = all_unknown[:MAX_UNKNOWN_SCORED]
     scores = m2_score_batch(parsed["unknown_lines"])
     # Critical-only gate: flag ONLY what is fully critical, needs human
     # approval, and can't be handled by AI. Everything else is auto-handled.
@@ -192,12 +217,16 @@ def get_unknowns(configuration_id: str):
         critical_items.append({"id": f"UNK-{i + 1:03d}", "line": l, "context": [],
                                "status": "NEEDS_HUMAN_APPROVAL",
                                "reason": reason, "oov": oov})
-    # Sync ONLY critical items into the training queue (dedupe on re-GET).
+    # Sync ONLY critical items into the training queue (dedupe on re-GET). This GET writes, so it is reserved for
+    # AUDITOR and above: a read-only VIEWER sees the list but cannot add rows to the review queue.
     try:
         existing = {t.get("raw_command") for t in db.find("training", status="PENDING")}
     except Exception:
         existing = set()
+    can_enqueue = rbac.has_role(user.get("role", ""), rbac.AUDITOR)
     for it in critical_items:
+        if not can_enqueue:
+            break
         if it["line"] in existing:
             continue
         tid = store.nid("TR")
@@ -206,8 +235,11 @@ def get_unknowns(configuration_id: str):
                              "context": [], "status": "PENDING",
                              "reason": it["reason"], "created_at": store.now()})
         existing.add(it["line"])
-    return cfg.ok({"unknown_count": len(parsed["unknown_lines"]),
+    return cfg.ok({"unknown_count": len(all_unknown), "scored": len(parsed["unknown_lines"]),
+                   "truncated": len(all_unknown) > MAX_UNKNOWN_SCORED,
                    "critical_count": len(critical_items),
                    "auto_handled": auto_handled,
                    # `items` is now critical-only (was: every unknown line).
-                   "items": critical_items})
+                   # Secret values are masked in the response; the raw line is kept
+                   # (encrypted) in the training queue only.
+                   "items": [{**it, "line": redact_line(it["line"])} for it in critical_items]})

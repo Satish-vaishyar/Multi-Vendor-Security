@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
@@ -19,7 +20,7 @@ export default defineConfig({
   webServer: {
     command: 'npx vite --port 5173 --strictPort --host 127.0.0.1',
     url: 'http://127.0.0.1:5173',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 90_000,
   },
 });

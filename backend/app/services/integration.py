@@ -28,7 +28,7 @@ _LOCK = threading.Lock()
 
 # models modules the backend uses, in dependency order (common/embed first:
 # the rest do `from src.common import ...` / `from src import embed`).
-_MODELS_MODULES = ["common", "embed", "m1_vendor", "m2_oov", "m3_mapping",
+_MODELS_MODULES = ["artifact_guard", "common", "embed", "m1_vendor", "m2_oov", "m3_mapping",
                    "m5_validator", "m6_risk", "m7_fleet", "m8_similarity"]
 
 
@@ -78,6 +78,7 @@ def okf_layer():
     import src.knowledge_extras as kx
     import src.engines as eng
     import src.learning_engine as le
+    import src.remediation_gen as rgen
     props = pr.PropertyRegistry().load()
     ckb = ckb_mod.ControlKB().load()
     fwk = ckb_mod.FrameworkRegistry().load()
@@ -87,7 +88,79 @@ def okf_layer():
     learn = le.LearningEngine(maps)
     return {"props": props, "ckb": ckb, "fwk": fwk, "xwalk": xwalk, "rem": rem,
             "maps": maps, "learn": learn, "nest": kx.nest_flat_ir,
-            "ComplianceEngine": eng.ComplianceEngine, "RiskEngine": kx.RiskEngine}
+            "ComplianceEngine": eng.ComplianceEngine, "RiskEngine": kx.RiskEngine,
+            "fixlib": rgen.FixLibrary()}
+
+
+# ---- tenant-scoped learned mappings (DB is the source of truth) --------------
+_LEARN_LOCK = threading.Lock()
+_LEARN_CACHE: dict = {}          # org_id -> (version, LearningEngine)
+_LEARN_VERSION_TTL = 3.0         # seconds a version probe is trusted
+_LEARN_PROBE: dict = {}          # org_id -> (checked_at, version)
+
+
+def _learned_version(org: str):
+    import time
+    from app.core import persist
+    now = time.monotonic()
+    hit = _LEARN_PROBE.get(org)
+    if hit and now - hit[0] < _LEARN_VERSION_TTL:
+        return hit[1]
+    n = persist.count("mappings", status="approved")
+    latest = persist.select("mappings", ["created_at"], limit=1, status="approved")
+    ver = (n, str(latest[0]["created_at"]) if latest else "")
+    _LEARN_PROBE[org] = (now, ver)
+    return ver
+
+
+def invalidate_learned(org: str | None = None) -> None:
+    """Drop cached engines so the next parse sees newly approved mappings immediately."""
+    with _LEARN_LOCK:
+        if org is None:
+            _LEARN_CACHE.clear()
+            _LEARN_PROBE.clear()
+        else:
+            _LEARN_CACHE.pop(org, None)
+            _LEARN_PROBE.pop(org, None)
+
+
+def learning_engine():
+    """LearningEngine = shipped registry + this tenant's approved (DB) mappings.
+
+    Rebuilt only when the tenant's approved-mapping set changes, so every worker
+    process/container converges within seconds of an approval (no files, no redeploy).
+    """
+    import logging
+    import re as _re
+    from app.core import persist, tenancy
+    okf = okf_layer()
+    org = tenancy.current_org()
+    ver = _learned_version(org)
+    hit = _LEARN_CACHE.get(org)
+    if hit and hit[0] == ver:
+        return hit[1]
+    from src.knowledge_extras import MappingRegistry
+    from src.schemas import VendorMapping
+    from src.learning_engine import LearningEngine
+    reg = MappingRegistry()
+    reg.maps = list(okf["maps"].maps)
+    rows = persist.select("mappings", ["vendor", "platform", "source_token", "canonical_property",
+                                       "canonical_value", "confidence"],
+                          order="created_at ASC", limit=100000, status="approved")
+    for r in rows:
+        try:
+            _re.compile(r["source_token"])
+            reg.maps.append(VendorMapping(
+                vendor=str(r["vendor"] or "any").lower(), platform=r.get("platform") or "any",
+                raw_command_pattern=r["source_token"], canonical_property=r["canonical_property"],
+                canonical_value=r.get("canonical_value"), confidence=float(r.get("confidence") or 1.0),
+                source="human_verified", status="approved"))
+        except Exception as e:  # a bad row must never break auditing
+            logging.getLogger("sih26155").warning("skipping invalid learned mapping %r: %s", r, e)
+    eng = LearningEngine(reg)
+    with _LEARN_LOCK:
+        _LEARN_CACHE[org] = (ver, eng)
+    return eng
 
 
 @lru_cache(maxsize=1)
@@ -110,6 +183,16 @@ def m1_predict(text: str) -> dict:
         return predict(text)
     except Exception as e:
         return {"vendor": "unknown", "confidence": 0.31, "method": f"fallback:{e}"}
+
+
+def fingerprint_vendor(text: str):
+    """Deterministic structural vendor/platform fingerprint (okf/src/vendor_parsers/fingerprint.py)."""
+    _ensure_bridge()
+    try:
+        from src.vendor_parsers import fingerprint
+        return fingerprint(text)
+    except Exception:  # never let fingerprinting break detection; M1 + regex fallbacks remain
+        return None
 
 
 def m6_rule_score(severity="medium", exposure="internal", asset_criticality="medium", confidence=0.9) -> float:
@@ -145,11 +228,11 @@ def m2_score_batch(commands: list) -> list:
     _ensure_bridge()
     try:
         import json
-        import joblib
+        from src.artifact_guard import load_verified
         from src.common import ARTIFACTS
         from src import embed
         from src.m2_oov import tokens, novelty
-        d = joblib.load(ARTIFACTS / "m2_clf.pkl")
+        d = load_verified(ARTIFACTS / "m2_clf.pkl")
         meta = json.loads((ARTIFACTS / "m2_meta.json").read_text()) \
             if (ARTIFACTS / "m2_meta.json").exists() else {"threshold": 0.5, "k": 1.0}
         clf, vocab = (d["clf"], set(d["vocab"])) if isinstance(d, dict) else (d, set())
@@ -184,7 +267,8 @@ def m5_validate(flat_ir: dict) -> dict:
         return validate({k.lower().replace("_", "."): v for k, v in flat_ir.items()}
                         if any("_" in k for k in flat_ir) else flat_ir)
     except Exception as e:
-        return {"valid": True, "errors": [], "warning": str(e)}
+        # Fail CLOSED: "could not validate" must never look like "valid". The audit records this as degraded.
+        return {"valid": False, "errors": [], "validator_error": True, "warning": str(e)}
 
 
 def m7_fit_fleet(feature_dicts: list) -> dict:

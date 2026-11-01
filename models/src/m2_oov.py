@@ -98,7 +98,8 @@ def train(csv_path: Path):
 
 def predict(command: str):
     import json
-    d = joblib.load(CLF)
+    from src.artifact_guard import load_verified
+    d = load_verified(CLF)
     meta = json.loads(META.read_text()) if META.exists() else {"threshold": 0.5, "k": 1.0}
     clf, vocab = (d["clf"], set(d["vocab"])) if isinstance(d, dict) else (d, set())
     v = embed.encode([command])

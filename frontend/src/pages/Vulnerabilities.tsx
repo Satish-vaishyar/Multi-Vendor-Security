@@ -5,7 +5,7 @@ import { getVulnsForAudit, kbStatus, syncCves } from "../api/vulnerabilities.api
 import { toMessage } from "../api/client";
 import { useAuditOverviews, useSelectedAudit } from "../hooks/useAuditOverviews";
 import { AuditPicker } from "../components/AuditPicker";
-import { Badge, Card, Empty, ErrorState, Loader, PageHeader, btnPrimary, inputCls } from "../components/common";
+import { Badge, Card, Empty, ErrorState, Hint, Loader, PageHeader, btnPrimary, inputCls } from "../components/common";
 
 export default function Vulnerabilities() {
   const [auditId, select] = useSelectedAudit();
@@ -51,7 +51,7 @@ export default function Vulnerabilities() {
 
   return (
     <div>
-      <PageHeader title="Vulnerabilities" sub="CVE findings per audit — GET /vulnerabilities/{audit_id}" />
+      <PageHeader title="Vulnerabilities" sub={<>Known software flaws (CVEs) that affect your devices, matched by software version. <Hint term="CVE" /></>} />
       <div className="mb-4">
         <AuditPicker
           overviews={audits.overviews} isLoading={audits.isLoading} isError={audits.isError} onRetry={audits.refetch}
@@ -72,7 +72,7 @@ export default function Vulnerabilities() {
             </span>
           </div>
           <div className="mt-2 flex flex-col gap-2 md:flex-row">
-            <input className={inputCls} value={kw} onChange={(e) => setKw(e.target.value)} placeholder="Products, comma-separated…" />
+            <input className={inputCls} aria-label="Products to look up" value={kw} onChange={(e) => setKw(e.target.value)} placeholder="Products, comma-separated…" />
             <button className={btnPrimary} disabled={sync.isPending || !kw.trim()} onClick={() => sync.mutate()}>
               {sync.isPending ? "Syncing NVD…" : "Sync real-world data"}
             </button>

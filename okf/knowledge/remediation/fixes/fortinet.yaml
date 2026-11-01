@@ -1,0 +1,363 @@
+# Fix templates for Fortinet FortiOS 6.4 - 7.4, keyed by canonical property. NOT lab-verified.
+vendor: fortinet
+platforms: [fortios]
+verification: documented
+sources:
+  - FortiOS Administration Guide (system global, admin, interface, snmp, log, ntp)
+  - FortiOS CLI Reference
+apply_notes: >-
+  Run in the FortiOS CLI. Each "config ... end" block applies immediately (no separate commit). Keep a second admin
+  session open. FortiOS syntax varies slightly between 6.4 / 7.0 / 7.2 / 7.4 - verify option names with "set ?".
+parameters:
+  OSPF_KEY: OSPF MD5 key
+  BGP_KEY: BGP neighbour password
+  NEIGHBOR_IP: BGP neighbour address
+  OSPF_IF: OSPF interface entry name
+  INTERFACE: interface name
+  NTP_SOURCE_IP: address of the interface used as NTP source
+  SYSLOG_IP: address of the central syslog / SIEM collector
+  NTP_IP_1: primary NTP server
+  NTP_IP_2: secondary NTP server
+  NTP_KEY: NTP key shared with the server
+  TACACS_IP_1: TACACS+ server address
+  TACACS_KEY: TACACS+ shared secret
+  RADIUS_IP: RADIUS server address
+  RADIUS_KEY: RADIUS shared secret
+  MGMT_SUBNET: management network address
+  MGMT_NETMASK: management network mask (e.g. 255.255.255.0)
+  NMS_IP: SNMP manager address
+  SNMP_USER: SNMPv3 user name
+  AUTH_PASSPHRASE: SNMPv3 authentication passphrase
+  PRIV_PASSPHRASE: SNMPv3 privacy passphrase
+  NEW_ADMIN: name of the replacement administrator account
+  PASSWORD: password for the replacement administrator
+  TUNNEL: IPsec tunnel (phase1) name
+  COLLECTOR_IP: NetFlow collector address
+  WAN_INTERFACE: internet-facing interface name
+  SRC_ADDRESS: firewall address object for the allowed source
+  DST_ADDRESS: firewall address object for the allowed destination
+  SERVICE: firewall service object
+  BANNER_TEXT: approved legal warning text
+  TARGET: affected object
+
+fixes:
+  TELNET.ENABLED:
+    title: Remove telnet from interface administrative access
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["config system interface", "    edit \"{name}\"", "        set allowaccess {allowaccess}", "    next", "end"]
+    validation: ["show system interface {name} | grep allowaccess"]
+    rollback: ["config system interface", "    edit \"{name}\"", "        set allowaccess {allowaccess_before}", "    next", "end"]
+    impact: Admins using telnet on this interface lose access; confirm HTTPS/SSH works on it first.
+    prerequisites: ["https or ssh remains in the allowaccess list"]
+    disruption: medium
+  HTTP.ENABLED:
+    title: Remove HTTP from interface administrative access
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["config system interface", "    edit \"{name}\"", "        set allowaccess {allowaccess}", "    next", "end"]
+    validation: ["show system interface {name} | grep allowaccess"]
+    rollback: ["config system interface", "    edit \"{name}\"", "        set allowaccess {allowaccess_before}", "    next", "end"]
+    impact: The management UI is only reachable over HTTPS on this interface.
+    disruption: low
+  MGMT.ENCRYPTED_ONLY:
+    title: Allow only encrypted management protocols
+    includes: [TELNET.ENABLED, HTTP.ENABLED]
+  SSH.WEAK_CIPHERS:
+    title: Enable strong crypto and disable CBC SSH ciphers
+    value: false
+    commands: ["config system global", "    set strong-crypto enable", "    set ssh-cbc-cipher disable", "end"]
+    validation: ["show system global | grep -E \"strong-crypto|ssh-cbc\""]
+    rollback: ["config system global", "    set ssh-cbc-cipher enable", "end"]
+    impact: Old SSH/TLS clients that only offer weak algorithms can no longer connect.
+    disruption: medium
+  SSH.MACS_STRONG:
+    title: Disable weak SSH MACs
+    value: true
+    commands: ["config system global", "    set ssh-hmac-md5 disable", "    set ssh-mac-weak disable", "end"]
+    validation: ["show system global | grep ssh-"]
+    rollback: ["config system global", "    set ssh-hmac-md5 enable", "end"]
+    disruption: medium
+  CRYPTO.WEAK_ALGO:
+    title: Use AES-256 + SHA-256 + DH14 for IPsec and TLS 1.2 for management
+    value: false
+    commands: ["config system global", "    set strong-crypto enable", "    set ssl-min-proto-version TLSv1-2", "end",
+               "config vpn ipsec phase1-interface", "    edit \"<TUNNEL>\"", "        set proposal aes256-sha256", "        set dhgrp 14", "    next", "end",
+               "config vpn ipsec phase2-interface", "    edit \"<TUNNEL>-P2\"", "        set proposal aes256-sha256", "        set dhgrp 14", "        set pfs enable", "    next", "end"]
+    validation: ["diagnose vpn ike gateway list", "get vpn ipsec tunnel summary"]
+    rollback: []
+    impact: Tunnels flap while re-negotiating; the remote peer must accept the new proposal.
+    prerequisites: ["peer supports AES-256/SHA-256/DH14", "maintenance window"]
+    disruption: high
+  CRYPTO.IKE_VERSION:
+    title: Move IPsec tunnels to IKEv2
+    value: 2
+    commands: ["config vpn ipsec phase1-interface", "    edit \"<TUNNEL>\"", "        set ike-version 2", "    next", "end"]
+    validation: ["diagnose vpn ike gateway list"]
+    rollback: ["config vpn ipsec phase1-interface", "    edit \"<TUNNEL>\"", "        set ike-version 1", "    next", "end"]
+    impact: Tunnel re-negotiates; the peer must support IKEv2.
+    disruption: high
+  MGMT.SESSION_TIMEOUT:
+    title: Set a 5-minute administrator idle time-out
+    value: true
+    commands: ["config system global", "    set admintimeout 5", "end"]
+    validation: ["show system global | grep admintimeout"]
+    rollback: ["config system global", "    set admintimeout 30", "end"]
+    approval_required: false
+    disruption: low
+  VTY.TIMEOUT_SET:
+    title: Set a 5-minute administrator idle time-out
+    value: true
+    includes: [MGMT.SESSION_TIMEOUT]
+  AAA.LOCKOUT_ENABLED:
+    title: Lock administrators out after 3 failed logins
+    value: true
+    commands: ["config system global", "    set admin-lockout-threshold 3", "    set admin-lockout-duration 300", "end"]
+    validation: ["show system global | grep lockout"]
+    rollback: ["config system global", "    unset admin-lockout-threshold", "    unset admin-lockout-duration", "end"]
+    approval_required: false
+    disruption: low
+  SSH.RETRIES_LIMITED:
+    title: Limit failed administrator logins
+    value: true
+    includes: [AAA.LOCKOUT_ENABLED]
+  ACL.MGMT_RESTRICTED:
+    title: Restrict administrator logins to the management network
+    value: true
+    per_target: true
+    target_placeholder: "<ADMIN_NAME>"
+    commands: ["config system admin", "    edit \"{name}\"", "        set trusthost1 <MGMT_SUBNET> <MGMT_NETMASK>", "    next", "end"]
+    validation: ["show system admin {name} | grep trusthost"]
+    rollback: ["config system admin", "    edit \"{name}\"", "        unset trusthost1", "    next", "end"]
+    impact: Logins from outside the trusted host are refused - include the address you manage from.
+    prerequisites: ["your management source is inside <MGMT_SUBNET>/<MGMT_NETMASK>"]
+    disruption: high
+  VTY.ACL_APPLIED:
+    title: Restrict administrator logins to the management network
+    value: true
+    includes: [ACL.MGMT_RESTRICTED]
+  USER.DEFAULT_ACCOUNTS:
+    title: Replace the default "admin" account
+    value: false
+    per_target: true
+    manual: true
+    commands: ["config system admin", "    edit \"<NEW_ADMIN>\"", "        set accprofile \"super_admin\"", "        set password <PASSWORD>",
+               "        set trusthost1 <MGMT_SUBNET> <MGMT_NETMASK>", "    next", "end",
+               "! log in as <NEW_ADMIN> in a NEW session, verify access, then:",
+               "config system admin", "    delete \"{name}\"", "end"]
+    validation: ["show system admin"]
+    rollback: []
+    impact: Deleting the original account before confirming the new one works will lock you out.
+    prerequisites: ["new administrator verified in a separate session"]
+    disruption: high
+  AAA.TACACS_CONFIGURED:
+    title: Add a TACACS+ server and an admin group that uses it
+    value: true
+    commands: ["config user tacacs+", "    edit \"TACACS1\"", "        set server <TACACS_IP_1>", "        set key <TACACS_KEY>", "    next", "end",
+               "config user group", "    edit \"ADMINS-TAC\"", "        set member \"TACACS1\"", "    next", "end"]
+    validation: ["diagnose test authserver tacacs+ TACACS1 <NEW_ADMIN> <PASSWORD>"]
+    rollback: ["config user group", "    delete \"ADMINS-TAC\"", "end", "config user tacacs+", "    delete \"TACACS1\"", "end"]
+    disruption: low
+  AAA.RADIUS_CONFIGURED:
+    title: Add a RADIUS server
+    value: true
+    commands: ["config user radius", "    edit \"RADIUS1\"", "        set server <RADIUS_IP>", "        set secret <RADIUS_KEY>", "    next", "end"]
+    validation: ["diagnose test authserver radius RADIUS1 pap <NEW_ADMIN> <PASSWORD>"]
+    rollback: ["config user radius", "    delete \"RADIUS1\"", "end"]
+    disruption: low
+  AAA.AUTHENTICATION:
+    title: Authenticate administrators against TACACS+ (with local break-glass)
+    value: true
+    includes: [AAA.TACACS_CONFIGURED]
+    commands: ["config system admin", "    edit \"tacacs-admins\"", "        set remote-auth enable", "        set accprofile \"super_admin\"",
+               "        set wildcard enable", "        set remote-group \"ADMINS-TAC\"", "    next", "end"]
+    validation: ["show system admin tacacs-admins"]
+    rollback: ["config system admin", "    delete \"tacacs-admins\"", "end"]
+    impact: Keep one local super_admin as break-glass in case the TACACS+ server is unreachable.
+    prerequisites: ["TACACS+ server reachable from the management VRF/interface"]
+    disruption: high
+  PASSWORD.POLICY_STRONG:
+    title: Enforce an administrator password policy
+    value: true
+    commands: ["config system password-policy", "    set status enable", "    set minimum-length 12", "    set min-upper-case-letter 1",
+               "    set min-lower-case-letter 1", "    set min-number 1", "    set min-non-alphanumeric 1", "end"]
+    validation: ["show system password-policy"]
+    rollback: ["config system password-policy", "    set status disable", "end"]
+    impact: Existing weak passwords keep working until they are changed.
+    approval_required: false
+    disruption: low
+  LOGGING.REMOTE_SERVER:
+    title: Send logs to a syslog server
+    value: true
+    commands: ["config log syslogd setting", "    set status enable", "    set server <SYSLOG_IP>", "    set mode reliable", "    set port 514", "end"]
+    validation: ["show log syslogd setting"]
+    rollback: ["config log syslogd setting", "    set status disable", "end"]
+    approval_required: false
+    disruption: low
+  LOGGING.ENABLED:
+    title: Enable local (memory) logging
+    value: true
+    commands: ["config log memory setting", "    set status enable", "end"]
+    validation: ["show log memory setting"]
+    rollback: ["config log memory setting", "    set status disable", "end"]
+    approval_required: false
+    disruption: low
+  LOGGING.BUFFERED:
+    title: Enable local (memory) logging
+    value: true
+    includes: [LOGGING.ENABLED]
+  NTP.ENABLED:
+    title: Synchronise time with two NTP servers
+    value: true
+    commands: ["config system ntp", "    set type custom", "    set ntpsync enable", "    set syncinterval 60", "    config ntpserver",
+               "        edit 1", "            set server <NTP_IP_1>", "        next", "        edit 2", "            set server <NTP_IP_2>", "        next", "    end", "end"]
+    validation: ["diagnose sys ntp status"]
+    rollback: ["config system ntp", "    set ntpsync disable", "end"]
+    approval_required: false
+    disruption: low
+  NTP.SOURCE_SET:
+    title: Set the NTP source address
+    value: true
+    commands: ["config system ntp", "    set source-ip <NTP_SOURCE_IP>", "end"]
+    validation: ["show system ntp | grep source-ip"]
+    rollback: ["config system ntp", "    unset source-ip", "end"]
+    approval_required: false
+    disruption: low
+  ROUTING.OSPF_AUTH:
+    title: Authenticate OSPF interfaces with MD5
+    value: true
+    commands: ["config router ospf", "    config ospf-interface", "        edit \"<OSPF_IF>\"", "            set interface \"<INTERFACE>\"",
+               "            set authentication md5", "            config md5-keys", "                edit 1", "                    set key-string <OSPF_KEY>",
+               "                next", "            end", "        next", "    end", "end"]
+    validation: ["get router info ospf interface"]
+    rollback: ["config router ospf", "    config ospf-interface", "        edit \"<OSPF_IF>\"", "            set authentication none", "        next", "    end", "end"]
+    impact: Adjacencies drop until both ends use the same key.
+    prerequisites: ["coordinate with every OSPF neighbour"]
+    disruption: high
+  ROUTING.BGP_AUTH:
+    title: Set a password on every BGP neighbour
+    value: true
+    commands: ["config router bgp", "    config neighbor", "        edit \"<NEIGHBOR_IP>\"", "            set password <BGP_KEY>", "        next", "    end", "end"]
+    validation: ["get router info bgp neighbors <NEIGHBOR_IP>"]
+    rollback: ["config router bgp", "    config neighbor", "        edit \"<NEIGHBOR_IP>\"", "            unset password", "        next", "    end", "end"]
+    impact: The session resets until the peer uses the same password.
+    prerequisites: ["coordinate with the peer's operator"]
+    disruption: high
+  ROUTING.AUTH_ENABLED:
+    title: Authenticate routing protocols
+    value: true
+    includes: [ROUTING.BGP_AUTH, ROUTING.OSPF_AUTH]
+  NTP.AUTHENTICATED:
+    title: Authenticate NTP
+    value: true
+    commands: ["config system ntp", "    config ntpserver", "        edit 1", "            set authentication enable", "            set key <NTP_KEY>",
+               "            set key-id 1", "        next", "    end", "end"]
+    validation: ["diagnose sys ntp status"]
+    rollback: ["config system ntp", "    config ntpserver", "        edit 1", "            set authentication disable", "        next", "    end", "end"]
+    prerequisites: ["the NTP server uses the same key and key id"]
+    disruption: medium
+  SNMP.COMMUNITY_PUBLIC:
+    title: Delete default SNMP communities
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["config system snmp community", "    delete {name}", "end"]
+    validation: ["show system snmp community"]
+    rollback: []
+    impact: Systems still polling this community stop receiving data - move them to SNMPv3 first.
+    prerequisites: ["SNMPv3 user created and NMS updated"]
+    disruption: medium
+  SNMP.ACL_RESTRICTED:
+    title: Restrict SNMP communities to the NMS host
+    value: true
+    per_target: true
+    commands: ["config system snmp community", "    edit {name}", "        config hosts", "            edit 1", "                set ip <NMS_IP> 255.255.255.255",
+               "            next", "        end", "    next", "end"]
+    validation: ["show system snmp community"]
+    rollback: []
+    disruption: low
+  SNMP.V3_PRIV:
+    title: Use SNMPv3 authPriv
+    value: true
+    commands: ["config system snmp user", "    edit \"<SNMP_USER>\"", "        set security-level auth-priv", "        set auth-proto sha", "        set auth-pwd <AUTH_PASSPHRASE>",
+               "        set priv-proto aes", "        set priv-pwd <PRIV_PASSPHRASE>", "        set notify-hosts <NMS_IP>", "    next", "end"]
+    validation: ["show system snmp user"]
+    rollback: ["config system snmp user", "    delete \"<SNMP_USER>\"", "end"]
+    disruption: low
+  SNMP.VERSION:
+    title: Use SNMPv3 authPriv
+    value: 3
+    includes: [SNMP.V3_PRIV]
+  SNMP.ENABLED:
+    title: Disable the SNMP agent
+    value: false
+    commands: ["config system snmp sysinfo", "    set status disable", "end"]
+    validation: ["show system snmp sysinfo"]
+    rollback: ["config system snmp sysinfo", "    set status enable", "end"]
+    impact: All SNMP monitoring of this device stops.
+    disruption: high
+  ACL.PERMIT_ANY:
+    title: Replace any-to-any accept policies with specific rules
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    manual: true
+    commands: ["config firewall policy", "    edit {name}", "        set srcaddr <SRC_ADDRESS>", "        set dstaddr <DST_ADDRESS>", "        set service <SERVICE>",
+               "        set logtraffic all", "    next", "end"]
+    validation: ["show firewall policy {name}", "diagnose firewall iprope lookup"]
+    rollback: ["config firewall policy", "    edit {name}", "        set srcaddr \"all\"", "        set dstaddr \"all\"", "        set service \"ALL\"", "    next", "end"]
+    impact: Traffic not matching the narrowed policy is dropped by the implicit deny - run with logtraffic first to learn the flows.
+    prerequisites: ["traffic inventory (policy hit counts / log data)"]
+    disruption: high
+  BANNER.LOGIN_SET:
+    title: Show a pre-login warning banner
+    value: true
+    commands: ["config system global", "    set pre-login-banner enable", "end",
+               "config system replacemsg admin \"pre_admin-disclaimer-text\"", "    set buffer \"<BANNER_TEXT>\"", "end"]
+    validation: ["show system global | grep banner"]
+    rollback: ["config system global", "    set pre-login-banner disable", "end"]
+    approval_required: false
+    disruption: low
+  BANNER.MOTD_SET:
+    title: Show a post-login banner
+    value: true
+    commands: ["config system global", "    set post-login-banner enable", "end"]
+    validation: ["show system global | grep banner"]
+    rollback: ["config system global", "    set post-login-banner disable", "end"]
+    approval_required: false
+    disruption: low
+  BANNER.EXEC_SET:
+    title: Show a post-login banner
+    value: true
+    includes: [BANNER.MOTD_SET]
+  AUDIT.CONFIG_ARCHIVED:
+    title: Keep a configuration revision on every logout
+    value: true
+    commands: ["config system global", "    set revision-backup-on-logout enable", "end"]
+    validation: ["show system global | grep revision"]
+    rollback: ["config system global", "    set revision-backup-on-logout disable", "end"]
+    approval_required: false
+    disruption: low
+  DOS.PROTECTION:
+    title: Add a DoS policy on the internet-facing interface
+    value: true
+    manual: true
+    commands: ["config firewall DoS-policy", "    edit 1", "        set interface \"<WAN_INTERFACE>\"", "        set srcaddr \"all\"", "        set dstaddr \"all\"",
+               "        set service \"ALL\"", "        config anomaly", "            edit \"tcp_syn_flood\"", "                set status enable",
+               "                set log enable", "                set action block", "                set threshold 2000", "            next",
+               "            edit \"udp_flood\"", "                set status enable", "                set log enable", "                set action block",
+               "                set threshold 2000", "            next", "        end", "    next", "end"]
+    validation: ["show firewall DoS-policy"]
+    rollback: ["config firewall DoS-policy", "    delete 1", "end"]
+    impact: Thresholds that are too low block legitimate bursts - start with action pass + logging, then tune.
+    disruption: medium
+  MONITORING.NETFLOW:
+    title: Export NetFlow to a collector
+    value: true
+    commands: ["config system netflow", "    set collector-ip <COLLECTOR_IP>", "    set collector-port 2055", "end"]
+    validation: ["show system netflow"]
+    rollback: ["config system netflow", "    set collector-ip 0.0.0.0", "end"]
+    approval_required: false
+    disruption: low

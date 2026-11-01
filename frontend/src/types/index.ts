@@ -22,13 +22,17 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  org_id?: string;
+  must_change_password?: boolean;
+  mfa_enabled?: boolean;
+  mfa_enrollment_required?: boolean;
 }
 
 export interface LoginResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
-  user: { id: string; name: string; role: string };
+  user: { id: string; name: string; email: string; role: string; org_id?: string; must_change_password?: boolean };
 }
 
 export interface Asset {
@@ -199,5 +203,11 @@ export interface DashboardSummary {
   cve?: { critical?: number; high?: number };
   pqc?: { ready?: number; transition?: number; at_risk?: number; audits?: number };
   training?: { pending?: number };
+  by_engine?: Record<string, { fail: number; total: number }>;
+  by_vendor?: Record<string, { assets: number; failed_findings: number }>;
+  score_distribution?: { range: string; count: number }[];
+  top_failing_controls?: { control_id: string; title?: string; failures: number; assets: number; severity?: string }[];
+  trend?: { audit_id: string; asset_id?: string; created_at?: string; compliance_score?: number | null }[];
+  totals?: { findings: number; failed: number };
   [k: string]: unknown;
 }

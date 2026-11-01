@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginViaUI } from './pom/login.page';
+import { seed } from './helpers/seed';
 
 /**
  * Edge cases: invalid IDs, unknown routes, session expiry, offline.
@@ -30,35 +31,47 @@ test.describe('Feature: Edge cases', () => {
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
   });
 
-  test('should redirect to login on 401 (session expiry)', async ({ page }) => {
-    test.fixme(true, 'Flaky in CI - Issue #124: 401 interceptor races with react-query cache');
+  test('should redirect to login when the session expires (401 from the API)', async ({ page }) => {
     await loginViaUI(page);
-    await page.route('**/api/**', (route) =>
-      route.fulfill({ status: 401, contentType: 'application/json', body: '{"detail":"expired"}' }),
+    await expect(page.getByRole('heading', { name: /security overview/i })).toBeVisible({ timeout: 20_000 });
+    // Expire the session server-side-equivalent: every further API call answers 401.
+    await page.route('**/api/v1/**', (route) =>
+      route.fulfill({ status: 401, contentType: 'application/json', body: '{"success":false,"error":{"code":"HTTP_401","message":"expired"}}' }),
     );
-    await page.goto('/assets');
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Devices' }).click();
     await expect(page).toHaveURL(/\/login/, { timeout: 20_000 });
-    await page.unroute('**/api/**');
+    expect(await page.evaluate(() => localStorage.getItem('sih26155_token'))).toBeNull();
   });
 
-  test('should show friendly error when backend unreachable', async ({ page }) => {
-    test.fixme(true, 'Flaky in CI - Issue #125: cached dashboard query masks offline ErrorState');
+  test('should show a friendly error with Retry when the backend is unreachable', async ({ page }) => {
     await loginViaUI(page);
-    await page.route('**/api/**', (route) => route.abort('failed'));
+    await page.route('**/api/v1/assets**', (route) => route.abort('failed'));
     await page.goto('/assets');
-    await expect(page.getByText(/unable to load|failed|cannot reach|retry/i).first()).toBeVisible({
-      timeout: 20_000,
-    });
-    await page.unroute('**/api/**');
+    await expect(page.getByRole('heading', { name: /devices/i }).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/unable to load|cannot reach|could not load/i).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: /retry/i })).toBeVisible();
+    // recovery: once the backend is back, Retry loads the data
+    await page.unroute('**/api/v1/assets**');
+    await page.getByRole('button', { name: /retry/i }).click();
+    await expect(page.getByText(/unable to load|cannot reach|could not load/i)).toHaveCount(0, { timeout: 20_000 });
   });
 
-  // Quarantined: mobile viewport audit-dialog overflow is under investigation.
-  test('quarantined: mobile viewport start-audit dialog', async ({ page }) => {
-    test.fixme(true, 'Flaky in CI - Issue #123: mobile audit dialog needs overflow fix');
+  test('mobile viewport: the Start audit dialog fits the screen', async ({ page }) => {
     await loginViaUI(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/configurations/upload');
-    await expect(page.getByRole('heading', { name: /upload/i }).first()).toBeVisible();
+    await page.goto(`/configurations/${seed().insecure.configuration_id}`);
+    await page.getByTestId('start-audit-open').click();
+    const dialog = page.getByRole('dialog', { name: 'Start audit' });
+    await expect(dialog).toBeVisible();
+    const confirm = page.getByTestId('start-audit-confirm');
+    await confirm.scrollIntoViewIfNeeded();
+    const vp = page.viewportSize()!;
+    const box = (await confirm.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(vp.width);
+    const m = await page.evaluate(() => ({ doc: document.documentElement.scrollWidth, win: document.documentElement.clientWidth }));
+    expect(m.doc).toBeLessThanOrEqual(m.win + 1);
+    await page.keyboard.press('Escape');
   });
 
   test.afterEach(async ({ page }, testInfo) => {

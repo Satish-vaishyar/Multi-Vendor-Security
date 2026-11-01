@@ -7,17 +7,23 @@ from __future__ import annotations
 import re
 from typing import Any, Dict
 
-from app.services.integration import m1_predict
+from app.services.integration import fingerprint_vendor, m1_predict
+
+# display names for the lower-case platform tokens used by the parsers / control applicability
+PLATFORM_LABEL = {"ios": "IOS", "ios-xe": "IOS-XE", "nx-os": "NX-OS", "eos": "EOS", "junos": "Junos",
+                  "fortios": "FortiOS", "pan-os": "PAN-OS"}
 
 VERSION_PATTERNS = [
     # specific OS versions first — generic "version N" (e.g. `ip ssh version 1`)
     # must never beat the real platform version
     (r"ios(?:-xe)?\s*version\s*(\d+\.\d+[\.\w\-]*)", "IOS-XE"),
     (r"cisco\s+ios-xe\s+version\s*(\d+\.\d+[\.\w\-]*)", "IOS-XE"),
-    (r"junos[^\d]*(\d+\.\d+R\d+[\.\w\-]*)", "Junos"),
-    (r"fortios[^\d]*v?(\d+\.\d+\.\d+)", "FortiOS"),
-    (r"pan-os[^\d]*(\d+\.\d+[\.\w\-]*)", "PAN-OS"),
-    (r"eos[^\d]*(\d+\.\d+[\.\w\-]*)", "EOS"),
+    # The gap between the platform name and its version is BOUNDED: an open-ended `[^\d]*` makes re.search quadratic on a
+    # 5 MB config that repeats the platform word (e.g. "eos eos eos ...") with no digits anywhere (regex DoS).
+    (r"junos[^\d]{0,40}(\d+\.\d+R\d+[\.\w\-]*)", "Junos"),
+    (r"fortios[^\d]{0,40}v?(\d+\.\d+\.\d+)", "FortiOS"),
+    (r"pan-os[^\d]{0,40}(\d+\.\d+[\.\w\-]*)", "PAN-OS"),
+    (r"eos[^\d]{0,40}(\d+\.\d+[\.\w\-]*)", "EOS"),
     (r"(?<![\w-])version\s+(\d+\.\d+[\.\d\w\-\.]*)\b", None),
 ]
 
@@ -41,9 +47,18 @@ def detect_vendor(config_text: str, hint_vendor: str = "") -> Dict[str, Any]:
     conf = float(m1.get("confidence", 0.31) or 0.31)
     if hint_vendor and vendor in ("unknown",):
         vendor, conf = hint_vendor.lower(), 0.6
+    fp = fingerprint_vendor(config_text)
+    platform_token = None
+    if fp and float(fp["confidence"]) >= 0.9:
+        # Structural markers beat the statistical model (trained on synthetic data).
+        vendor, conf = str(fp["vendor"]), max(conf, float(fp["confidence"]))
+        platform_token = str(fp["platform"])
+        method = "fingerprint"
+    else:
+        method = m1.get("method", "rules")
     t = config_text.lower()
-    version = None
-    for pat, _plat in VERSION_PATTERNS:
+    version = fp.get("version") if fp else None
+    for pat, _plat in VERSION_PATTERNS if not version else []:
         m = re.search(pat, t)
         if m:
             version = m.group(1).strip("v")
@@ -53,7 +68,8 @@ def detect_vendor(config_text: str, hint_vendor: str = "") -> Dict[str, Any]:
         best = max(scores, key=scores.get)
         if scores[best] > 0:
             vendor, conf = best, 0.62
+    platform = PLATFORM_LABEL.get(platform_token or "", "") or _platform(vendor)
     return {"vendor": vendor.upper() if vendor != "unknown" else "UNKNOWN",
-            "vendor_id": vendor, "platform": _platform(vendor),
+            "vendor_id": vendor, "platform": platform,
             "version": version, "confidence": round(conf, 3),
-            "method": m1.get("method", "rules")}
+            "method": method}

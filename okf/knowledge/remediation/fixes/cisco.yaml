@@ -1,0 +1,646 @@
+# Fix templates for Cisco IOS / IOS-XE, keyed by canonical property.
+# Written from Cisco IOS-XE configuration guides; NOT lab-verified. Control IDs from public benchmarks are
+# referenced by ID only (no benchmark text is reproduced).
+vendor: cisco
+platforms: [ios, ios-xe]
+verification: documented
+sources:
+  - Cisco IOS-XE Security Configuration Guide (AAA, SSH, SNMP, CoPP, uRPF, port security)
+  - Cisco IOS-XE System Management Configuration Guide (NTP, logging, archive)
+apply_notes: >-
+  Run in global configuration mode ("configure terminal"). Keep a second SSH/console session open while changing
+  management access, then "end" and "write memory" once verified. Placeholders in <ANGLE_BRACKETS> must be replaced.
+parameters:
+  ACL_NAME: name of the access list shown in the finding evidence
+  COMMUNITY: SNMP community string
+  DST_HOST: destination host the flow must reach
+  FILE: file name served by the TFTP server
+  PORT: TCP/UDP port the flow needs
+  SRC_NET: source network address
+  SRC_WILDCARD: wildcard mask of the source network
+  SYSLOG_IP: address of the central syslog / SIEM collector
+  NTP_IP_1: primary NTP server address
+  NTP_IP_2: secondary NTP server address
+  NTP_KEY: NTP MD5/SHA key shared with the NTP server
+  TACACS_IP_1: primary TACACS+ server address
+  TACACS_IP_2: secondary TACACS+ server address
+  TACACS_KEY: TACACS+ shared secret
+  RADIUS_IP: RADIUS server address
+  RADIUS_KEY: RADIUS shared secret
+  MGMT_SUBNET: management network address (e.g. 10.0.0.0)
+  WILDCARD: wildcard mask of the management network (e.g. 0.0.0.255)
+  NMS_IP: SNMP manager address
+  SNMP_USER: SNMPv3 user name
+  AUTH_PASSPHRASE: SNMPv3 authentication passphrase (>= 12 characters)
+  PRIV_PASSPHRASE: SNMPv3 privacy passphrase (>= 12 characters)
+  DOMAIN: DNS domain name of the device (required to generate RSA keys)
+  LOOPBACK: loopback interface used as the source (e.g. Loopback0)
+  OSPF_KEY: OSPF key-chain secret
+  BGP_KEY: BGP neighbor password
+  ENABLE_SECRET: new privileged-EXEC secret
+  USERNAME: local administrator account name
+  PASSWORD: password for the local administrator account
+  COLLECTOR_IP: NetFlow/IPFIX collector address
+  INTERFACE: interface name
+  TARGET: affected object
+  VLANS: VLAN list to protect (e.g. 10,20,30-40)
+  ACCESS_PORTS: access-port range (e.g. GigabitEthernet1/0/1 - 24)
+  BANNER_TEXT: legal warning text approved by your organisation
+
+fixes:
+  TELNET.ENABLED:
+    title: Disable telnet on the VTY lines
+    value: false
+    per_target: true
+    target_placeholder: "vty 0 15"
+    commands: ["line {name}", " transport input ssh", " exit"]
+    validation: ["show running-config | section line vty", "show users"]
+    rollback: ["line {name}", " transport input all", " exit"]
+    impact: Sessions already open over telnet keep running until closed; new telnet logins are refused.
+    prerequisites: ["SSH works (domain name, RSA keys, local user or AAA) - test from a second session before applying"]
+    disruption: medium
+  HTTP.ENABLED:
+    title: Disable the cleartext HTTP server
+    value: false
+    commands: ["no ip http server"]
+    validation: ["show running-config | include ip http"]
+    rollback: ["ip http server"]
+    impact: Web UI / RESTCONF over plain HTTP stops; HTTPS is unaffected.
+    approval_required: false
+    disruption: low
+  HTTPS.ENABLED:
+    title: Serve management over HTTPS with TLS 1.2
+    value: true
+    commands: ["ip http secure-server", "ip http tls-version TLSv1.2"]
+    validation: ["show ip http server status"]
+    rollback: ["no ip http secure-server"]
+    prerequisites: ["a trustpoint or self-signed certificate (created automatically on first use)"]
+    disruption: low
+  MGMT.ENCRYPTED_ONLY:
+    title: Allow only encrypted management protocols
+    includes: [TELNET.ENABLED, HTTP.ENABLED]
+  SSH.ENABLED:
+    title: Enable SSH with a 2048-bit RSA key
+    value: true
+    commands: ["ip domain-name <DOMAIN>", "crypto key generate rsa general-keys modulus 2048 label SSH-KEYS",
+               "ip ssh rsa keypair-name SSH-KEYS", "ip ssh version 2"]
+    validation: ["show ip ssh"]
+    rollback: ["no ip ssh rsa keypair-name SSH-KEYS"]
+    impact: Generating keys can take a few seconds of CPU.
+    disruption: low
+  SSH.VERSION:
+    title: Enforce SSH protocol version 2
+    value: 2
+    commands: ["ip ssh version 2"]
+    validation: ["show ip ssh"]
+    rollback: ["no ip ssh version"]
+    prerequisites: ["RSA key of at least 768 bits exists (2048 recommended)"]
+    approval_required: false
+    disruption: low
+  SSH.WEAK_CIPHERS:
+    title: Restrict SSH to CTR/GCM ciphers
+    value: false
+    commands: ["ip ssh server algorithm encryption aes256-ctr aes192-ctr aes128-ctr"]
+    validation: ["show ip ssh"]
+    rollback: ["no ip ssh server algorithm encryption"]
+    impact: SSH clients that only support CBC ciphers can no longer connect.
+    disruption: medium
+  SSH.MACS_STRONG:
+    title: Restrict SSH MACs to SHA-2
+    value: true
+    commands: ["ip ssh server algorithm mac hmac-sha2-256 hmac-sha2-512"]
+    validation: ["show ip ssh"]
+    rollback: ["no ip ssh server algorithm mac"]
+    impact: Old SSH clients without hmac-sha2 support can no longer connect.
+    disruption: medium
+  SSH.RETRIES_LIMITED:
+    title: Limit SSH authentication retries to 3
+    value: true
+    commands: ["ip ssh authentication-retries 3"]
+    validation: ["show ip ssh"]
+    rollback: ["no ip ssh authentication-retries"]
+    approval_required: false
+    disruption: low
+  SSH.TIMEOUT_SET:
+    title: Set the SSH negotiation time-out to 60 seconds
+    value: true
+    commands: ["ip ssh time-out 60"]
+    validation: ["show ip ssh"]
+    rollback: ["no ip ssh time-out"]
+    approval_required: false
+    disruption: low
+  CRYPTO.RSA_KEY_SIZE:
+    title: Use an RSA key of at least 2048 bits
+    commands: ["crypto key generate rsa general-keys modulus 2048 label SSH-KEYS", "ip ssh rsa keypair-name SSH-KEYS"]
+    validation: ["show crypto key mypubkey rsa"]
+    rollback: []
+    impact: Replacing a key changes the SSH host key; clients will warn on next connection.
+    disruption: medium
+  CRYPTO.WEAK_ALGO:
+    title: Replace weak hashes and algorithms
+    value: false
+    commands:
+      - "! type 4/5 secrets -> scrypt (type 9):"
+      - "enable algorithm-type scrypt secret <ENABLE_SECRET>"
+      - "username <USERNAME> privilege 15 algorithm-type scrypt secret <PASSWORD>"
+      - "! IKE/IPsec: use AES + SHA-2 + DH group 14 or higher (migrate each policy), e.g.:"
+      - "crypto isakmp policy 10"
+      - " encryption aes 256"
+      - " hash sha256"
+      - " group 14"
+      - " exit"
+      - "! SNMPv3 users: auth sha / priv aes 128 (see SNMP fixes)"
+    validation: ["show running-config | include secret", "show crypto isakmp policy"]
+    rollback: []
+    impact: Re-keying a policy briefly drops tunnels that negotiate it; peers must support the new proposal.
+    prerequisites: ["inventory of which lines (secrets, isakmp, snmp users) are weak - see the finding evidence"]
+    disruption: high
+  SNMP.COMMUNITY_PUBLIC:
+    title: Remove default SNMP community strings
+    value: false
+    per_target: true
+    commands: ["no snmp-server community {name}"]
+    validation: ["show running-config | include snmp-server community"]
+    rollback: ["snmp-server community {name} RO"]
+    impact: Monitoring systems still polling with this community stop receiving data - migrate them to SNMPv3 first.
+    prerequisites: ["SNMPv3 credentials created and the NMS reconfigured"]
+    disruption: medium
+  SNMP.READWRITE:
+    title: Remove read-write SNMP communities
+    value: false
+    per_target: true
+    commands: ["no snmp-server community {name}"]
+    validation: ["show running-config | include snmp-server community"]
+    rollback: ["snmp-server community {name} RW"]
+    impact: Any tool that configures the device via SNMP SET stops working.
+    disruption: medium
+  SNMP.ACL_RESTRICTED:
+    title: Restrict SNMP to the management systems
+    value: true
+    setup: ["ip access-list standard SNMP-NMS", " permit <NMS_IP>", " deny any log", " exit"]
+    per_target: true
+    commands: ["snmp-server community {name} {mode} SNMP-NMS"]
+    validation: ["show ip access-lists SNMP-NMS", "show running-config | include snmp-server community"]
+    rollback: ["snmp-server community {name} {mode}"]
+    impact: Polls from addresses not in the ACL are dropped.
+    disruption: low
+  SNMP.V3_PRIV:
+    title: Use SNMPv3 with authentication and privacy
+    value: true
+    commands: ["snmp-server group MON-GRP v3 priv", "snmp-server user <SNMP_USER> MON-GRP v3 auth sha <AUTH_PASSPHRASE> priv aes 128 <PRIV_PASSPHRASE>",
+               "snmp-server host <NMS_IP> version 3 priv <SNMP_USER>"]
+    validation: ["show snmp user", "show snmp group"]
+    rollback: ["no snmp-server user <SNMP_USER> MON-GRP v3", "no snmp-server group MON-GRP v3 priv"]
+    prerequisites: ["NMS supports SNMPv3 authPriv"]
+    disruption: low
+  SNMP.VERSION:
+    title: Move monitoring to SNMPv3
+    value: 3
+    commands: ["snmp-server group MON-GRP v3 priv", "snmp-server user <SNMP_USER> MON-GRP v3 auth sha <AUTH_PASSPHRASE> priv aes 128 <PRIV_PASSPHRASE>",
+               "snmp-server host <NMS_IP> version 3 priv <SNMP_USER>"]
+    validation: ["show snmp user"]
+    rollback: []
+    impact: After the NMS is moved, remove the v1/v2c communities (see the community findings).
+    disruption: low
+  SNMP.ENABLED:
+    title: Disable the SNMP agent
+    value: false
+    commands: ["no snmp-server"]
+    validation: ["show snmp"]
+    rollback: ["snmp-server community <COMMUNITY> RO"]
+    impact: All SNMP monitoring of this device stops.
+    disruption: high
+  USER.DEFAULT_ACCOUNTS:
+    title: Remove default / well-known local accounts
+    value: false
+    per_target: true
+    commands: ["no username {name}"]
+    validation: ["show running-config | include ^username"]
+    rollback: ["username {name} privilege 15 secret <PASSWORD>"]
+    impact: Make sure another privilege-15 account (or working AAA) exists first or you will lose access.
+    prerequisites: ["a verified alternative administrative account"]
+    disruption: high
+  AAA.AUTHENTICATION:
+    title: Authenticate administrators through AAA with local fallback
+    value: true
+    commands: ["aaa new-model", "aaa authentication login default group tacacs+ local", "aaa authentication enable default group tacacs+ enable"]
+    validation: ["show running-config | section aaa", "test aaa group tacacs+ <USERNAME> <PASSWORD> legacy"]
+    rollback: ["no aaa authentication login default", "no aaa authentication enable default"]
+    impact: Wrong server settings can lock out logins; the "local" keyword keeps local accounts as fallback.
+    prerequisites: ["TACACS+/RADIUS servers configured and reachable", "a local account with privilege 15"]
+    disruption: high
+  AAA.TACACS_CONFIGURED:
+    title: Configure two TACACS+ servers
+    value: true
+    commands: ["tacacs server TAC1", " address ipv4 <TACACS_IP_1>", " key <TACACS_KEY>", " exit",
+               "tacacs server TAC2", " address ipv4 <TACACS_IP_2>", " key <TACACS_KEY>", " exit",
+               "aaa group server tacacs+ TACACS-GRP", " server name TAC1", " server name TAC2", " exit"]
+    validation: ["show tacacs", "test aaa group TACACS-GRP <USERNAME> <PASSWORD> legacy"]
+    rollback: ["no aaa group server tacacs+ TACACS-GRP", "no tacacs server TAC1", "no tacacs server TAC2"]
+    disruption: low
+  AAA.RADIUS_CONFIGURED:
+    title: Configure a RADIUS server
+    value: true
+    commands: ["radius server RAD1", " address ipv4 <RADIUS_IP> auth-port 1812 acct-port 1813", " key <RADIUS_KEY>", " exit",
+               "aaa group server radius RADIUS-GRP", " server name RAD1", " exit"]
+    validation: ["show radius server-group all"]
+    rollback: ["no aaa group server radius RADIUS-GRP", "no radius server RAD1"]
+    disruption: medium
+  AAA.AUTHORIZATION:
+    title: Enable AAA authorization for exec and privileged commands
+    value: true
+    commands: ["aaa authorization exec default group tacacs+ local", "aaa authorization commands 15 default group tacacs+ local"]
+    validation: ["show running-config | include aaa authorization"]
+    rollback: ["no aaa authorization exec default", "no aaa authorization commands 15 default"]
+    disruption: medium
+  AAA.ACCOUNTING:
+    title: Enable AAA accounting
+    value: true
+    commands: ["aaa accounting exec default start-stop group tacacs+", "aaa accounting commands 15 default start-stop group tacacs+"]
+    validation: ["show running-config | include aaa accounting"]
+    rollback: ["no aaa accounting exec default", "no aaa accounting commands 15 default"]
+    approval_required: false
+    disruption: low
+  AAA.LOCKOUT_ENABLED:
+    title: Lock accounts after repeated failed logins
+    value: true
+    commands: ["aaa local authentication attempts max-fail 5", "login block-for 120 attempts 3 within 60"]
+    validation: ["show aaa local user lockout", "show login"]
+    rollback: ["no aaa local authentication attempts max-fail", "no login block-for"]
+    impact: A brute-force attempt (or a mistyped password 3 times) blocks logins for 120 seconds.
+    disruption: low
+  ACL.MGMT_RESTRICTED:
+    title: Restrict management access with an ACL on the VTY lines
+    value: true
+    includes: [VTY.ACL_APPLIED]
+  VTY.ACL_APPLIED:
+    title: Apply a management-source ACL to the VTY lines
+    value: true
+    setup: ["ip access-list standard ACL-MGMT-VTY", " permit <MGMT_SUBNET> <WILDCARD>", " deny any log", " exit"]
+    per_target: true
+    target_placeholder: "vty 0 15"
+    commands: ["line {name}", " access-class ACL-MGMT-VTY in", " exit"]
+    validation: ["show ip access-lists ACL-MGMT-VTY", "show running-config | section line vty"]
+    rollback: ["line {name}", " no access-class ACL-MGMT-VTY in", " exit"]
+    impact: Your own source address MUST be inside the permitted subnet or you lose management access.
+    prerequisites: ["confirm the address you manage from is covered by <MGMT_SUBNET>/<WILDCARD>"]
+    disruption: high
+  VTY.TIMEOUT_SET:
+    title: Set a 10-minute exec time-out on the VTY lines
+    value: true
+    per_target: true
+    target_placeholder: "vty 0 15"
+    commands: ["line {name}", " exec-timeout 10 0", " exit"]
+    validation: ["show running-config | section line vty"]
+    rollback: ["line {name}", " no exec-timeout", " exit"]
+    approval_required: false
+    disruption: low
+  MGMT.SESSION_TIMEOUT:
+    title: Set idle time-outs on management lines
+    value: true
+    includes: [VTY.TIMEOUT_SET]
+  CONSOLE.SECURED:
+    title: Require login and a time-out on the console
+    value: true
+    commands: ["line con 0", " login authentication default", " exec-timeout 10 0", " exit"]
+    validation: ["show running-config | section line con"]
+    rollback: ["line con 0", " no login authentication", " exit"]
+    prerequisites: ["a working local or AAA login (console lock-out is only recoverable physically)"]
+    disruption: medium
+  ACL.PERMIT_ANY:
+    title: Replace "permit any any" with specific rules
+    value: false
+    manual: true
+    commands:
+      - "! Review the ACL named in the finding evidence, then replace the catch-all with the required flows:"
+      - "ip access-list extended <ACL_NAME>"
+      - " no permit ip any any"
+      - " permit tcp <SRC_NET> <SRC_WILDCARD> host <DST_HOST> eq <PORT>"
+      - " deny ip any any log"
+      - " exit"
+    validation: ["show ip access-lists <ACL_NAME>"]
+    rollback: ["ip access-list extended <ACL_NAME>", " permit ip any any", " exit"]
+    impact: Removing a catch-all permit blocks every flow not explicitly allowed - map the required traffic first (use "log" counters).
+    prerequisites: ["traffic inventory of the interface the ACL is applied to"]
+    disruption: high
+  IP.SOURCE_ROUTE_DISABLED:
+    title: Disable IP source routing
+    value: true
+    commands: ["no ip source-route"]
+    validation: ["show running-config | include source-route"]
+    rollback: ["ip source-route"]
+    approval_required: false
+    disruption: low
+  IP.REDIRECTS_DISABLED:
+    title: Disable ICMP redirects on L3 interfaces
+    value: true
+    per_target: true
+    target_placeholder: "<INTERFACE>"
+    commands: ["interface {name}", " no ip redirects", " exit"]
+    validation: ["show running-config interface {name}"]
+    rollback: ["interface {name}", " ip redirects", " exit"]
+    approval_required: false
+    disruption: low
+  PROXY_ARP.DISABLED:
+    title: Disable proxy ARP on L3 interfaces
+    value: true
+    per_target: true
+    target_placeholder: "<INTERFACE>"
+    commands: ["interface {name}", " no ip proxy-arp", " exit"]
+    validation: ["show running-config interface {name}"]
+    rollback: ["interface {name}", " ip proxy-arp", " exit"]
+    impact: Hosts relying on proxy ARP to reach other subnets lose connectivity.
+    disruption: medium
+  IP.DIRECTED_BROADCAST_DISABLED:
+    title: Disable directed broadcast on interfaces
+    value: true
+    per_target: true
+    target_placeholder: "<INTERFACE>"
+    commands: ["interface {name}", " no ip directed-broadcast", " exit"]
+    validation: ["show running-config interface {name}"]
+    rollback: ["interface {name}", " ip directed-broadcast", " exit"]
+    approval_required: false
+    disruption: low
+  URPF.ENABLED:
+    title: Enable unicast reverse-path forwarding
+    value: true
+    per_target: true
+    target_placeholder: "<INTERFACE>"
+    commands: ["interface {name}", " ip verify unicast source reachable-via rx", " exit"]
+    validation: ["show ip interface {name} | include verify source"]
+    rollback: ["interface {name}", " no ip verify unicast source reachable-via rx", " exit"]
+    impact: Strict mode drops legitimate traffic on asymmetric paths; use "reachable-via any" (loose) there.
+    prerequisites: ["CEF enabled; confirm routing is symmetric on the interface"]
+    disruption: high
+  KEY.STORED_SECURE:
+    title: Store credentials and keys with strong hashes/encryption
+    value: true
+    includes: [PASSWORD.ENCRYPTED]
+  PASSWORD.ENCRYPTED:
+    title: Encrypt stored passwords and move to scrypt secrets
+    value: true
+    commands: ["service password-encryption", "enable algorithm-type scrypt secret <ENABLE_SECRET>", "no enable password",
+               "! for each local user shown in the finding evidence:",
+               "username <USERNAME> privilege 15 algorithm-type scrypt secret <PASSWORD>"]
+    validation: ["show running-config | include password|secret"]
+    rollback: []
+    impact: Credential changes take effect immediately - verify the new login in a second session.
+    prerequisites: ["a way to log in if a credential is mistyped (console access)"]
+    disruption: medium
+  SERVICE.PASSWORD_ENCRYPTION:
+    title: Enable service password-encryption
+    value: true
+    commands: ["service password-encryption"]
+    validation: ["show running-config | include service password-encryption"]
+    rollback: ["no service password-encryption"]
+    approval_required: false
+    disruption: low
+  PASSWORD.POLICY_STRONG:
+    title: Enforce a minimum password length
+    value: true
+    commands: ["security passwords min-length 12"]
+    validation: ["show running-config | include security passwords"]
+    rollback: ["no security passwords min-length"]
+    impact: Existing shorter passwords keep working until changed.
+    approval_required: false
+    disruption: low
+  LOGGING.ENABLED:
+    title: Enable local logging
+    value: true
+    commands: ["logging on", "logging buffered 64000 informational"]
+    validation: ["show logging | include Log Buffer"]
+    rollback: ["no logging buffered"]
+    approval_required: false
+    disruption: low
+  LOGGING.BUFFERED:
+    title: Enable buffered logging
+    value: true
+    commands: ["logging buffered 64000 informational"]
+    validation: ["show logging"]
+    rollback: ["no logging buffered"]
+    approval_required: false
+    disruption: low
+  LOGGING.REMOTE_SERVER:
+    title: Send logs to a central syslog server
+    value: true
+    commands: ["logging host <SYSLOG_IP>", "logging trap informational", "logging source-interface <LOOPBACK>"]
+    validation: ["show logging | include Trap logging|host"]
+    rollback: ["no logging host <SYSLOG_IP>"]
+    approval_required: false
+    disruption: low
+  LOGGING.TIMESTAMPS:
+    title: Timestamp log and debug messages
+    value: true
+    commands: ["service timestamps log datetime msec localtime show-timezone", "service timestamps debug datetime msec localtime show-timezone"]
+    validation: ["show running-config | include service timestamps"]
+    rollback: ["no service timestamps log"]
+    approval_required: false
+    disruption: low
+  NTP.ENABLED:
+    title: Synchronise time with two NTP servers
+    value: true
+    commands: ["ntp server <NTP_IP_1>", "ntp server <NTP_IP_2>"]
+    validation: ["show ntp associations"]
+    rollback: ["no ntp server <NTP_IP_1>", "no ntp server <NTP_IP_2>"]
+    approval_required: false
+    disruption: low
+  NTP.AUTHENTICATED:
+    title: Authenticate NTP
+    value: true
+    commands: ["ntp authentication-key 1 md5 <NTP_KEY>", "ntp authenticate", "ntp trusted-key 1", "ntp server <NTP_IP_1> key 1"]
+    validation: ["show ntp associations detail"]
+    rollback: ["no ntp authenticate"]
+    impact: Unauthenticated time sources are ignored once authentication is on; use hmac-sha2-256 keys where the platform supports them.
+    prerequisites: ["the NTP server is configured with the same key"]
+    disruption: medium
+  NTP.SOURCE_SET:
+    title: Set a stable NTP source interface
+    value: true
+    commands: ["ntp source <LOOPBACK>"]
+    validation: ["show ntp status"]
+    rollback: ["no ntp source"]
+    approval_required: false
+    disruption: low
+  BANNER.LOGIN_SET:
+    title: Configure a login banner
+    value: true
+    commands: ["banner login ^C", "<BANNER_TEXT>", "^C"]
+    validation: ["show running-config | section banner"]
+    rollback: ["no banner login"]
+    approval_required: false
+    disruption: low
+  BANNER.MOTD_SET:
+    title: Configure a message-of-the-day banner
+    value: true
+    commands: ["banner motd ^C", "<BANNER_TEXT>", "^C"]
+    validation: ["show running-config | section banner"]
+    rollback: ["no banner motd"]
+    approval_required: false
+    disruption: low
+  BANNER.EXEC_SET:
+    title: Configure an EXEC banner
+    value: true
+    commands: ["banner exec ^C", "<BANNER_TEXT>", "^C"]
+    validation: ["show running-config | section banner"]
+    rollback: ["no banner exec"]
+    approval_required: false
+    disruption: low
+  SERVICE.PAD_DISABLED:
+    title: Disable the PAD service
+    value: true
+    commands: ["no service pad"]
+    validation: ["show running-config | include service pad"]
+    rollback: ["service pad"]
+    approval_required: false
+    disruption: low
+  SERVICE.FINGER_DISABLED:
+    title: Disable the finger service
+    value: true
+    commands: ["no ip finger"]
+    validation: ["show running-config | include finger"]
+    rollback: []
+    approval_required: false
+    disruption: low
+  DNS.LOOKUP_DISABLED:
+    title: Disable DNS lookups from the CLI
+    value: true
+    commands: ["no ip domain lookup"]
+    validation: ["show running-config | include domain lookup"]
+    rollback: ["ip domain lookup"]
+    approval_required: false
+    disruption: low
+  FTP.ENABLED:
+    title: Disable the FTP server
+    value: false
+    commands: ["no ftp-server enable"]
+    validation: ["show running-config | include ftp"]
+    rollback: ["ftp-server enable"]
+    approval_required: false
+    disruption: low
+  TFTP.ENABLED:
+    title: Disable the TFTP server
+    value: false
+    commands: ["no tftp-server flash:<FILE>"]
+    validation: ["show running-config | include tftp-server"]
+    rollback: []
+    approval_required: false
+    disruption: low
+  CDP.DISABLED_EDGE:
+    title: Disable CDP globally
+    value: true
+    commands: ["no cdp run"]
+    validation: ["show cdp"]
+    rollback: ["cdp run"]
+    impact: IP phones and neighbour discovery tools that rely on CDP stop working; use "no cdp enable" per edge interface instead if needed.
+    disruption: medium
+  AUDIT.CONFIG_ARCHIVED:
+    title: Archive configuration changes
+    value: true
+    commands: ["archive", " log config", "  logging enable", "  hidekeys", " path flash:archive", " write-memory", " exit"]
+    validation: ["show archive"]
+    rollback: ["no archive"]
+    approval_required: false
+    disruption: low
+  MONITORING.NETFLOW:
+    title: Export flow records to a collector
+    value: true
+    commands: ["flow exporter EXP1", " destination <COLLECTOR_IP>", " transport udp 2055", " exit",
+               "flow monitor MON1", " exporter EXP1", " record netflow ipv4 original-input", " exit",
+               "interface <INTERFACE>", " ip flow monitor MON1 input", " exit"]
+    validation: ["show flow monitor MON1 cache"]
+    rollback: ["interface <INTERFACE>", " no ip flow monitor MON1 input", " exit", "no flow monitor MON1", "no flow exporter EXP1"]
+    impact: Flow export adds CPU/memory load on small platforms.
+    disruption: low
+  DOS.PROTECTION:
+    title: Add control-plane policing for management traffic
+    value: true
+    manual: true
+    commands:
+      - "ip access-list extended COPP-MGMT"
+      - " permit tcp <MGMT_SUBNET> <WILDCARD> any eq 22"
+      - " exit"
+      - "class-map match-all COPP-MGMT-CLASS"
+      - " match access-group name COPP-MGMT"
+      - " exit"
+      - "policy-map COPP-POLICY"
+      - " class COPP-MGMT-CLASS"
+      - "  police 128000 conform-action transmit exceed-action drop"
+      - " exit"
+      - " exit"
+      - "control-plane"
+      - " service-policy input COPP-POLICY"
+    validation: ["show policy-map control-plane"]
+    rollback: ["control-plane", " no service-policy input COPP-POLICY", " exit"]
+    impact: A wrong rate or class can drop legitimate routing/management traffic - baseline first and test in a lab.
+    prerequisites: ["traffic baseline for the control plane"]
+    disruption: high
+  DHCP.SNOOPING:
+    title: Enable DHCP snooping
+    value: true
+    commands: ["ip dhcp snooping", "ip dhcp snooping vlan <VLANS>"]
+    validation: ["show ip dhcp snooping"]
+    rollback: ["no ip dhcp snooping"]
+    impact: Mark uplinks/trusted ports with "ip dhcp snooping trust" first or DHCP breaks for every client.
+    prerequisites: ["trusted (uplink / DHCP server) ports identified"]
+    disruption: high
+  PORT_SECURITY.ENABLED:
+    title: Enable port security on access ports
+    value: true
+    commands: ["interface range <ACCESS_PORTS>", " switchport port-security", " switchport port-security maximum 2",
+               " switchport port-security violation restrict", " exit"]
+    validation: ["show port-security"]
+    rollback: ["interface range <ACCESS_PORTS>", " no switchport port-security", " exit"]
+    impact: Ports with more MAC addresses than the maximum (hubs, VMs, phones+PC) start dropping traffic.
+    disruption: high
+  STP.BPDU_GUARD:
+    title: Enable BPDU guard on edge ports
+    value: true
+    commands: ["spanning-tree portfast bpduguard default"]
+    validation: ["show spanning-tree summary"]
+    rollback: ["no spanning-tree portfast bpduguard default"]
+    impact: An edge port that receives a BPDU is err-disabled (protects against loops and rogue switches).
+    disruption: medium
+  ROUTING.OSPF_AUTH:
+    title: Authenticate OSPF with a key chain (HMAC-SHA-256)
+    value: true
+    setup: ["key chain OSPF-KEYS", " key 1", "  key-string <OSPF_KEY>", "  cryptographic-algorithm hmac-sha-256", "  exit", " exit"]
+    commands: ["interface <INTERFACE>", " ip ospf authentication key-chain OSPF-KEYS", " exit"]
+    validation: ["show ip ospf interface <INTERFACE> | include auth"]
+    rollback: ["interface <INTERFACE>", " no ip ospf authentication key-chain OSPF-KEYS", " exit"]
+    impact: Adjacencies drop until BOTH ends use the same key - change both sides in the same window.
+    prerequisites: ["coordinate with every OSPF neighbour"]
+    disruption: high
+  ROUTING.BGP_AUTH:
+    title: Set a password on every BGP neighbour
+    value: true
+    per_target: true
+    target_placeholder: "<NEIGHBOR_IP>"
+    commands: ["router bgp {asn}", " neighbor {name} password <BGP_KEY>", " exit"]
+    validation: ["show ip bgp neighbors {name} | include password|state"]
+    rollback: ["router bgp {asn}", " no neighbor {name} password", " exit"]
+    impact: The session resets until the peer uses the same password - change both sides together.
+    prerequisites: ["coordinate with the peer's operator"]
+    disruption: high
+  ROUTING.AUTH_ENABLED:
+    title: Authenticate routing protocols
+    value: true
+    includes: [ROUTING.BGP_AUTH, ROUTING.OSPF_AUTH]
+  CRYPTO.IKE_VERSION:
+    title: Migrate IPsec peers to IKEv2
+    value: 2
+    manual: true
+    commands:
+      - "crypto ikev2 proposal IKEV2-PROP"
+      - " encryption aes-gcm-256"
+      - " prf sha384"
+      - " group 20"
+      - " exit"
+      - "crypto ikev2 policy IKEV2-POL"
+      - " proposal IKEV2-PROP"
+      - " exit"
+      - "! then move each tunnel/crypto map to an IKEv2 profile (platform guide)"
+    validation: ["show crypto ikev2 sa"]
+    rollback: []
+    impact: Tunnels re-negotiate; the remote peer must support IKEv2 with the same proposal.
+    prerequisites: ["peer support confirmed", "maintenance window"]
+    disruption: high

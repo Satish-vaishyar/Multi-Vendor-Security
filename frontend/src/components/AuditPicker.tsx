@@ -19,10 +19,10 @@ interface Props {
 /** Searchable audit list — each row shows the audit id + route brief, click loads detail. */
 export function AuditPicker({
   overviews, isLoading, isError, onRetry, value, onSelect, renderBrief,
-  title = "Select Audit", sub = "Search by audit ID, then click an audit to inspect it.",
+  title = "Audit", sub = "Choose which audit to look at. Newest first.",
 }: Props) {
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(!value);
   const filtered = (overviews ?? []).filter((a) =>
     a.audit_id.toLowerCase().includes(q.trim().toLowerCase()),
   );
@@ -31,28 +31,30 @@ export function AuditPicker({
   return (
     <Card
       title={title}
-      sub={value && sel ? `Showing ${value} — change selection below` : sub}
+      sub={value && sel ? `Showing ${value}` : sub}
       right={
         <button
           onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
           className="flex items-center gap-1 rounded-lg border border-linestrong bg-surface px-2.5 py-1.5 text-xs font-semibold text-ink2 hover:bg-surface2"
         >
-          {open ? <>Hide <ChevronUp size={14} /></> : <>Audits <ChevronDown size={14} /></>}
+          {open ? <>Hide <ChevronUp size={14} /></> : <>Change audit <ChevronDown size={14} /></>}
         </button>
       }
     >
       {isLoading ? <Loader label="Loading audits…" /> :
         isError ? <ErrorState message="Unable to list audits." onRetry={onRetry} /> :
-          !overviews.length ? <Empty label="No audits yet. Upload a configuration and start an audit." /> :
+          !overviews.length ? <Empty label="No audits yet." hint="Upload a configuration on the Upload & audit page and the audit runs straight away." /> :
             open ? (
               <>
                 <div className="relative mb-3">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink3" />
                   <input
+                    aria-label="Search audits by ID"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Search audit by ID (e.g. AUD-…)"
-                    className="w-full rounded-lg border border-linestrong bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink3/70 outline-none focus:border-primary"
+                    className="w-full rounded-lg border border-linestrong bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink3 outline-none focus:border-primary"
                   />
                 </div>
                 {!filtered.length ? <Empty label={`No audits match "${q}".`} /> : (

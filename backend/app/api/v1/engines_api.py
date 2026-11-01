@@ -1,7 +1,7 @@
 """Compliance / CVE(vulnerabilities) / PQC / Analytics(security) read APIs (api.md §13-18)."""
 from __future__ import annotations
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from app.core import config as cfg
@@ -556,8 +556,17 @@ def kb_status():
                            "are offline test fixtures and never matched."})
 
 
+def _clamped_int(body: dict, key: str, default: int, lo: int, hi: int) -> int:
+    """int() (a malformed value still raises -> the sync job is recorded as FAILED) clamped to [lo, hi]."""
+    return max(lo, min(int(body.get(key, default)), hi))
+
+
 @vuln_router.post("/sync")
 def cve_sync(body: dict):
+    # Bounded inputs: this call makes outbound requests to NVD and rewrites the shared CVE knowledge base, so an
+    # unbounded page count would let any ADMIN turn the API into a request amplifier / lock the KB for everyone.
+    if len(body.get("products") or []) > 50 or len(str(body.get("keyword") or "")) > 100:
+        raise HTTPException(400, "too many products (max 50) or keyword too long (max 100 chars)")
     job_id = store.nid("CVE-SYNC")
     db.save("jobs", {"job_id": job_id, "kind": "cve_sync", "status": "RUNNING",
                      "created_at": store.now()})
@@ -572,10 +581,15 @@ def cve_sync(body: dict):
             if q and q not in keywords:
                 keywords.append(q)
         data = cve_layer()["sync_now"](body.get("keyword"),
-                                        int(body.get("pages", 1)),
-                                        min(int(body.get("results_per_page", 200)), 2000),
+                                        _clamped_int(body, "pages", 1, 1, 10),
+                                        _clamped_int(body, "results_per_page", 200, 1, 2000),
                                         keywords=keywords or None,
-                                        drop_seeds=bool(body.get("drop_seeds", False)))
+                                        drop_seeds=bool(body.get("drop_seeds", False)),
+                                        since_days=(_clamped_int(body, "since_days", 0, 0, 3650) or None)
+                                        if body.get("since_days") else None)
+        if body.get("kev", True):                     # flag CISA Known-Exploited CVEs (best effort, offline-safe)
+            from src.cve.kev import sync_kev
+            data["kev"] = sync_kev()
         job = db.update("jobs", job_id, {"status": "COMPLETED", "result": data})
     except Exception as e:
         job = db.update("jobs", job_id, {"status": "FAILED", "error": str(e)})
@@ -607,7 +621,7 @@ def blast_radius(body: BlastBody):
 
 
 @vuln_router.get("/{audit_id}")
-def vulns_for_audit(audit_id: str):
+def vulns_for_audit(audit_id: str, page: int = Query(1, ge=1), page_size: int = Query(200, ge=1, le=200)):
     rec = _audit_cols(audit_id, ["cve"])
     matches = (rec.get("cve") or {}).get("matches", [])
     unresolved = (rec.get("cve") or {}).get("unresolved", [])
@@ -656,8 +670,10 @@ def vulns_for_audit(audit_id: str):
         m["finding_id"] = fid
         items.append(m)
         sev[s.lower()] += 1
+    start = (page - 1) * page_size
     return cfg.ok({"audit_id": audit_id, "summary": {"total": len(items), **sev},
-                   "unresolved": unresolved, "items": items})
+                   "unresolved": unresolved, "items": items[start:start + page_size],
+                   "total": len(items), "page": page, "page_size": page_size})
 
 
 @vuln_router.get("/{audit_id}/{finding_id}")
@@ -872,7 +888,7 @@ def analytics_for_audit(audit_id: str):
 
 
 class FleetBody(BaseModel):
-    asset_ids: List[str] = []
+    asset_ids: List[str] = Field(default_factory=list, max_length=500)
 
 
 @analytics_router.post("/fleet")

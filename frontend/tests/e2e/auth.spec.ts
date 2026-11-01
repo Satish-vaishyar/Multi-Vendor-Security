@@ -11,8 +11,8 @@ test.describe('Feature: Authentication', () => {
     const login = new LoginPage(page);
     await login.goto();
 
-    // Arrange: prefilled demo creds visible
-    await expect(page.getByTestId('login-email')).toHaveValue('admin@example.com');
+    // Arrange: the form starts empty (no demo credentials are shipped)
+    await expect(page.getByTestId('login-email')).toHaveValue('');
 
     // Act: wait for API, not a timeout
     const respPromise = login.login();

@@ -15,6 +15,10 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
 
 def _token():
+    # the bootstrap admin starts with must_change_password (weak default); a real operator would have changed it
+    client.post("/api/v1/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})   # ensures the bootstrap admin exists
+    with dbmod.get_conn() as conn:
+        conn.cursor().execute("UPDATE users SET must_change_password=false WHERE lower(email)=lower(%s)", (ADMIN_EMAIL,))
     r = client.post("/api/v1/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
     assert r.status_code == 200
     return r.json()["data"]["access_token"]
@@ -43,7 +47,7 @@ def test_readyz_down(monkeypatch):
         raise TimeoutError("no route")
     monkeypatch.setattr(dbmod, "ping", boom)
     r = client.get("/readyz")
-    assert r.status_code == 200
+    assert r.status_code == 503  # load balancers must stop routing to a node with no DB
     assert r.json()["db"]["status"] == "down"
 
 
@@ -104,9 +108,16 @@ def test_db_helper_commit(monkeypatch):
     monkeypatch.setattr(psycopg, "connect", lambda *a, **k: fake)
     monkeypatch.setattr(dbmod, "DATABASE_URL", "postgresql://x")
     assert dbmod.is_configured() is True
+    # The pool is process-wide; start from an empty one so the fake is borrowed.
+    while not dbmod._idle.empty():
+        c, _ = dbmod._idle.get_nowait()
+        dbmod._discard(c)
     with dbmod.get_conn() as conn:
         assert conn is fake
-    assert fake.calls == ["commit", "close"]
+    # pooled: committed and returned to the idle queue (not closed)
+    assert fake.calls == ["commit"]
+    dbmod._idle.get_nowait()
+    dbmod._created -= 1
 
 
 def test_db_helper_rollback(monkeypatch):
@@ -130,13 +141,24 @@ def test_db_helper_no_url(monkeypatch):
 
 def test_db_ping(monkeypatch):
     import psycopg
-    rows = [("PostgreSQL 17", "postgres", "postgres"), (10,)]
+    rows = [("PostgreSQL 17", "postgres", "postgres"), (10,), (True,)]
     fake = _FakeConn(monkeypatch, rows)
     monkeypatch.setattr(psycopg, "connect", lambda *a, **k: fake)
     monkeypatch.setattr(dbmod, "DATABASE_URL", "postgresql://x")
+    while not dbmod._idle.empty():  # a pooled real connection would bypass the fake
+        dbmod._discard(dbmod._idle.get_nowait()[0])
     out = dbmod.ping()
     assert out == {"version": "PostgreSQL 17", "database": "postgres",
-                   "user": "postgres", "public_tables": 10}
+                   "user": "postgres", "public_tables": 10, "schema_current": True}
+
+
+def test_readyz_reports_outdated_schema(monkeypatch):
+    """A DB that has not had `python -m app.cli migrate` applied must not look healthy."""
+    monkeypatch.setattr(cfg, "DATABASE_URL", "postgresql://x")
+    monkeypatch.setattr(dbmod, "ping", lambda: {"public_tables": 10, "schema_current": False})
+    r = client.get("/readyz")
+    assert r.status_code == 503
+    assert "app.cli migrate" in r.json()["db"]["error"]
 
 
 def test_db_load_env_failure(monkeypatch):

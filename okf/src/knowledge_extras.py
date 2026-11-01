@@ -43,6 +43,22 @@ class RiskEngine:
                             "internet_exposed": internet_exposed, "confidence": f.confidence}}
 
 
+# Curated mappings contain open-ended gaps such as `snmp.*community\s+public`. On a hostile line ("snmp snmp snmp ...")
+# every position restarts a scan to the end of the line: QUADRATIC (a 60 KB line cost 2.6 s, a 5 MB one hours). Gaps are
+# therefore bounded and only the first MAX_MATCH_CHARS characters of a line are matched (real CLI lines are far shorter).
+# See docs/SECURITY_REVIEW.md PT-09.
+MAX_MATCH_CHARS = 1024
+_GAP = r".{0,100}"
+_rx_cache: Dict[str, "re.Pattern[str]"] = {}
+
+
+def _bounded_rx(pattern: str) -> "re.Pattern[str]":
+    rx = _rx_cache.get(pattern)
+    if rx is None:
+        rx = _rx_cache[pattern] = re.compile(pattern.replace(".*", _GAP), re.IGNORECASE)
+    return rx
+
+
 class MappingRegistry:
     """Vendor syntax -> canonical property. Deterministic regexes win; LLM fills gaps."""
 
@@ -71,11 +87,12 @@ class MappingRegistry:
             s = line.strip()
             if not s or s.startswith(("!", "#")):
                 continue
+            head = s[:MAX_MATCH_CHARS]
             for m in self.maps:
-                if m.vendor not in ("any", vendor.lower()):
+                if m.vendor.lower() not in ("any", vendor.lower()):  # case-insensitive vendor match
                     continue
                 try:
-                    if re.search(m.raw_command_pattern, s, re.IGNORECASE):
+                    if _bounded_rx(m.raw_command_pattern).search(head):
                         ir[m.canonical_property] = m.canonical_value
                         provenance[m.canonical_property] = {
                             "line": s, "line_no": lineno, "source": m.source,

@@ -44,7 +44,8 @@ def train(jsonl: Path):
 
 
 def suggest(command: str, vendor: str = "unknown", topk: int = 3):
-    d = joblib.load(IDX)
+    from src.artifact_guard import load_verified
+    d = load_verified(IDX)
     nn, recs = d["nn"], d["recs"]
     v = embed.encode([command])
     dist, idx = nn.kneighbors(v, n_neighbors=topk)

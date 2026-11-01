@@ -5,7 +5,7 @@ import { getCanonicalIr, getConfiguration, getUnknowns } from "../api/configurat
 import { createAudit } from "../api/audits.api";
 import { toMessage } from "../api/client";
 import { FRAMEWORKS } from "../constants";
-import { Badge, Card, Empty, ErrorState, Field, Loader, PageHeader, btnGhost, btnPrimary, inputCls } from "../components/common";
+import { Badge, Card, Empty, ErrorState, Field, Loader, Notice, PageHeader, btnGhost, btnPrimary, inputCls } from "../components/common";
 
 const tabCls = (active: boolean) =>
   `rounded-lg border px-3 py-1.5 font-semibold ${active ? "border-primary bg-primarylight text-primary" : "border-linestrong bg-surface text-ink2 hover:bg-surface2"}`;
@@ -55,12 +55,12 @@ export default function ConfigurationDetails() {
       <PageHeader
         title={String(m.filename ?? configurationId)}
         sub={`Vendor: ${String(m.detected_vendor ?? m.vendor ?? "—")} · Platform: ${String(m.detected_platform ?? m.platform ?? "—")} · Version: ${String(m.detected_version ?? m.version ?? "—")}`}
-        actions={<><button className={btnGhost} onClick={() => nav("/configurations/upload")}>New Upload</button>
-          <button className={btnPrimary} onClick={() => setShowAudit(true)}>Start Audit</button></>}
+        actions={<><button className={btnGhost} onClick={() => nav("/quick-audit")}>New upload</button>
+          <button data-testid="start-audit-open" className={btnPrimary} onClick={() => setShowAudit(true)}>Start Audit</button></>}
       />
-      <div className="mb-4 flex gap-2 text-xs">
+      <div className="mb-4 flex flex-wrap gap-2 text-xs" role="tablist" aria-label="Configuration views">
         {(["raw", "ir", "unknown", "info"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={tabCls(tab === t)}>
+          <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={tabCls(tab === t)}>
             {{ raw: "Raw Configuration", ir: "Canonical IR", unknown: "Unknown Tokens", info: "Parsing Information" }[t]}
           </button>
         ))}
@@ -99,12 +99,12 @@ export default function ConfigurationDetails() {
       )}
 
       {showAudit && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-ink/40 p-4" onClick={() => setShowAudit(false)}>
-          <div className="card-shadow w-full max-w-md rounded-xl border border-line bg-surface p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/40 p-4" role="dialog" aria-modal="true" aria-label="Start audit" onClick={() => setShowAudit(false)} onKeyDown={(e) => { if (e.key === "Escape") setShowAudit(false); }}>
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-line bg-surface p-5 shadow-[var(--shadow-pop)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base font-semibold text-ink">Start Audit</h2>
             <p className="mt-1 text-xs text-ink3">Select frameworks and analysis engines</p>
             <div className="mt-3">
-              <p className="mb-1.5 text-[11px] uppercase tracking-wider text-ink3">Frameworks</p>
+              <p className="mb-1.5 text-xs font-medium text-ink2">Frameworks</p>
               <div className="flex flex-wrap gap-2">
                 {FRAMEWORKS.map((f) => (
                   <label key={f} className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold ${fw.includes(f) ? "border-primary bg-primarylight text-primary" : "border-linestrong text-ink2"}`}>
@@ -120,10 +120,10 @@ export default function ConfigurationDetails() {
                 </label>
               ))}
             </div>
-            <Field label="Asset ID"><input className={`${inputCls} mt-1`} value={String(m.asset_id ?? "missing — re-upload against an asset")} readOnly /></Field>
-            {err && <p className="mt-2 text-xs text-danger">{err}</p>}
+            <Field label="Device ID"><input className={`${inputCls} mt-1`} value={String(m.asset_id ?? "missing — re-upload against an asset")} readOnly /></Field>
+            {err && <div className="mt-2"><Notice kind="error">{err}</Notice></div>}
             <div className="mt-4 flex gap-2">
-              <button className={btnPrimary} disabled={!fw.length || audit.isPending} onClick={() => audit.mutate()}>
+              <button data-testid="start-audit-confirm" className={btnPrimary} disabled={!fw.length || audit.isPending} onClick={() => audit.mutate()}>
                 {audit.isPending ? "Starting…" : "Start Audit"}
               </button>
               <button className={btnGhost} onClick={() => setShowAudit(false)}>Cancel</button>

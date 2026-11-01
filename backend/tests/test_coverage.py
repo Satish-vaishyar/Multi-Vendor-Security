@@ -80,7 +80,9 @@ def test_core_utils():
     e = cfgmod.err("X", "y")
     assert e["success"] is False and e["error"]["code"] == "X"
     assert secmod._verify("pw", "malformed-hash") is False
-    assert secmod.authenticate("nobody@example.com", "x") is None
+    with pytest.raises(secmod.AuthFailure) as exc:
+        secmod.authenticate("nobody@example.com", "x", ip="10.9.9.9")
+    assert exc.value.status_code == 401 and exc.value.detail == "Invalid credentials"
 
     def boom(*a, **k):
         raise RuntimeError("no dotenv")
@@ -287,7 +289,9 @@ def test_reports_404():
 
 def test_training_edges(monkeypatch):
     asset = _asset()
-    cid = _upload("blorp alpha one\nblorp beta two\n", asset)
+    # Only routing/security-impact lines reach the human-approval queue
+    # (CRITICAL_HUMAN_PATTERNS), so the fixtures must be critical AND novel.
+    cid = _upload("ip route blorp alpha one\nip route blorp beta two\n", asset)
     client.get(f"/api/v1/configurations/{cid}/unknowns")
     pend = persist.find("training", status="PENDING")
     assert len(pend) >= 2
@@ -383,7 +387,9 @@ def test_integration_fallbacks(monkeypatch, tmp_path):
     monkeypatch.delitem(sys.modules, "src.m3_mapping", raising=False)
     assert integ.m3_suggest("x")[0].get("error")
     monkeypatch.delitem(sys.modules, "src.m5_validator", raising=False)
-    assert integ.m5_validate({})["valid"] is True
+    # fail CLOSED: a broken validator must never report "valid" (it used to - see P1-3)
+    broken = integ.m5_validate({})
+    assert broken["valid"] is False and broken["validator_error"] is True
     monkeypatch.delitem(sys.modules, "src.m7_fleet", raising=False)
     out = integ.m7_fit_fleet([{}])
     assert out["method"].startswith("fallback")

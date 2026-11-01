@@ -6,7 +6,8 @@ import { getAnalytics } from "../api/analytics.api";
 import { getComplianceControls } from "../api/compliance.api";
 import { getVulnsForAudit } from "../api/vulnerabilities.api";
 import { getPqc } from "../api/pqc.api";
-import { createReport } from "../api/reports.api";
+import { createReport, downloadEvidencePack } from "../api/reports.api";
+import { downloadFindings } from "../api/exceptions.api";
 import { toMessage } from "../api/client";
 import { REPORT_SECTIONS } from "../constants";
 import { Badge, Card, Empty, ErrorState, Loader, PageHeader, btnGhost, btnPrimary } from "../components/common";
@@ -133,10 +134,13 @@ export default function AuditResults() {
         title="Audit Results"
         sub={`Audit ${auditId}${d.asset_id ? ` · Asset ${d.asset_id}` : ""}${d.configuration_id ? ` · Config ${d.configuration_id}` : ""}`}
         actions={<><Link to={`/audits/${auditId}`} className={btnGhost}>Progress</Link>
+          <button className={btnGhost} onClick={() => void downloadFindings(auditId, "csv").catch((e) => setErr(toMessage(e)))}>Export CSV</button>
+          <button className={btnGhost} onClick={() => void downloadFindings(auditId, "json").catch((e) => setErr(toMessage(e)))}>Export JSON</button>
+          <button className={btnGhost} title="Every CIS control with verdict, evidence, remediation and risk acceptance" onClick={() => void downloadEvidencePack(auditId, "CIS", "csv").catch((e) => setErr(toMessage(e)))}>Evidence pack (CIS)</button>
           <button className={btnPrimary} disabled={rep.isPending} onClick={() => rep.mutate()}>{rep.isPending ? "Generating…" : "Generate PDF Report"}</button></>}
       />
       {msg && <p className="mb-3 rounded-lg border border-ok/30 bg-okbg p-2.5 text-xs text-ok">{msg}</p>}
-      {err && <p className="mb-3 rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-xs text-danger">{err}</p>}
+      {err && <p role="alert" className="mb-3 rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-xs text-danger">{err}</p>}
 
       {/* 1 — Executive summary (manager view) */}
       <Card
@@ -157,6 +161,53 @@ export default function AuditResults() {
           <li>Plan crypto migration for items flagged in the PQC tab; low/medium hardening can follow.</li>
         </ol>
       </Card>
+
+      {((d.degraded ?? []) as string[]).length > 0 && (
+        <p role="alert" className="mt-4 rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-xs text-danger">
+          <b>Degraded audit — results may be incomplete.</b> {((d.degraded ?? []) as string[]).join(" · ")}
+        </p>
+      )}
+
+      {/* 1b — How much of this verdict is evidence vs. gaps/assumptions */}
+      {(() => {
+        const a = (d.assessment ?? {}) as AnyRec;
+        if (a.applicable === undefined) return null;
+        const parser = (a.parser ?? {}) as AnyRec;
+        const cov = Number(a.coverage_pct ?? 0);
+        const notes = ((parser.notes ?? []) as string[]);
+        return (
+          <div className="mt-4">
+            <Card
+              title="Assessment coverage"
+              sub="How much of this score is backed by the configuration, and how much is not assessed or assumed."
+              right={<span className={`text-sm font-bold ${cov >= 80 ? "text-ok" : cov >= 50 ? "text-warn" : "text-danger"}`}>{fmtNum(cov)}% assessed</span>}
+            >
+              <Bar value={cov} />
+              <p className="mt-2 text-xs text-ink2">
+                <b className="text-ink">{String(a.assessed ?? 0)}</b> of <b className="text-ink">{String(a.applicable ?? 0)}</b> applicable controls
+                were decided · <b className="text-ink">{String(a.not_assessed ?? 0)}</b> could not be assessed from this configuration ·{" "}
+                <b className="text-ink">{String(a.not_applicable ?? 0)}</b> not applicable to this platform
+                {Number(a.assumed ?? 0) > 0 && (
+                  <> · <b className="text-ink">{String(a.assumed)}</b> verdicts rest on a documented platform default because the setting is absent from the config
+                  (only {fmtNum(Number(a.observed_pct ?? 0))}% is read directly from configuration lines)</>
+                )}.
+              </p>
+              {parser.used === true && (
+                <p className="mt-1 text-[11px] text-ink3">
+                  Parsed with the {String(parser.platform ?? parser.vendor)} structured parser: {String(parser.observed ?? 0)} settings read from the
+                  config, {String(parser.assumed_defaults ?? 0)} platform defaults applied.
+                </p>
+              )}
+              {parser.used === false && (
+                <p className="mt-1 text-[11px] text-warn">No structured parser for this vendor yet — only registry mappings and the AI learning loop were used, so coverage is limited.</p>
+              )}
+              {notes.length > 0 && (
+                <p className="mt-1 text-[11px] text-danger">Parser warnings: {notes.join(" · ")}</p>
+              )}
+            </Card>
+          </div>
+        );
+      })()}
 
       {/* 2 — KPI cards */}
       <div className="mb-4 mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
@@ -453,13 +504,13 @@ export default function AuditResults() {
           sub="Search and filter everything in one place. Open a row for evidence, risk and remediation."
           right={
             <div className="flex flex-wrap gap-1.5">
-              <select value={sevFilter} onChange={(e) => setSevFilter(e.target.value)} className="rounded-lg border border-linestrong bg-surface px-2 py-1 text-xs">
+              <select aria-label="Filter by severity" value={sevFilter} onChange={(e) => setSevFilter(e.target.value)} className="rounded-lg border border-linestrong bg-surface px-2 py-1 text-xs">
                 {["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"].map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
-              <select value={engFilter} onChange={(e) => setEngFilter(e.target.value)} className="rounded-lg border border-linestrong bg-surface px-2 py-1 text-xs">
+              <select aria-label="Filter by engine" value={engFilter} onChange={(e) => setEngFilter(e.target.value)} className="rounded-lg border border-linestrong bg-surface px-2 py-1 text-xs">
                 {["ALL", "COMPLIANCE", "CVE", "PQC", "SECURITY"].map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search title or ID…" className="rounded-lg border border-linestrong bg-surface px-2 py-1 text-xs" />
+              <input aria-label="Search findings" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search title or ID…" className="rounded-lg border border-linestrong bg-surface px-2 py-1 text-xs" />
             </div>
           }
         >

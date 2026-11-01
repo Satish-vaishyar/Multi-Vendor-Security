@@ -63,6 +63,10 @@ class Evidence(BaseModel):
     expected_value: Any = None
     operator: str = "EQUALS"
     status: FindingStatus = "UNKNOWN"
+    # "config" = read from a configuration line, "default" = documented platform default assumed
+    # because the line is absent, "" = not determined. `note` explains defaults / N-A reasons.
+    basis: str = ""
+    note: str = ""
 
 
 class Finding(BaseModel):

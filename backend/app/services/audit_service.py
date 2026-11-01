@@ -7,10 +7,14 @@ PQC, security analytics, CVE) -> unified findings (common schema arch.md §27)
 """
 from __future__ import annotations
 import hashlib
+import logging
 import time
 from typing import Any, Dict, List
 
 from app.core import persist as db
+from app.core import tenancy
+from app.services import history
+from app.core.redact import redact_line, redact_secrets
 from app.core import store
 from app.parsers import vendor_detector, canonical as canon
 from app.engines import pqc as pqc_eng
@@ -18,22 +22,52 @@ from app.engines import security as sec_eng
 from app.services.integration import okf_layer, cve_layer, m6_rule_score, m5_validate
 
 
+def _parser_version() -> str:
+    try:
+        from src import vendor_parsers
+        return str(vendor_parsers.__version__)
+    except Exception:
+        return "unknown"
+
+
 def _fid(prefix: str, audit_id: str, key: str, i: int) -> str:
-    h = hashlib.sha256(f"{audit_id}:{key}:{i}".encode()).hexdigest()[:6].upper()
+    """Deterministic (a re-run of the same audit upserts the same rows) and wide enough not to collide: 6 hex characters
+    (24 bits) collided across a few thousand findings, which overwrote a finding in the same organisation or failed the whole
+    audit when the id belonged to another one."""
+    h = hashlib.sha256(f"{audit_id}:{key}:{i}".encode()).hexdigest()[:16].upper()
     return f"{prefix}-{h}"
+
+
+def _redact_provenance(prov: Dict[str, Any]) -> Dict[str, Any]:
+    """Evidence lines are stored and shown in the UI/PDF: never persist secret values."""
+    out: Dict[str, Any] = {}
+    for k, v in (prov or {}).items():
+        v = dict(v) if isinstance(v, dict) else v
+        if isinstance(v, dict) and isinstance(v.get("line"), str):
+            v["line"] = redact_secrets(v["line"])
+        out[k] = v
+    return out
 
 
 def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
               frameworks: List[str], run_cve: bool = True, run_pqc: bool = True,
               run_security: bool = True, asset_criticality: str = "HIGH",
-              vendor_hint: str = "", detected: Dict[str, Any] | None = None) -> Dict[str, Any]:
+              vendor_hint: str = "", detected: Dict[str, Any] | None = None,
+              trigger: str = "manual", snapshot: bool = True) -> Dict[str, Any]:
     t0 = time.time()
     okf = okf_layer()
     det = detected or vendor_detector.detect_vendor(config_text, vendor_hint)
     vendor = det["vendor_id"]
-    parsed = canon.parse_to_canonical(config_text, vendor)
+    parsed = canon.parse_to_canonical(config_text, vendor, str(det.get("platform") or ""))
     flat, nested = parsed["flat_ir"], parsed["nested_ir"]
     ir_validation = m5_validate(flat)  # M5 Canonical IR Validator gate
+    # Anything that silently weakened this audit is listed here (shown in the UI and the PDF).
+    degraded: List[str] = []
+    if ir_validation.get("validator_error"):
+        degraded.append(f"IR validator unavailable ({ir_validation.get('warning', 'error')}); schema checks were skipped")
+    if str(det.get("method", "")).startswith("fallback"):
+        degraded.append(f"vendor model unavailable ({det.get('method')}); deterministic fingerprints only")
+    degraded += [f"parser: {n}" for n in (parsed.get("parser") or {}).get("notes", [])]
 
     stages: Dict[str, str] = {"ingestion": "COMPLETED", "detection": "COMPLETED",
                               "normalization": "COMPLETED",
@@ -47,7 +81,9 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
     # Platform-scoped evaluation (SCAP CPE model): controls that cannot apply
     # to this vendor/platform evaluate to NOT_APPLICABLE and leave the score.
     comp_findings = comp_eng.evaluate(nested, asset_id=asset_id,
-                                      vendor=vendor, platform=str(det.get("platform") or ""))
+                                      vendor=vendor, platform=str(det.get("platform") or ""),
+                                      not_applicable=parsed.get("not_applicable"),
+                                      provenance=parsed.get("provenance"))
     comp_score = okf["ComplianceEngine"].score(comp_findings)
     stages["compliance"] = "COMPLETED"
 
@@ -85,7 +121,11 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
     sec_out: Dict[str, Any] = {"risk_score": 100, "anomalies": []}
     if run_security:
         stages["security"] = "RUNNING"
-        sec_out = sec_eng.analyze(flat, asset_id)
+        dumped = [f.model_dump() if hasattr(f, "model_dump") else dict(f) for f in comp_findings]
+        failed_props = {str((d.get("evidence") or {}).get("property") or "") for d in dumped
+                        if str(d.get("status") or "").upper() == "FAIL"}
+        sec_out = sec_eng.analyze(flat, asset_id, provenance=parsed.get("provenance"),
+                                  compliance_failed=failed_props - {""})
         stages["security"] = "COMPLETED"
 
     # — Unified findings (common schema) + risk —
@@ -93,7 +133,11 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
     # map to the same audit; finding_ids key off audit_id (not configuration_id)
     # so re-runs upsert the same rows instead of accumulating duplicates
     # (which previously made the picker CVE count drift from the detail table).
-    audit_id = f"AUD-{hashlib.sha256(config_text.encode()).hexdigest()[:8].upper()}"
+    # Scoped by org + asset so identical configs on different devices/tenants can
+    # never share (and silently overwrite) one audit; the same config re-run on the
+    # same asset still upserts the same audit (idempotent, no duplicate findings).
+    audit_id = "AUD-" + hashlib.sha256(
+        f"{tenancy.current_org()}|{asset_id}|{config_text}".encode()).hexdigest()[:12].upper()
     stages["risk"] = "RUNNING"
     internet_exposed = flat.get("MGMT.INTERNET_EXPOSED") is True
     unified: List[Dict[str, Any]] = []
@@ -152,13 +196,30 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
                                                       "references": _refs},
                         "source": {"cve": m.get("cve_id")}})
     for i, a in enumerate(sec_out.get("anomalies", [])):
-        fid = _fid("F-SEC", audit_id, a.get("type", "?"), i)
+        if a.get("duplicates_compliance"):
+            continue                                   # already reported as a failed compliance control
+        fid = _fid("F-SEC", audit_id, a.get("rule_id") or a.get("type", "?"), i)
         unified.append({"finding_id": fid, "type": "SECURITY", "engine": "security",
                         "severity": a.get("severity", "MEDIUM"), "title": f"{a.get('type')}: {a.get('property')}",
                         "status": "FAIL", "asset_id": asset_id,
-                        "evidence": {"property": a.get("property"), "detail": a.get("detail")},
-                        "confidence": 0.9, "risk": {"risk_score": 7.0, "priority": a.get("severity")},
-                        "remediation": {"available": False}, "source": {"analytics": a.get("type")}})
+                        "evidence": {"property": a.get("property"), "detail": a.get("detail"), "why": a.get("why"),
+                                     "rule_id": a.get("rule_id"), "basis": a.get("basis", "observed")},
+                        "confidence": 0.9 if a.get("basis") != "assumed" else 0.6,
+                        "risk": {"risk_score": 7.0, "priority": a.get("severity")},
+                        "remediation": {"available": bool(a.get("fix")), "recommendation": a.get("fix", "")},
+                        "source": {"analytics": a.get("type"), "rule": a.get("rule_id")}})
+    for i, p in enumerate(sec_out.get("patterns", [])):
+        fid = _fid("F-PATH", audit_id, p.get("rule_id") or p.get("pattern", "?"), i)
+        unified.append({"finding_id": fid, "type": "SECURITY", "engine": "security",
+                        "severity": p.get("severity", "HIGH"), "title": f"Attack path: {p.get('pattern')}",
+                        "status": "FAIL", "asset_id": asset_id,
+                        "evidence": {"property": ",".join(p.get("contributors", [])), "detail": p.get("detail"),
+                                     "rule_id": p.get("rule_id"), "basis": p.get("basis", "observed"),
+                                     "signals": p.get("evidence", {})},
+                        "confidence": 0.85 if p.get("basis") != "assumed" else 0.55,
+                        "risk": {"risk_score": 8.5, "priority": p.get("severity")},
+                        "remediation": {"available": bool(p.get("fix")), "recommendation": p.get("fix", "")},
+                        "source": {"analytics": "ATTACK_PATH", "rule": p.get("rule_id")}})
     for i, row in enumerate(pqc_out.get("algorithms", [])):
         if row.get("pqc_status") == "MIGRATION_REQUIRED":
             fid = _fid("F-PQC", audit_id, row.get("algorithm", "?"), i)
@@ -193,7 +254,7 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
     record = {"audit_id": audit_id, "asset_id": asset_id, "configuration_id": configuration_id,
               "vendor": det, "frameworks": frameworks, "status": "COMPLETED", "progress": 100,
               "config_sha256": hashlib.sha256(config_text.encode()).hexdigest(),
-              "versions": {"parser": "deterministic-regex@1.0+M4-gapfill",
+              "versions": {"parser": f"structured-vendor-parsers@{_parser_version()}+registry+M4-gapfill",
                            "mapping_registry": "okf-mappings@1.0+learned",
                            "canonical_ir": "1.0", "control_pack": "okf-core/extended",
                            "okf": _okf_ver, "cve_kb": "okf-vulnKB+nvd-sync",
@@ -203,9 +264,9 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
                                             "security_risk": sec_out.get("risk_score")},
               "by_framework": by_fw, "compliance": comp_score,
               "cve": cve_out, "pqc": pqc_out, "security": sec_out,
-              "canonical_ir": nested, "flat_ir": flat, "provenance": parsed.get("provenance", {}),
-              "unknown_lines": parsed.get("unknown_lines", []), "llm_offline": parsed.get("llm_offline", True),
-              "ir_validation": ir_validation,
+              "canonical_ir": nested, "flat_ir": flat, "provenance": _redact_provenance(parsed.get("provenance", {})),
+              "unknown_lines": [redact_line(l) for l in parsed.get("unknown_lines", [])], "llm_offline": parsed.get("llm_offline", True),
+              "ir_validation": ir_validation, "parser": parsed.get("parser", {}), "degraded": degraded,
               "findings": unified, "duration_s": round(time.time() - t0, 2),
               "created_at": store.now()}
     db.save("audits", record)
@@ -216,8 +277,16 @@ def run_audit(*, asset_id: str, configuration_id: str, config_text: str,
         for row in db.select("findings", ["finding_id"], limit=5000, audit_id=audit_id):
             if row.get("finding_id") not in new_ids:
                 db.delete("findings", row["finding_id"])
-    except Exception:
-        pass
+    except Exception as e:
+        logging.getLogger("sih26155").warning("stale-finding cleanup failed for %s: %s", audit_id, e)
     for u in unified:
         db.save("findings", {**u, "audit_id": audit_id})
+    # Append-only history (drift / aging / trend). Last step, so a retried job never double-records.
+    # `snapshot=False` is used for what-if re-audits (remediation simulation) that must not appear as real runs.
+    if snapshot:
+        try:
+            record["history"] = history.record_snapshot(record, trigger)
+        except Exception as e:  # noqa: BLE001 - history must never fail an audit, but it must not vanish silently
+            logging.getLogger("sih26155").error("history snapshot failed for %s: %s", audit_id, e)
+            record["history_error"] = f"{type(e).__name__}: {e}"
     return record

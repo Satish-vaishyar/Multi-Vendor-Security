@@ -6,7 +6,7 @@ import { getComplianceControls, getComplianceFramework, getComplianceOverall, ge
 import { FRAMEWORK_LABELS } from "../constants";
 import { fmtScore, useAuditOverviews, useSelectedAudit } from "../hooks/useAuditOverviews";
 import { AuditPicker } from "../components/AuditPicker";
-import { Badge, Card, Empty, ErrorState, Loader, PageHeader, inputCls } from "../components/common";
+import { Badge, Card, Empty, ErrorState, Hint, Loader, PageHeader, inputCls } from "../components/common";
 
 type Ctrl = Record<string, unknown>;
 
@@ -119,7 +119,7 @@ export default function Compliance() {
 
   return (
     <div>
-      <PageHeader title="Compliance" sub="Multi-framework control results — click any finding for why it was raised, the issue, the fix and the risk of ignoring it" />
+      <PageHeader title="Compliance" sub={<>How the configuration scores against CIS, NIST, STIG and ISO 27001. Open any finding for why it failed and how to fix it. <Hint term="STIG" /></>} />
       <div className="mb-4">
         <AuditPicker
           overviews={audits.overviews} isLoading={audits.isLoading} isError={audits.isError} onRetry={audits.refetch}

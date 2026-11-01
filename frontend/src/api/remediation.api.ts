@@ -28,6 +28,16 @@ export interface RemediationPlan {
   risk: Record<string, unknown>;
   evidence: Record<string, unknown>;
   remediation_detail: Record<string, unknown>;
+  /* context-aware plan metadata (fix library); empty/absent for legacy plans */
+  impact?: string;
+  prerequisites?: string[];
+  parameters?: { name: string; description: string }[];
+  apply_notes?: string;
+  verification?: string;
+  verification_note?: string;
+  plan_sources?: string[];
+  manual_review?: string[];
+  manual_steps?: string[];
 }
 
 export interface RemediationHistoryItem {

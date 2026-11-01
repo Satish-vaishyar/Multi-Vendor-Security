@@ -142,10 +142,10 @@ def test_learning_merge_and_helpers(monkeypatch):
         "mappings": [
             {"canonical_property": "SSH.VERSION", "canonical_value": 1,  # collides -> det wins
              "confidence": 0.9, "evidence": "ip ssh version 2"},
-            {"canonical_property": "NTP.ENABLED", "canonical_value": True,
+            {"canonical_property": "X.CUSTOM_FLAG", "canonical_value": True,
              "confidence": 0.8, "evidence": "mystery line"}]})
     out = eng.audit_config("! comment\n\nip ssh version 2\nmystery line\n", vendor="cisco")
-    assert out["flat_ir"]["SSH.VERSION"] == 2 and out["flat_ir"]["NTP.ENABLED"] is True
+    assert out["flat_ir"]["SSH.VERSION"] == 2 and out["flat_ir"]["X.CUSTOM_FLAG"] is True
     assert out["unknown_lines"] == []
     assert nest_flat_ir({"A.B": 1}) == {"A": {"B": 1}}
     monkeypatch.setattr(le, "suggest_mapping", lambda *a, **k: {"ok": True})

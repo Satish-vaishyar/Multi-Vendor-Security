@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { clearToken, getToken, setToken } from "../api/client";
-import { me } from "../api/auth.api";
+import { logoutRequest, me } from "../api/auth.api";
 import type { User } from "../types";
 
 interface AuthState {
@@ -18,7 +18,7 @@ export const useAuth = create<AuthState>((set) => ({
   ready: false,
   setSession: (token, user) => {
     setToken(token);
-    set({ token, user, ready: true });
+    set({ token: getToken(), user, ready: true });
   },
   bootstrap: async () => {
     const t = getToken();
@@ -35,7 +35,10 @@ export const useAuth = create<AuthState>((set) => ({
     }
   },
   logout: () => {
-    clearToken();
-    set({ token: null, user: null, ready: true });
+    // Best effort: revoke the token on the server, then always clear the local session.
+    void logoutRequest().catch(() => undefined).finally(() => {
+      clearToken();
+      set({ token: null, user: null, ready: true });
+    });
   },
 }));

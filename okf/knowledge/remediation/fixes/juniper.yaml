@@ -1,0 +1,453 @@
+# Fix templates for Juniper Junos (EX/QFX/MX/SRX), keyed by canonical property. NOT lab-verified.
+vendor: juniper
+platforms: [junos]
+verification: documented
+sources:
+  - Junos OS System Basics / Administration Guide (system services, login, syslog, ntp, archival)
+  - Junos OS Network Management Administration Guide (SNMP) and Routing Protocols Library (auth)
+apply_notes: >-
+  Run in configuration mode ("configure"). Apply the "set"/"delete" lines, review with "show | compare", then
+  "commit confirmed 5" so a lock-out rolls back automatically, verify, and finally "commit".
+parameters:
+  AREA: OSPF area (e.g. 0.0.0.0)
+  BGP_KEY: BGP authentication key
+  OSPF_KEY: OSPF authentication key
+  IKE_PROPOSAL: name of the IKE proposal to harden
+  SYSLOG_IP: address of the central syslog / SIEM collector
+  NTP_IP_1: primary NTP server
+  NTP_IP_2: secondary NTP server
+  NTP_KEY: NTP key shared with the server
+  TACACS_IP_1: TACACS+ server address
+  TACACS_IP_2: second TACACS+ server address
+  TACACS_KEY: TACACS+ shared secret
+  RADIUS_IP: RADIUS server address
+  RADIUS_KEY: RADIUS shared secret
+  MGMT_PREFIX: management network in CIDR form (e.g. 10.0.0.0/24)
+  NMS_IP: SNMP manager address
+  SNMP_USER: SNMPv3 user name
+  AUTH_PASSPHRASE: SNMPv3 authentication passphrase
+  PRIV_PASSPHRASE: SNMPv3 privacy passphrase
+  GATEWAY: IKE gateway name
+  USERNAME: login user name
+  INTERFACE: interface name
+  VLAN: VLAN name
+  LOOPBACK_IP: loopback address used as the source
+  BANNER_TEXT: approved legal warning text
+  ARCHIVE_URL: archive destination (e.g. scp://backup@host:/configs/)
+  TARGET: affected object
+
+fixes:
+  TELNET.ENABLED:
+    title: Remove the telnet service
+    value: false
+    commands: ["delete system services telnet"]
+    validation: ["show configuration system services"]
+    rollback: ["set system services telnet"]
+    impact: Telnet management stops; SSH is unaffected.
+    prerequisites: ["SSH works (set system services ssh) - verify from a second session"]
+    disruption: medium
+  HTTP.ENABLED:
+    title: Remove cleartext web management
+    value: false
+    commands: ["delete system services web-management http"]
+    validation: ["show configuration system services web-management"]
+    rollback: ["set system services web-management http"]
+    approval_required: false
+    disruption: low
+  HTTPS.ENABLED:
+    title: Enable HTTPS web management
+    value: true
+    commands: ["set system services web-management https system-generated-certificate", "set system services web-management https interface <INTERFACE>"]
+    validation: ["show configuration system services web-management"]
+    rollback: ["delete system services web-management https"]
+    disruption: low
+  MGMT.ENCRYPTED_ONLY:
+    title: Allow only encrypted management protocols
+    includes: [TELNET.ENABLED, HTTP.ENABLED]
+  FTP.ENABLED:
+    title: Remove the FTP service
+    value: false
+    commands: ["delete system services ftp"]
+    validation: ["show configuration system services"]
+    rollback: ["set system services ftp"]
+    approval_required: false
+    disruption: low
+  SSH.ENABLED:
+    title: Enable SSH (version 2)
+    value: true
+    commands: ["set system services ssh protocol-version v2"]
+    validation: ["show configuration system services ssh"]
+    rollback: ["delete system services ssh"]
+    disruption: low
+  SSH.VERSION:
+    title: Enforce SSH protocol version 2
+    value: 2
+    commands: ["set system services ssh protocol-version v2"]
+    validation: ["show configuration system services ssh"]
+    rollback: ["delete system services ssh protocol-version"]
+    approval_required: false
+    disruption: low
+  SSH.WEAK_CIPHERS:
+    title: Restrict SSH to CTR ciphers
+    value: false
+    commands: ["delete system services ssh ciphers", "set system services ssh ciphers [ aes256-ctr aes192-ctr aes128-ctr ]"]
+    validation: ["show configuration system services ssh ciphers"]
+    rollback: ["delete system services ssh ciphers"]
+    impact: SSH clients that only support CBC/3DES ciphers can no longer connect.
+    disruption: medium
+  SSH.MACS_STRONG:
+    title: Restrict SSH MACs to SHA-2
+    value: true
+    commands: ["delete system services ssh macs", "set system services ssh macs [ hmac-sha2-256 hmac-sha2-512 ]"]
+    validation: ["show configuration system services ssh macs"]
+    rollback: ["delete system services ssh macs"]
+    impact: Clients without hmac-sha2 support can no longer connect.
+    disruption: medium
+  SSH.RETRIES_LIMITED:
+    title: Disconnect after 3 failed login attempts
+    value: true
+    commands: ["set system login retry-options tries-before-disconnect 3"]
+    validation: ["show configuration system login retry-options"]
+    rollback: ["delete system login retry-options tries-before-disconnect"]
+    approval_required: false
+    disruption: low
+  SSH.TIMEOUT_SET:
+    title: Drop idle SSH connections
+    value: true
+    commands: ["set system services ssh client-alive-interval 60", "set system services ssh client-alive-count-max 3"]
+    validation: ["show configuration system services ssh"]
+    rollback: ["delete system services ssh client-alive-interval", "delete system services ssh client-alive-count-max"]
+    approval_required: false
+    disruption: low
+  AAA.LOCKOUT_ENABLED:
+    title: Lock out accounts after repeated failures
+    value: true
+    commands: ["set system login retry-options tries-before-disconnect 3", "set system login retry-options lockout-period 10"]
+    validation: ["show configuration system login retry-options"]
+    rollback: ["delete system login retry-options lockout-period"]
+    impact: An account is locked for 10 minutes after repeated failures.
+    approval_required: false
+    disruption: low
+  AAA.TACACS_CONFIGURED:
+    title: Configure two TACACS+ servers
+    value: true
+    commands: ["set system tacplus-server <TACACS_IP_1> secret <TACACS_KEY>", "set system tacplus-server <TACACS_IP_1> source-address <LOOPBACK_IP>",
+               "set system tacplus-server <TACACS_IP_2> secret <TACACS_KEY>", "set system tacplus-server <TACACS_IP_2> source-address <LOOPBACK_IP>"]
+    validation: ["show configuration system tacplus-server"]
+    rollback: ["delete system tacplus-server"]
+    disruption: low
+  AAA.RADIUS_CONFIGURED:
+    title: Configure a RADIUS server
+    value: true
+    commands: ["set system radius-server <RADIUS_IP> secret <RADIUS_KEY>", "set system radius-server <RADIUS_IP> source-address <LOOPBACK_IP>"]
+    validation: ["show configuration system radius-server"]
+    rollback: ["delete system radius-server"]
+    disruption: low
+  AAA.AUTHENTICATION:
+    title: Authenticate administrators via TACACS+ with local fallback
+    value: true
+    includes: [AAA.TACACS_CONFIGURED]
+    commands: ["set system authentication-order [ tacplus password ]"]
+    validation: ["show configuration system authentication-order", "test aaa ..."]
+    rollback: ["delete system authentication-order"]
+    impact: If the TACACS+ servers are unreachable, the local "password" method is used (keep a local super-user for this).
+    prerequisites: ["TACACS+ reachable from the management instance", "a local super-user account"]
+    disruption: high
+  AAA.ACCOUNTING:
+    title: Account logins, changes and interactive commands to TACACS+
+    value: true
+    commands: ["set system accounting events [ login change-log interactive-commands ]", "set system accounting destination tacplus"]
+    validation: ["show configuration system accounting"]
+    rollback: ["delete system accounting"]
+    approval_required: false
+    disruption: low
+  PASSWORD.POLICY_STRONG:
+    title: Enforce a password policy
+    value: true
+    commands: ["set system login password minimum-length 12", "set system login password change-type character-sets",
+               "set system login password minimum-changes 3", "set system login password format sha512"]
+    validation: ["show configuration system login password"]
+    rollback: ["delete system login password"]
+    impact: Applies to newly set passwords only.
+    approval_required: false
+    disruption: low
+  USER.DEFAULT_ACCOUNTS:
+    title: Remove well-known local accounts
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["delete system login user {name}"]
+    validation: ["show configuration system login"]
+    rollback: ["set system login user {name} class super-user authentication plain-text-password"]
+    impact: Make sure another super-user (or working TACACS+) exists before deleting.
+    prerequisites: ["a verified alternative administrator"]
+    disruption: high
+  CRYPTO.WEAK_ALGO:
+    title: Remove weak algorithms and MD5 password hashes
+    value: false
+    commands: ["delete system services ssh ciphers", "set system services ssh ciphers [ aes256-ctr aes192-ctr aes128-ctr ]",
+               "delete system services ssh macs", "set system services ssh macs [ hmac-sha2-256 hmac-sha2-512 ]",
+               "set system login password format sha512",
+               "! re-enter each password hashed with $1$ so it is stored as SHA-512:",
+               "set system root-authentication plain-text-password",
+               "set security ike proposal <IKE_PROPOSAL> authentication-algorithm sha-256",
+               "set security ike proposal <IKE_PROPOSAL> dh-group group14",
+               "set security ike proposal <IKE_PROPOSAL> encryption-algorithm aes-256-cbc"]
+    validation: ["show configuration system | display set | match encrypted-password"]
+    rollback: []
+    impact: IPsec peers must accept the new proposal; SSH clients need CTR ciphers.
+    prerequisites: ["identify which items are weak from the finding evidence - delete lines that do not apply"]
+    disruption: high
+  CRYPTO.IKE_VERSION:
+    title: Use IKEv2 only
+    value: 2
+    commands: ["set security ike gateway <GATEWAY> version v2-only"]
+    validation: ["show security ike security-associations"]
+    rollback: ["delete security ike gateway <GATEWAY> version"]
+    impact: The tunnel re-negotiates; the peer must support IKEv2.
+    disruption: high
+  SNMP.COMMUNITY_PUBLIC:
+    title: Delete default SNMP communities
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["delete snmp community {name}"]
+    validation: ["show configuration snmp"]
+    rollback: ["set snmp community {name} authorization read-only"]
+    impact: Monitoring using this community stops - migrate to SNMPv3 first.
+    prerequisites: ["SNMPv3 user created and the NMS updated"]
+    disruption: medium
+  SNMP.READWRITE:
+    title: Remove read-write SNMP communities
+    value: false
+    per_target: true
+    skip_if_no_targets: true
+    commands: ["delete snmp community {name}"]
+    validation: ["show configuration snmp"]
+    rollback: ["set snmp community {name} authorization read-write"]
+    disruption: medium
+  SNMP.ACL_RESTRICTED:
+    title: Restrict SNMP communities to the NMS
+    value: true
+    per_target: true
+    commands: ["set snmp community {name} clients <NMS_IP>/32", "set snmp community {name} clients 0.0.0.0/0 restrict"]
+    validation: ["show configuration snmp community {name}"]
+    rollback: ["delete snmp community {name} clients"]
+    disruption: low
+  SNMP.V3_PRIV:
+    title: Use SNMPv3 authPriv
+    value: true
+    commands: ["set snmp v3 usm local-engine user <SNMP_USER> authentication-sha authentication-password \"<AUTH_PASSPHRASE>\"",
+               "set snmp v3 usm local-engine user <SNMP_USER> privacy-aes128 privacy-password \"<PRIV_PASSPHRASE>\"",
+               "set snmp v3 vacm security-to-group security-model usm security-name <SNMP_USER> group MON-GRP",
+               "set snmp v3 vacm access group MON-GRP default-context-prefix security-model usm security-level privacy read-view ALL",
+               "set snmp view ALL oid .1 include"]
+    validation: ["show snmp v3"]
+    rollback: ["delete snmp v3 usm local-engine user <SNMP_USER>"]
+    disruption: low
+  SNMP.VERSION:
+    title: Use SNMPv3 authPriv
+    value: 3
+    includes: [SNMP.V3_PRIV]
+  SNMP.ENABLED:
+    title: Remove the SNMP configuration
+    value: false
+    commands: ["delete snmp"]
+    validation: ["show configuration snmp"]
+    rollback: []
+    impact: All SNMP monitoring stops.
+    disruption: high
+  LOGGING.ENABLED:
+    title: Log to local files
+    value: true
+    commands: ["set system syslog file messages any notice", "set system syslog file messages authorization info"]
+    validation: ["show configuration system syslog"]
+    rollback: ["delete system syslog file messages"]
+    approval_required: false
+    disruption: low
+  LOGGING.BUFFERED:
+    title: Log to local files
+    value: true
+    includes: [LOGGING.ENABLED]
+  LOGGING.REMOTE_SERVER:
+    title: Send logs to a syslog server
+    value: true
+    commands: ["set system syslog host <SYSLOG_IP> any notice", "set system syslog host <SYSLOG_IP> authorization info",
+               "set system syslog host <SYSLOG_IP> source-address <LOOPBACK_IP>"]
+    validation: ["show configuration system syslog host <SYSLOG_IP>"]
+    rollback: ["delete system syslog host <SYSLOG_IP>"]
+    approval_required: false
+    disruption: low
+  NTP.ENABLED:
+    title: Synchronise time with two NTP servers
+    value: true
+    commands: ["set system ntp server <NTP_IP_1>", "set system ntp server <NTP_IP_2>"]
+    validation: ["show ntp associations"]
+    rollback: ["delete system ntp server <NTP_IP_1>", "delete system ntp server <NTP_IP_2>"]
+    approval_required: false
+    disruption: low
+  NTP.AUTHENTICATED:
+    title: Authenticate NTP
+    value: true
+    commands: ["set system ntp authentication-key 5 type md5 value \"<NTP_KEY>\"", "set system ntp trusted-key 5", "set system ntp server <NTP_IP_1> key 5"]
+    validation: ["show ntp associations"]
+    rollback: ["delete system ntp authentication-key 5", "delete system ntp trusted-key 5"]
+    prerequisites: ["the NTP server uses the same key"]
+    disruption: medium
+  NTP.SOURCE_SET:
+    title: Set the NTP source address
+    value: true
+    commands: ["set system ntp source-address <LOOPBACK_IP>"]
+    validation: ["show configuration system ntp"]
+    rollback: ["delete system ntp source-address"]
+    approval_required: false
+    disruption: low
+  BANNER.LOGIN_SET:
+    title: Configure a pre-login banner
+    value: true
+    commands: ["set system login message \"<BANNER_TEXT>\""]
+    validation: ["show configuration system login message"]
+    rollback: ["delete system login message"]
+    approval_required: false
+    disruption: low
+  BANNER.MOTD_SET:
+    title: Configure a post-login banner
+    value: true
+    commands: ["set system login announcement \"<BANNER_TEXT>\""]
+    validation: ["show configuration system login announcement"]
+    rollback: ["delete system login announcement"]
+    approval_required: false
+    disruption: low
+  BANNER.EXEC_SET:
+    title: Configure a post-login banner
+    value: true
+    includes: [BANNER.MOTD_SET]
+  ACL.MGMT_RESTRICTED:
+    title: Protect the Routing Engine with a loopback filter
+    value: true
+    manual: true
+    commands:
+      - "set policy-options prefix-list MGMT-NETS <MGMT_PREFIX>"
+      - "set firewall family inet filter PROTECT-RE term allow-mgmt from source-prefix-list MGMT-NETS"
+      - "set firewall family inet filter PROTECT-RE term allow-mgmt from protocol tcp"
+      - "set firewall family inet filter PROTECT-RE term allow-mgmt from destination-port [ ssh https ]"
+      - "set firewall family inet filter PROTECT-RE term allow-mgmt then accept"
+      - "! add terms BEFORE the discard for: routing protocols (ospf/bgp/bfd), ntp, snmp, dns, icmp"
+      - "set firewall family inet filter PROTECT-RE term default then discard"
+      - "set interfaces lo0 unit 0 family inet filter input PROTECT-RE"
+    validation: ["show firewall filter PROTECT-RE", "show interfaces lo0 | match filter"]
+    rollback: ["delete interfaces lo0 unit 0 family inet filter input PROTECT-RE"]
+    impact: A loopback filter that omits routing/NTP/SNMP terms drops those protocols and can take adjacencies down - always use "commit confirmed".
+    prerequisites: ["inventory of protocols that must reach the Routing Engine", "your management source is in MGMT-NETS"]
+    disruption: high
+  VTY.ACL_APPLIED:
+    title: Protect the Routing Engine with a loopback filter
+    value: true
+    includes: [ACL.MGMT_RESTRICTED]
+  MGMT.SESSION_TIMEOUT:
+    title: Add an idle time-out to login classes
+    value: true
+    commands: ["set system login class ADMIN-IDLE permissions all", "set system login class ADMIN-IDLE idle-timeout 10",
+               "set system login user <USERNAME> class ADMIN-IDLE"]
+    validation: ["show configuration system login class ADMIN-IDLE"]
+    rollback: ["delete system login class ADMIN-IDLE"]
+    impact: Sessions idle for 10 minutes are logged out.
+    approval_required: false
+    disruption: low
+  VTY.TIMEOUT_SET:
+    title: Add an idle time-out to login classes
+    value: true
+    includes: [MGMT.SESSION_TIMEOUT]
+  IP.REDIRECTS_DISABLED:
+    title: Do not send ICMP redirects
+    value: true
+    commands: ["set system no-redirects"]
+    validation: ["show configuration system no-redirects"]
+    rollback: ["delete system no-redirects"]
+    approval_required: false
+    disruption: low
+  URPF.ENABLED:
+    title: Enable unicast reverse-path checking
+    value: true
+    commands: ["set interfaces <INTERFACE> unit 0 family inet rpf-check"]
+    validation: ["show interfaces <INTERFACE> | match rpf"]
+    rollback: ["delete interfaces <INTERFACE> unit 0 family inet rpf-check"]
+    impact: Strict mode drops legitimate traffic on asymmetric paths; add "mode loose" there.
+    disruption: high
+  CDP.DISABLED_EDGE:
+    title: Disable LLDP
+    value: true
+    commands: ["set protocols lldp disable"]
+    validation: ["show lldp"]
+    rollback: ["delete protocols lldp disable"]
+    disruption: low
+  AUDIT.CONFIG_ARCHIVED:
+    title: Archive the configuration on every commit
+    value: true
+    commands: ["set system archival configuration transfer-on-commit", "set system archival configuration archive-sites \"<ARCHIVE_URL>\""]
+    validation: ["show configuration system archival"]
+    rollback: ["delete system archival"]
+    approval_required: false
+    disruption: low
+  DHCP.SNOOPING:
+    title: Enable DHCP snooping
+    value: true
+    commands: ["set ethernet-switching-options secure-access-port vlan <VLAN> examine-dhcp"]
+    validation: ["show dhcp-security binding"]
+    rollback: ["delete ethernet-switching-options secure-access-port vlan <VLAN> examine-dhcp"]
+    impact: Mark trusted (uplink) ports with dhcp-trusted first.
+    disruption: high
+  PORT_SECURITY.ENABLED:
+    title: Limit MAC addresses per access port
+    value: true
+    commands: ["set ethernet-switching-options secure-access-port interface <INTERFACE> mac-limit 3 action drop"]
+    validation: ["show ethernet-switching table"]
+    rollback: ["delete ethernet-switching-options secure-access-port interface <INTERFACE> mac-limit"]
+    impact: Ports that learn more MAC addresses than the limit (hubs, VMs, phone + PC) start dropping traffic.
+    disruption: high
+  STP.BPDU_GUARD:
+    title: Block BPDUs on edge ports
+    value: true
+    commands: ["set protocols rstp bpdu-block-on-edge"]
+    validation: ["show spanning-tree interface"]
+    rollback: ["delete protocols rstp bpdu-block-on-edge"]
+    disruption: medium
+  ROUTING.BGP_AUTH:
+    title: Authenticate BGP groups
+    value: true
+    per_target: true
+    target_placeholder: "<BGP_GROUP>"
+    commands: ["set protocols bgp group {name} authentication-key \"<BGP_KEY>\""]
+    validation: ["show bgp neighbor"]
+    rollback: ["delete protocols bgp group {name} authentication-key"]
+    impact: Sessions reset until the peer uses the same key.
+    disruption: high
+  ROUTING.OSPF_AUTH:
+    title: Authenticate OSPF interfaces
+    value: true
+    commands: ["set protocols ospf area <AREA> interface <INTERFACE> authentication md5 1 key \"<OSPF_KEY>\""]
+    validation: ["show ospf interface detail"]
+    rollback: ["delete protocols ospf area <AREA> interface <INTERFACE> authentication"]
+    impact: Adjacencies drop until both ends match.
+    disruption: high
+  ROUTING.AUTH_ENABLED:
+    title: Authenticate routing protocols
+    value: true
+    includes: [ROUTING.BGP_AUTH, ROUTING.OSPF_AUTH]
+  DOS.PROTECTION:
+    title: Rate-limit management traffic with a policer
+    value: true
+    commands: ["set firewall policer MGMT-POLICER if-exceeding bandwidth-limit 1m burst-size-limit 15k", "set firewall policer MGMT-POLICER then discard"]
+    validation: ["show firewall policer MGMT-POLICER"]
+    rollback: ["delete firewall policer MGMT-POLICER"]
+    impact: Attach it to the loopback filter terms; a too-low limit drops legitimate management traffic.
+    disruption: medium
+  ACL.PERMIT_ANY:
+    title: Replace accept-all terms with specific matches
+    value: false
+    manual: true
+    commands: ["! edit the filter term / policy named in the finding evidence so it has a 'from' / match clause", "show firewall | display set | match accept"]
+    validation: ["show firewall"]
+    rollback: []
+    impact: Narrowing a permit-all drops traffic that is not explicitly allowed.
+    disruption: high

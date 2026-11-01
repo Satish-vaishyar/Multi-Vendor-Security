@@ -20,6 +20,7 @@ heuristic fallbacks so the OKF engines + tests still work.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from dataclasses import dataclass, field
@@ -104,8 +105,23 @@ class FeatherlessGateway:
     timeout: float = 60.0
 
     @property
+    def is_local(self) -> bool:
+        """True for self-hosted OpenAI-compatible servers (Ollama, vLLM, llama.cpp) - data stays on-prem."""
+        from urllib.parse import urlparse
+        host = (urlparse(self.base_url).hostname or "").lower()
+        return host in ("localhost", "127.0.0.1", "::1", "host.docker.internal") or host.endswith(".internal")             or host.endswith(".local")
+
+    @property
     def online(self) -> bool:
-        return bool(self.api_key)
+        """Customer configs only leave the network when the operator explicitly opts in.
+
+        * local/self-hosted endpoint  -> allowed (no key needed)
+        * external endpoint (Featherless, ...) -> needs BOTH an API key AND ALLOW_EXTERNAL_LLM=true
+        """
+        if self.is_local:
+            return True
+        allowed = os.getenv("ALLOW_EXTERNAL_LLM", "false").strip().lower() in ("1", "true", "yes")
+        return bool(self.api_key) and allowed
 
     # ---- low-level chat (OpenAI-compatible) ----
     def chat(self, messages: List[Dict[str, str]], temperature: float = 0.1,
@@ -113,9 +129,16 @@ class FeatherlessGateway:
         mdl = model or self.model
         if not self.online:
             return GatewayResponse(ok=False, model=mdl, offline=True,
-                                   error="OFFLINE: FEATHERLESS_API_KEY not set")
+                                   error="OFFLINE: external LLM disabled (set ALLOW_EXTERNAL_LLM=true and "
+                                         "FEATHERLESS_API_KEY, or point FEATHERLESS_BASE_URL at a local model)")
         try:
             import httpx
+            # Secrets never leave the process, even toward an allowed LLM endpoint.
+            from src.redact import redact_secrets
+            messages = [{**m, "content": redact_secrets(str(m.get("content", "")))} for m in messages]
+            logging.getLogger("llm_gateway").info(
+                "LLM call -> %s (local=%s) model=%s chars=%d", self.base_url, self.is_local, mdl,
+                sum(len(m.get("content", "")) for m in messages))
             payload = {
                 "model": mdl,
                 "messages": messages,
@@ -167,9 +190,25 @@ gateway = FeatherlessGateway()
 
 
 # ---------------------------------------------------------------- heuristics
+# Several rules below contain an open-ended `.*` between two literals. On a hostile line such as "aaaa..." (every
+# position starts a match attempt that then scans to the end of the line) that is QUADRATIC: one 100 KB line cost
+# ~5 s and a 5 MB line would pin a worker for hours. The gap is bounded instead, and only the first
+# _MAX_HEURISTIC_CHARS characters of a line are inspected (real CLI commands are far shorter).
+_MAX_HEURISTIC_CHARS = 1024
+_GAP = r".{0,100}"
+_bounded_cache: Dict[str, "re.Pattern[str]"] = {}
+
+
+def _bounded(pat: str) -> "re.Pattern[str]":
+    rx = _bounded_cache.get(pat)
+    if rx is None:
+        rx = _bounded_cache[pat] = re.compile(pat.replace(".*", _GAP))
+    return rx
+
+
 def _heuristic_parse_line(line: str) -> Optional[Dict[str, Any]]:
     """Deterministic offline fallback: map a raw CLI line to canonical property."""
-    l = line.strip().lower()
+    l = line.strip().lower()[:_MAX_HEURISTIC_CHARS]
     if not l or l.startswith(("!", "#", "hostname")):
         return None
     rules = [
@@ -236,7 +275,7 @@ def _heuristic_parse_line(line: str) -> Optional[Dict[str, Any]]:
         (r"flow\s+monitor|netflow|sflow|ip\s+flow", "MONITORING.NETFLOW", True, 0.75),
     ]
     for pat, prop, val, conf in rules:
-        if re.search(pat, l):
+        if _bounded(pat).search(l):
             return {"canonical_property": prop, "canonical_value": val,
                     "confidence": conf, "evidence": line.strip(), "source": "heuristic"}
     return None

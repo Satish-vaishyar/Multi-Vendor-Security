@@ -101,7 +101,7 @@ export default function SecurityAnalytics() {
 
   return (
     <div>
-      <PageHeader title="Security Analytics" sub="Risk, anomalies, fleet outliers — GET /analytics/{audit_id}" />
+      <PageHeader title="Security Analytics" sub="Risky settings, attack paths and devices that differ from the rest of your fleet." />
       <div className="mb-4">
         <AuditPicker
           overviews={audits.overviews} isLoading={audits.isLoading} isError={audits.isError} onRetry={audits.refetch}

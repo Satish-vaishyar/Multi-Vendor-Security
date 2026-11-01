@@ -6,12 +6,14 @@ and, when a candidate config is supplied, re-audits it to prove the fix.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core import config as cfg
 from app.core import persist as db
+from app.core import security as sec
 from app.core import store
+from app.api.v1.paging import Pager, envelope, pager, paged
 from app.services.integration import okf_layer
 
 router = APIRouter(prefix="/api/v1/remediation", tags=["remediation"])
@@ -123,6 +125,23 @@ def _fallback_steps(f: dict) -> tuple[list[str], str, list[str]]:
     return (cmds, "generic", ["show running-config", "Re-run audit: control status should be PASS"])
 
 
+def _generated_plan(f: dict, vendor: str, platform: str, okf: dict):
+    """Fix-library plan for a failed COMPLIANCE finding, built from this audit's own parsed config."""
+    if _engine_key(f) != "compliance" or str(f.get("status", "")).upper() not in ("FAIL", "UNKNOWN"):
+        return None
+    control = okf["ckb"].controls.get(str(f.get("control_id") or ""))
+    audit = db.get("audits", str(f.get("audit_id") or ""), inflate=False) if f.get("audit_id") else None
+    if not control or not audit:
+        return None
+    try:
+        return okf["fixlib"].plan(control, audit.get("canonical_ir") or {}, audit.get("provenance") or {},
+                                  vendor, platform.lower())
+    except Exception as e:  # a template bug must degrade to the legacy plan, never to a 500
+        import logging
+        logging.getLogger("sih26155").warning("fix-library plan failed for %s: %s", f.get("finding_id"), e)
+        return None
+
+
 @router.get("/{finding_id}")
 def get_plan(finding_id: str):
     f = _finding_or_404(finding_id)
@@ -134,16 +153,27 @@ def get_plan(finding_id: str):
     okf = okf_layer()
     entry = (okf["rem"].index or {}).get(str(f.get("control_id") or ""), {})
     vendors = (entry.get("vendors") or {}) if isinstance(entry, dict) else {}
-    vend = vendors.get(vendor, {}) or next(iter(vendors.values()), {})
+    # Exact vendor only: showing another vendor's commands on a device is worse than showing none.
+    vend = vendors.get(vendor, {})
+    if vendor == "cisco" and platform.lower() == "nx-os":
+        vend = {}   # the legacy Cisco packs are IOS syntax; NX-OS differs (feature/vrf/ssh syntax)
     if not isinstance(vend, dict):
         vend = {}
 
+    gen = _generated_plan(f, vendor, platform, okf)
     cmds: list[str] = list(vend.get("commands") or [])
     source = "okf-vendor" if cmds else ""
+    if gen:   # context-aware plan from the fix library supersedes the thin legacy pack
+        cmds = [s["command"] for s in gen["steps"]]
+        source = "fix-library"
     validation: list[str] = list(vend.get("validation") or [])
     rollback: list[str] = list(vend.get("rollback") or [])
     approval_required = bool(vend.get("approval_required", True))
     fix_title = str(vend.get("title") or entry.get("title") or f.get("title") or "")
+    if gen:
+        validation, rollback = list(gen["validation"]), list(gen["rollback"])
+        approval_required = bool(gen["approval_required"])
+        fix_title = str(gen["title"])
 
     if not cmds:
         cmds, source, fb_validation = _fallback_steps(f)
@@ -151,10 +181,13 @@ def get_plan(finding_id: str):
             validation = fb_validation
         if not fix_title:
             fix_title = str(f.get("title") or "")
-    else:
+    elif not gen:
         source = "okf-vendor"
 
-    steps = [{"order": i + 1, "command": c} for i, c in enumerate(cmds)]
+    steps = [{"order": i + 1, "command": c, **({"section": gen["steps"][i]["section"]} if gen else {})}
+             for i, c in enumerate(cmds)]
+    from app.services import fix_lab
+    lab = fix_lab.lookup(str(f.get("control_id") or ""), vendor, platform)      # evidence recorded by this organisation
     _rem_all = f.get("remediation") if isinstance(f.get("remediation"), dict) else {}
     _ev_all = f.get("evidence") if isinstance(f.get("evidence"), dict) else {}
     _refs_out: list[str] = []
@@ -184,34 +217,48 @@ def get_plan(finding_id: str):
                    "risk": f.get("risk") or {},
                    "evidence": f.get("evidence") or {},
                    "references": _refs_out,
-                   "remediation_detail": f.get("remediation") or {}})
+                   "remediation_detail": f.get("remediation") or {},
+                   # --- context-aware plan metadata (empty for legacy / non-compliance plans) ---
+                   "impact": gen["impact"] if gen else "",
+                   "prerequisites": gen["prerequisites"] if gen else [],
+                   "parameters": gen["parameters"] if gen else [],
+                   "apply_notes": gen["apply_notes"] if gen else "",
+                   "verification": "lab-verified" if lab else (gen["verification"] if gen else "legacy"),
+                   "verification_note": fix_lab.describe(lab) if lab else (gen["verification_note"] if gen else ""),
+                   "lab_verification": lab,
+                   "plan_sources": gen["sources"] if gen else [],
+                   "sections": gen["sections"] if gen else [],
+                   "manual_review": gen["manual_review"] if gen else [],
+                   "manual_steps": gen["manual_steps"] if gen else []})
 
 
 @router.get("/{finding_id}/history")
-def history(finding_id: str):
+def history(finding_id: str, p: Pager = Depends(pager(50))):
     _finding_or_404(finding_id)
     try:
-        items = db.find("remediations", order="DESC", finding_id=finding_id)
+        items, total = paged("remediations", p, None, finding_id=finding_id)
+    except HTTPException:
+        raise
     except Exception:
-        items = []
+        items, total = [], 0
     lite = [{"id": r.get("id"), "finding_id": r.get("finding_id"),
              "status": r.get("status"), "approved_by": r.get("approved_by"),
              "comment": r.get("comment", ""), "approved_at": r.get("approved_at"),
              "created_at": r.get("created_at")} for r in items]
-    return cfg.ok({"finding_id": finding_id, "items": lite, "total": len(lite)})
+    return cfg.ok(envelope(lite, total, p, finding_id=finding_id))
 
 
 class ApproveBody(BaseModel):
-    approved_by: str = Field(default="admin", min_length=1)
-    comment: str = ""
+    # approved_by is accepted for backwards compatibility but IGNORED: the actor
+    # is always the authenticated user (cannot be spoofed by the client).
+    approved_by: str = Field(default="", max_length=200)
+    comment: str = Field(default="", max_length=2000)
 
 
 @router.post("/{finding_id}/approve")
-def approve(finding_id: str, body: ApproveBody):
+def approve(finding_id: str, body: ApproveBody, user=Depends(sec.require_user)):
     _finding_or_404(finding_id)
-    approved_by = (body.approved_by or "").strip()
-    if not approved_by:
-        raise HTTPException(400, "approved_by is required")
+    approved_by = str(user.get("email") or user.get("id") or "").strip()
     rid = store.nid("REM")
     rec = {"id": rid, "finding_id": finding_id, "status": "APPROVED",
            "approved_by": approved_by, "comment": body.comment or "",
@@ -222,7 +269,7 @@ def approve(finding_id: str, body: ApproveBody):
 
 class ApplyBody(BaseModel):
     id: str = Field(default="", min_length=1)  # approval id from /approve
-    updated_config_text: str = ""
+    updated_config_text: str = Field(default="", max_length=5 * 1024 * 1024)   # same ceiling as a config upload
 
 
 def _same_finding_key(orig: dict, cand: dict) -> bool:
@@ -292,7 +339,7 @@ def apply(finding_id: str, body: ApplyBody):
             config_text=body.updated_config_text,
             frameworks=list(audit.get("frameworks") or ["CIS", "NIST", "STIG", "ISO27001"]),
             asset_criticality=str(asset.get("criticality") or "MEDIUM"),
-            detected=audit.get("vendor"))
+            detected=audit.get("vendor"), snapshot=False)       # what-if run: not a real audit in the history
         same = [x for x in record["findings"] if _same_finding_key(f, x)]
         after_fail = sum(1 for x in record["findings"] if x.get("status") == "FAIL")
         result["re_audit_status"] = same[0]["status"] if same else "UNKNOWN"

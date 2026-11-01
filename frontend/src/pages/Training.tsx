@@ -3,9 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { approveMapping, rejectMapping, suggestMapping, trainingQueue } from "../api/training.api";
 import { toMessage } from "../api/client";
 import type { Suggestion, TrainingItem } from "../types";
+import { useAuth } from "../stores/auth";
+import { hasRole } from "../utils/roles";
 import { AiBadge, Badge, Card, Empty, ErrorState, Field, Loader, PageHeader, btnGhost, btnPrimary, inputCls } from "../components/common";
 
 export default function Training() {
+  const canApprove = hasRole(useAuth((s) => s.user?.role), "APPROVER");
   const qc = useQueryClient();
   const [status, setStatus] = useState("PENDING");
   const [sel, setSel] = useState<TrainingItem | null>(null);
@@ -46,19 +49,19 @@ export default function Training() {
 
   const suggestions = (((sugg.data as Record<string, unknown> | undefined)?.suggestions ?? []) as Suggestion[]);
   const modelSuggestions = (((sugg.data as Record<string, unknown> | undefined)?.model_suggestions ?? []) as (Suggestion & { evidence?: string; vendor?: string })[]);
-  const useSuggestion = (s: Suggestion) => {
+  const applySuggestion = (s: Suggestion) => {
     setProp(s.canonical_property);
     setVal(String((s.value as unknown) ?? ""));
   };
 
   return (
     <div>
-      <PageHeader title="AI Training" sub="Adaptive learning loop — approve / reject AI mappings" />
+      <PageHeader title="AI Training" sub="When the AI meets a config line it does not know, it proposes a meaning. Approve or reject each suggestion so future audits get it right." />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card
           title="Unknown Command Queue"
           right={
-            <select className={`${inputCls} w-32`} value={status} onChange={(e) => setStatus(e.target.value)}>
+            <select className={`${inputCls} w-32`} aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value)}>
               {["PENDING", "APPROVED", "REJECTED"].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           }
@@ -93,7 +96,7 @@ export default function Training() {
                   <p className="mb-1.5 mt-3 text-[11px] uppercase tracking-wider text-ink3">LLM / heuristic suggestions</p>
                   <ul className="space-y-2">
                     {suggestions.map((s, i) => (
-                      <SuggestionRow key={`h-${i}`} index={i} s={s} onUse={() => useSuggestion(s)} />
+                      <SuggestionRow key={`h-${i}`} index={i} s={s} onUse={() => applySuggestion(s)} />
                     ))}
                   </ul>
                 </>
@@ -103,7 +106,7 @@ export default function Training() {
                   <p className="mb-1.5 mt-3 text-[11px] uppercase tracking-wider text-ink3">Model suggestions (M3 mapping classifier)</p>
                   <ul className="space-y-2">
                     {modelSuggestions.map((s, i) => (
-                      <SuggestionRow key={`m-${i}`} index={i} s={s} onUse={() => useSuggestion(s)} />
+                      <SuggestionRow key={`m-${i}`} index={i} s={s} onUse={() => applySuggestion(s)} />
                     ))}
                   </ul>
                 </>
@@ -114,13 +117,15 @@ export default function Training() {
                 <Field label="Comment"><input className={inputCls} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="verification note" /></Field>
                 <Field label="Reject reason"><input className={inputCls} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="why is this mapping wrong?" /></Field>
                 <div className="flex gap-2">
-                  <button className={btnPrimary} disabled={approve.isPending} onClick={() => approve.mutate()}>
+                  <button className={btnPrimary} disabled={!canApprove || approve.isPending}
+                    title={canApprove ? undefined : "Requires the APPROVER role"} onClick={() => approve.mutate()}>
                     {approve.isPending ? "Approving…" : "Approve"}
                   </button>
-                  <button className={btnGhost} disabled={reject.isPending} onClick={() => reject.mutate()}>Reject</button>
+                  <button className={btnGhost} disabled={!canApprove || reject.isPending}
+                    title={canApprove ? undefined : "Requires the APPROVER role"} onClick={() => reject.mutate()}>Reject</button>
                 </div>
                 {note && <p className="rounded-lg border border-ok/30 bg-okbg p-2.5 text-xs text-ok">{note}</p>}
-                {err && <p className="rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-xs text-danger">{err}</p>}
+                {err && <p role="alert" className="rounded-lg border border-danger/30 bg-dangerbg p-2.5 text-xs text-danger">{err}</p>}
               </div>
             </>
           )}
