@@ -33,3 +33,12 @@ def test_json_export_redacts_secrets():
     key = "AK" + "IAQWERTYUIOPASDFGH"
     out = export.to_json({"findings": [{"title": f"key {key}"}]})
     assert key not in out and json.loads(out)
+
+
+def test_json_and_sarif_redact_keys_nested_values_and_locations():
+    key = "AK" + "IAQWERTYUIOPASDFGH"
+    out = export.to_json({key: [{"a": key}, (key,), 3, None, object.__name__ and 1.5, {"k": True}]})
+    assert key not in out
+    rep = {"rule_pack_version": key, "findings": [{"control_id": key, "title": "t", "severity": "HIGH", "evidence_state": "FAIL_STATIC",
+                                                   "source": {"file": key + ".tf", "line_start": 2}}]}
+    assert key not in export.to_sarif(rep) and key not in export.to_json({"x": object()})

@@ -25,8 +25,20 @@ def csv_cell(value: Any) -> str:
     return "'" + text if text.startswith(_FORMULA_LEAD) else text
 
 
+def _redact(value: Any) -> Any:
+    """Redact every string (keys and values) of the structure itself; never run the regex over serialised JSON, where
+    escaping could split a credential from the pattern that matches it."""
+    if isinstance(value, str):
+        return secret_scan.redact(value)
+    if isinstance(value, dict):
+        return {secret_scan.redact(str(k)): _redact(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_redact(v) for v in value]
+    return value if value is None or isinstance(value, (bool, int, float)) else secret_scan.redact(str(value))
+
+
 def to_json(report: Dict[str, Any]) -> str:
-    return json.dumps(json.loads(secret_scan.redact(json.dumps(report, default=str))), indent=2, sort_keys=True)
+    return json.dumps(_redact(report), indent=2, sort_keys=True)
 
 
 def to_csv(report: Dict[str, Any]) -> str:
@@ -50,14 +62,15 @@ def to_sarif(report: Dict[str, Any]) -> str:
     for f in report.get("findings", []):
         if f.get("evidence_state") not in ("FAIL_STATIC", "FAIL_LIVE"):
             continue
-        rules.setdefault(f["control_id"], {"id": f["control_id"], "shortDescription": {"text": secret_scan.redact(str(f.get("title", "")))}})
+        rule_id = secret_scan.redact(str(f["control_id"]))
+        rules.setdefault(rule_id, {"id": rule_id, "shortDescription": {"text": secret_scan.redact(str(f.get("title", "")))}})
         src = f.get("source") or {}
-        loc = {"physicalLocation": {"artifactLocation": {"uri": str(src.get("file", ""))},
+        loc = {"physicalLocation": {"artifactLocation": {"uri": secret_scan.redact(str(src.get("file", "")))},
                                     "region": {"startLine": max(int(src.get("line_start") or 1), 1)}}}
-        results.append({"ruleId": f["control_id"], "level": _SARIF_LEVEL.get(f.get("severity"), "warning"),
+        results.append({"ruleId": rule_id, "level": _SARIF_LEVEL.get(f.get("severity"), "warning"),
                         "message": {"text": secret_scan.redact(f"{f.get('title', '')} ({f.get('resource_address', '')})")},
                         "locations": [loc]})
     doc = {"version": "2.1.0", "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
-           "runs": [{"tool": {"driver": {"name": "orbit-cloud-static", "version": str(report.get("rule_pack_version", "")),
+           "runs": [{"tool": {"driver": {"name": "orbit-cloud-static", "version": secret_scan.redact(str(report.get("rule_pack_version", ""))),
                                          "rules": list(rules.values())}}, "results": results}]}
     return json.dumps(doc, indent=2)
