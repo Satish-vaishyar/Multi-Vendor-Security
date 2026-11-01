@@ -2,7 +2,7 @@
 
 Everything exported is re-redacted (the report may have been stored and edited), and CSV cells that a spreadsheet could
 interpret as a formula are neutralised so an uploaded resource name cannot execute in the reviewer's Excel/Sheets.
-PDF is not produced here: it needs a renderer the sandboxed service does not ship.
+PDF is a small dependency-free text report written by `to_pdf` (no renderer, nothing fetched or executed).
 """
 from __future__ import annotations
 
@@ -98,3 +98,71 @@ def to_sarif(report: Dict[str, Any]) -> str:
            "runs": [{"tool": {"driver": {"name": "orbit-cloud-static", "version": secret_scan.redact(str(report.get("rule_pack_version", ""))),
                                          "rules": list(rules.values())}}, "results": results}]}
     return json.dumps(doc, indent=2)
+
+
+# ------------------------------------------------------------------ PDF (RTM S20): a dependency-free, text-only report
+PDF_LINE_WIDTH = 98
+PDF_LINES_PER_PAGE = 60
+PDF_MAX_FINDINGS = 2000
+
+
+def _pdf_text(value: Any) -> str:
+    """Redacted, control characters removed, latin-1 only (the built-in Helvetica font), then PDF string escaping."""
+    text = secret_scan.redact("" if value is None else str(value))
+    text = "".join(c if c.isprintable() else " " for c in text).encode("latin-1", "replace").decode("latin-1")
+    return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def _wrap(line: str) -> List[str]:
+    return [line[i:i + PDF_LINE_WIDTH] for i in range(0, max(len(line), 1), PDF_LINE_WIDTH)]
+
+
+def _report_lines(report: Dict[str, Any]) -> List[str]:
+    cov = report.get("coverage") or {}
+    summary = report.get("summary") or {}
+    inp = report.get("input") or {}
+    lines = ["Cloud security assessment report", "",
+             f"Scan input: {inp.get('filename', '')}  sha256 {inp.get('sha256', '')}",
+             f"Rule pack: {report.get('rule_pack_version', '')}   Mode: {report.get('mode', 'static')}   Status: {report.get('status', '')}", "",
+             "Statement", str(report.get("statement", "")), "", "Coverage",
+             f"Providers: {', '.join(map(str, cov.get('providers') or [])) or 'none detected'}",
+             f"Formats: {json.dumps(cov.get('formats') or {}, sort_keys=True)}",
+             f"Not assessed: {'; '.join(map(str, cov.get('not_assessed') or []))}"]
+    for note in cov.get("rule_pack_customisations") or []:
+        lines.append(f"Customisation: {note}")
+    lines += ["", "Summary", f"Results by state: {json.dumps(summary.get('states') or {}, sort_keys=True)}",
+              f"Failed by severity: {json.dumps(summary.get('failed_by_severity') or {}, sort_keys=True)}", "",
+              "Findings (UNKNOWN means undecidable from the files; it is never counted as a pass)"]
+    findings = [f for f in report.get("findings") or [] if isinstance(f, dict)]
+    for f in findings[:PDF_MAX_FINDINGS]:
+        src = f.get("source") or {}
+        lines.append(f"[{f.get('severity', '')}] {f.get('evidence_state', '')}  {f.get('control_id', f.get('rule_id', ''))}  {f.get('title', '')}")
+        lines.append(f"    {f.get('resource_address', src.get('resource_address', ''))}  {src.get('file', '')}:{src.get('line_start', '')}")
+    if len(findings) > PDF_MAX_FINDINGS:
+        lines.append(f"... {len(findings) - PDF_MAX_FINDINGS} more finding(s) are in the JSON export")
+    return lines
+
+
+def to_pdf(report: Dict[str, Any]) -> bytes:
+    wrapped = [w for line in _report_lines(report) for w in _wrap(line)]
+    pages = [wrapped[i:i + PDF_LINES_PER_PAGE] for i in range(0, len(wrapped), PDF_LINES_PER_PAGE)] or [[]]
+    objs: List[bytes] = [b"<< /Type /Catalog /Pages 2 0 R >>", b"", b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"]
+    kids = []
+    for lines in pages:
+        stream = "BT /F1 8 Tf 10 TL 36 806 Td " + " ".join(f"({_pdf_text(l)}) '" for l in lines) + " ET"
+        body = stream.encode("latin-1", "replace")
+        objs.append(b"<< /Length %d >>\nstream\n" % len(body) + body + b"\nendstream")
+        objs.append(b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents %d 0 R >>" % len(objs))
+        kids.append(len(objs))
+    objs[1] = b"<< /Type /Pages /Kids [" + b" ".join(b"%d 0 R" % k for k in kids) + b"] /Count %d >>" % len(kids)
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for n, o in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += b"%d 0 obj\n" % n + o + b"\nendobj\n"
+    xref = len(out)
+    out += b"xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1)
+    for off in offsets:
+        out += b"%010d 00000 n \n" % off
+    out += b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, xref)
+    return bytes(out)

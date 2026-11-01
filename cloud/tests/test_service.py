@@ -27,6 +27,8 @@ def test_export_endpoint_renders_formats_and_rejects_bad_input(monkeypatch):
     assert client.post("/export/exe", json=rep).status_code == 404
     assert client.post("/export/csv", json=rep).text.startswith("control_id,")
     assert '"version": "2.1.0"' in client.post("/export/sarif", json=rep).text
+    pdf = client.post("/export/pdf", json=rep)
+    assert pdf.headers["content-type"] == "application/pdf" and pdf.content.startswith(b"%PDF")
     assert client.post("/export/json", json=rep).json()["findings"][0]["control_id"] == "C"
     assert client.post("/export/json", content=b"{").status_code == 400
     assert client.post("/export/json", content=b"[1]").status_code == 400

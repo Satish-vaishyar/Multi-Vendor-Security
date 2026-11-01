@@ -36,7 +36,7 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S21 exceptions (expiry, separation of duties) | ✅ engine side; DB/API/UI ⬜ | `cloud/exceptions.py` |
 | S25 scan-to-scan drift | ✅ engine side | `cloud/drift.py` |
 | S26 capability matrix generated from the pack | ✅ | `cloud/capability.py` |
-| S20 JSON / CSV / SARIF export (PDF not produced) | ✅ | `cloud/export.py` |
+| S20 JSON / CSV / SARIF export | ✅ | `cloud/export.py` |
 | S17 relationship graph + effective exposure (note only; evidence state untouched) | ✅ | `cloud/graph.py` |
 | S19 remediation snippets (un-applied) + explain-only prompt builder | ✅ | `cloud/remediation.py` |
 | S22 deeper Kubernetes rules: hostIPC, hostPath, read-only root FS, RBAC wildcard, cluster-admin and anonymous bindings (CLOUD-K8S-009..014; 31 controls total) | ✅ | `cloud/rules/extractors.py`, `okf-cloud/` |
@@ -49,9 +49,12 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S34 (customer rule packs) private pack of CUSTOM-* controls over existing properties, severity overrides, justified disables that are always reported in coverage; no code, mappings or extractors; bounded; on-prem packaging not done | 🟡 | `cloud/rules/customer.py` |
 | S30 India provider discovery: evidence framework and decision rule only; NO provider conclusions are written (they need primary sources the study has not collected) | 🟡 | `docs/CLOUD_INDIA_PROVIDER_DISCOVERY.md` |
 | S31/S32 foundations (no cloud client, no network): read-only operation guard, authorisation record, un-leakable Secret, static/live reconcile giving PASS_LIVE / FAIL_LIVE / CONFLICT. Real AWS/Azure/GCP connectors need a test cloud account and are not built | 🟡 | `cloud/live.py` |
-| S29, S33 | ⬜ not started (S29 platforms and S33 inventory need schemas / accounts we do not have) | - |
+| S29 (partial) OpenStack Heat security groups, Ansible `ec2_group` tasks, Pulumi stack-export AWS security groups; VMware/NSX, Nutanix and cloud-init are NOT done (no verified schemas / rules) | 🟡 | `cloud/parsers/heat.py`, `ansible.py`, `pulumi.py`, `cloud/tests/test_s29.py` |
+| S28 (more) OVH IP firewall rule added; IBM, Vultr, UpCloud still not covered (nested/range source attributes need engine work and pinned schemas) | 🟡 | `cloud/rules/extractors.py` (`_FW_SPECS`) |
+| S20 PDF report: dependency-free text PDF (statement, coverage, not-assessed list, summary, findings with file/line), redacted, bounded; served by the scanner and the backend export route and offered on the Cloud page | ✅ | `cloud/export.py` (`to_pdf`) |
+| S33 org-wide inventory, S31/S32 real connectors, S23 schedules/webhooks/asset links | ⬜ blocked: need a test cloud account / a reviewed design for outbound webhooks and scheduled jobs; not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (395 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (406 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)

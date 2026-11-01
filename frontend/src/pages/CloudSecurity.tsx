@@ -89,7 +89,7 @@ export default function CloudSecurity() {
           sub={scan.data?.summary?.statement}
           right={
             <span className="flex gap-2">
-              {(["json", "csv", "sarif"] as const).map((f) => (
+              {(["json", "csv", "sarif", "pdf"] as const).map((f) => (
                 <button key={f} className={btnGhost} onClick={() => void downloadCloudScan(selected, f).catch((e) => setErr(toMessage(e)))}>
                   {f.toUpperCase()}
                 </button>

@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/v1/cloud", tags=["cloud"])
 
 MAX_UPLOAD = 50 * 1024 * 1024
 _SCAN_ID = re.compile(r"^CSCAN-[0-9a-f]{16}$")
-_FORMATS = {"json": "application/json", "csv": "text/csv", "sarif": "application/sarif+json"}
+_FORMATS = {"json": "application/json", "csv": "text/csv", "sarif": "application/sarif+json", "pdf": "application/pdf"}
 _TRUE = {"1", "true", "yes", "on"}
 
 

@@ -57,3 +57,24 @@ def test_whole_subtree_under_a_credential_key_is_masked():
                                      "passwords": [], "ok": {"n": 1}}))
     assert out["secret"] == {"a": ["[REDACTED]", "[REDACTED]", {"b": "[REDACTED]", "c": None}], "d": ""}
     assert out["tokens"] == ["[REDACTED]", "[REDACTED]"] and out["token"] == "[REDACTED]" and out["passwords"] == [] and out["ok"] == {"n": 1}
+
+
+def test_pdf_is_wellformed_redacted_and_paginated():
+    import re
+
+    from cloud.export import PDF_LINES_PER_PAGE, PDF_MAX_FINDINGS, to_pdf
+    secret = "AKIA" + "ABCDEFGHIJKLMNOP"
+    f = {"severity": "HIGH", "evidence_state": "FAIL_STATIC", "control_id": "C-1", "title": f"bad (paren) \ {secret} ☃",
+         "resource_address": "a.b", "source": {"file": "m.tf", "line_start": 3}}
+    rep = {"statement": "s", "coverage": {"providers": ["aws"], "formats": {"x": 1}, "not_assessed": ["live"], "rule_pack_customisations": ["c"]},
+           "summary": {"states": {"FAIL_STATIC": 1}}, "input": {"filename": "f", "sha256": "h"}, "findings": [f] * (PDF_MAX_FINDINGS + 1) + ["junk"]}
+    pdf = to_pdf(rep)
+    assert pdf.startswith(b"%PDF-1.4") and pdf.rstrip().endswith(b"%%EOF") and secret.encode() not in pdf
+    assert rb"\(paren\)" in pdf and rb"more finding\(s\)" in pdf
+    start = int(re.search(rb"startxref\n(\d+)", pdf).group(1))
+    assert pdf[start:start + 4] == b"xref"
+    offs = re.findall(rb"(\d{10}) 00000 n", pdf)
+    for n, off in enumerate(offs, 1):
+        assert pdf[int(off):].startswith(b"%d 0 obj" % n)
+    assert pdf.count(b"/Type /Page ") > 2 and PDF_LINES_PER_PAGE > 0
+    assert to_pdf({}).startswith(b"%PDF")          # an empty report still yields one page

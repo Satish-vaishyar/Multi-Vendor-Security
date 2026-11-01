@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, Response
 
 from cloud import __version__, export, flags, intake, pipeline
 
@@ -40,15 +40,16 @@ async def scan(request: Request, x_filename: str = Header(default="upload"), x_a
 
 
 _EXPORTERS = {"json": export.to_json, "csv": export.to_csv, "sarif": export.to_sarif}
+_BINARY = {"pdf": export.to_pdf}
 MAX_EXPORT_BODY = 64 * 1024 * 1024
 
 
 @app.post("/export/{fmt}")
-async def export_report(fmt: str, request: Request) -> PlainTextResponse:
-    """Render a stored scan report as JSON / CSV / SARIF. Pure transformation; every string is re-redacted by cloud.export."""
+async def export_report(fmt: str, request: Request) -> Response:
+    """Render a stored scan report as JSON / CSV / SARIF / PDF. Pure transformation; every string is re-redacted by cloud.export."""
     if not flags.is_enabled():
         raise HTTPException(503, "cloud module is disabled")
-    if fmt not in _EXPORTERS:
+    if fmt not in _EXPORTERS and fmt not in _BINARY:
         raise HTTPException(404, "unknown export format")
     body = bytearray()
     async for chunk in request.stream():
@@ -61,4 +62,6 @@ async def export_report(fmt: str, request: Request) -> PlainTextResponse:
         raise HTTPException(400, "body must be a JSON report")
     if not isinstance(report, dict):
         raise HTTPException(400, "body must be a JSON report")
+    if fmt in _BINARY:
+        return Response(_BINARY[fmt](report), media_type="application/pdf")
     return PlainTextResponse(_EXPORTERS[fmt](report))

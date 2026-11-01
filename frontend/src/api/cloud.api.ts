@@ -39,7 +39,7 @@ export async function uploadCloudScan(file: File) {
 }
 
 /** Download through the authenticated client (a plain link would lack the bearer token). */
-export async function downloadCloudScan(id: string, format: "json" | "csv" | "sarif") {
+export async function downloadCloudScan(id: string, format: "json" | "csv" | "sarif" | "pdf") {
   const r = await api.get(`/cloud/scans/${id}/export`, { params: { format }, responseType: "blob" });
   const url = URL.createObjectURL(r.data as Blob);
   const a = document.createElement("a");
