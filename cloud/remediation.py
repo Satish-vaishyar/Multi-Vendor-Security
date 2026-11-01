@@ -48,7 +48,8 @@ def attach(findings: List[Any]) -> int:
 
 
 def _clip(value: Any) -> str:
-    return secret_scan.redact(" ".join(str(value or "").split()))[:MAX_FIELD]
+    text = secret_scan.redact(" ".join(str(value or "").split()))[:MAX_FIELD]
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")      # a field can never close the <data> fence
 
 
 def explain_prompt(finding: Dict[str, Any]) -> Dict[str, str]:
@@ -60,4 +61,4 @@ def explain_prompt(finding: Dict[str, Any]) -> Dict[str, str]:
             "Explain in plain language why this matters and how to fix it.") % (
         _clip(finding.get("control_id")), _clip(finding.get("title")), _clip(finding.get("severity")),
         _clip(finding.get("evidence_state")), _clip(finding.get("resource_address")), _clip((finding.get("source") or {}).get("file")))
-    return {"system": system, "user": user.replace("</data>", "</data>", 1)}
+    return {"system": system, "user": user}

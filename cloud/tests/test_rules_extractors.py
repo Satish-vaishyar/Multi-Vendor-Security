@@ -384,3 +384,30 @@ def test_not_principal_and_every_principal_type_are_checked():
 ])
 def test_cidr_classification_is_explicit_and_independent_of_python_is_private(cidr, expect):
     assert ex._public(cidr, "any") is expect
+
+
+def test_k8s_deep_workload_and_rbac_properties():
+    pod = k8s("""\
+apiVersion: v1
+kind: Pod
+metadata: {name: p, namespace: d}
+spec:
+  hostIPC: true
+  volumes: [{name: v, hostPath: {path: /}}, oops]
+  containers:
+    - {name: a, image: "x:1", securityContext: {readOnlyRootFilesystem: true}}
+""")[0]
+    out = ex.k8s_workload(pod)
+    assert out["K8S.POD.HOST_IPC"] is True and out["K8S.POD.HOSTPATH_VOLUME"] is True and out["K8S.CONTAINER.WRITABLE_ROOT_FS"] is False
+    plain = ex.k8s_workload(k8s("apiVersion: v1\nkind: Pod\nmetadata: {name: p, namespace: d}\nspec:\n  volumes: oops\n  containers:\n    - {name: a, image: 'x:1'}\n")[0])
+    assert plain["K8S.POD.HOST_IPC"] is False and plain["K8S.POD.HOSTPATH_VOLUME"] is False and plain["K8S.CONTAINER.WRITABLE_ROOT_FS"] is True
+    role = lambda rules: k8s("apiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRole\nmetadata: {name: r}\nrules: %s\n" % rules)[0]
+    assert ex.k8s_rbac(role("[{verbs: ['*'], resources: ['*']}]")) == {"K8S.RBAC.WILDCARD_ROLE": True}
+    assert ex.k8s_rbac(role("[{verbs: [get], resources: ['*']}, oops]")) == {"K8S.RBAC.WILDCARD_ROLE": False}
+    assert ex.k8s_rbac(role("oops")) == {"K8S.RBAC.WILDCARD_ROLE": None}
+    bind = lambda body: k8s("apiVersion: rbac.authorization.k8s.io/v1\nkind: ClusterRoleBinding\nmetadata: {name: b}\n%s\n" % body)[0]
+    b = ex.k8s_rbac(bind("roleRef: {name: cluster-admin}\nsubjects: [{kind: Group, name: 'system:unauthenticated'}, oops]"))
+    assert b == {"K8S.RBAC.CLUSTER_ADMIN_BINDING": True, "K8S.RBAC.ANONYMOUS_BINDING": True}
+    assert ex.k8s_rbac(bind("roleRef: oops\nsubjects: oops")) == {"K8S.RBAC.CLUSTER_ADMIN_BINDING": False, "K8S.RBAC.ANONYMOUS_BINDING": False}
+    assert ex.extractor_properties("k8s_rbac", "Role") == ("K8S.RBAC.WILDCARD_ROLE",)
+    assert len(ex.extractor_properties("k8s_rbac", "RoleBinding")) == 2

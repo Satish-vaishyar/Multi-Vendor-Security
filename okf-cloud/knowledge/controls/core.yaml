@@ -277,3 +277,70 @@ controls:
     unknown_handling: none
     frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
     remediation: {summary: "Use a default-deny policy and add explicit allow rules."}
+
+  - id: CLOUD-K8S-009
+    name: Pods must not share the host IPC namespace
+    category: workload
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.POD.HOST_IPC, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Remove hostIPC or set it to false."}
+
+  - id: CLOUD-K8S-010
+    name: Pods must not mount hostPath volumes
+    category: workload
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.POD.HOSTPATH_VOLUME, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Use emptyDir, a PersistentVolumeClaim or a CSI volume instead of hostPath."}
+
+  - id: CLOUD-K8S-011
+    name: Container root filesystems should be read-only
+    category: workload
+    severity: LOW
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.CONTAINER.WRITABLE_ROOT_FS, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: CM-7, verified: false}]
+    remediation: {summary: "Set securityContext.readOnlyRootFilesystem to true and mount writable paths explicitly."}
+
+  - id: CLOUD-K8S-012
+    name: Roles must not grant every verb on every resource
+    category: identity
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.RBAC.WILDCARD_ROLE, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_rules_not_a_list
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Grant only the specific verbs and resources the subject needs."}
+
+  - id: CLOUD-K8S-013
+    name: Bindings must not grant cluster-admin
+    category: identity
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.RBAC.CLUSTER_ADMIN_BINDING, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Bind a narrowly scoped role instead of cluster-admin."}
+
+  - id: CLOUD-K8S-014
+    name: Bindings must not grant roles to anonymous or unauthenticated subjects
+    category: identity
+    severity: CRITICAL
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.RBAC.ANONYMOUS_BINDING, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-3, verified: false}]
+    remediation: {summary: "Remove system:anonymous and system:unauthenticated subjects from the binding."}
+

@@ -519,7 +519,7 @@ def k8s_workload(res: Resource) -> Dict[str, Optional[bool]]:
         return {}
     pod_sc = spec.get("securityContext") if isinstance(spec.get("securityContext"), dict) else {}
     cs = containers(spec)
-    priv, root, esc, cap_all, unpinned = [], [], [], [], []
+    priv, root, esc, cap_all, unpinned, rw_root = [], [], [], [], [], []
     for c in cs:
         sc = c.get("securityContext") if isinstance(c.get("securityContext"), dict) else {}
         priv.append(sc.get("privileged") is True)
@@ -529,9 +529,14 @@ def k8s_workload(res: Resource) -> Dict[str, Optional[bool]]:
         esc.append(sc.get("allowPrivilegeEscalation") is not False)     # Kubernetes default is true
         caps = (sc.get("capabilities") or {}).get("add") if isinstance(sc.get("capabilities"), dict) else None
         cap_all.append("ALL" in (caps or []))
+        rw_root.append(sc.get("readOnlyRootFilesystem") is not True)
         image = str(c.get("image", ""))
         unpinned.append("@sha256:" not in image and (":" not in image.rsplit("/", 1)[-1] or image.endswith(":latest")))
+    vols = spec.get("volumes") if isinstance(spec.get("volumes"), list) else []
     return {"K8S.POD.HOST_NETWORK": spec.get("hostNetwork") is True, "K8S.POD.HOST_PID": spec.get("hostPID") is True,
+            "K8S.POD.HOST_IPC": spec.get("hostIPC") is True,
+            "K8S.POD.HOSTPATH_VOLUME": any(isinstance(v, dict) and "hostPath" in v for v in vols),
+            "K8S.CONTAINER.WRITABLE_ROOT_FS": _flag(rw_root),
             "K8S.CONTAINER.PRIVILEGED": _flag(priv), "K8S.CONTAINER.RUN_AS_ROOT": _flag(root),
             "K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION": _flag(esc), "K8S.CONTAINER.CAP_ADD_ALL": _flag(cap_all),
             "K8S.CONTAINER.IMAGE_UNPINNED": _flag(unpinned)}
@@ -544,6 +549,24 @@ def k8s_netpol(res: Resource) -> Dict[str, Optional[bool]]:
     return {"K8S.NETPOL.ALLOW_ALL": bool(selects_all and open_rule)}
 
 
+def _has_star(values: Any) -> bool:
+    return isinstance(values, list) and "*" in values
+
+
+def k8s_rbac(res: Resource) -> Dict[str, Optional[bool]]:
+    """Roles that grant every verb on every resource, and bindings to cluster-admin or to anonymous/unauthenticated subjects."""
+    p = res.properties
+    if res.resource_type in ("Role", "ClusterRole"):
+        rules = p.get("rules")
+        if not isinstance(rules, list):
+            return {"K8S.RBAC.WILDCARD_ROLE": None}
+        return {"K8S.RBAC.WILDCARD_ROLE": any(isinstance(r, dict) and _has_star(r.get("verbs")) and _has_star(r.get("resources")) for r in rules)}
+    ref = p.get("roleRef") if isinstance(p.get("roleRef"), dict) else {}
+    subjects = [s for s in (p.get("subjects") or []) if isinstance(s, dict)] if isinstance(p.get("subjects"), list) else []
+    anonymous = any(s.get("name") in ("system:anonymous", "system:unauthenticated") for s in subjects)
+    return {"K8S.RBAC.CLUSTER_ADMIN_BINDING": ref.get("name") == "cluster-admin", "K8S.RBAC.ANONYMOUS_BINDING": anonymous}
+
+
 def extractor_properties(name: str, rtype: str) -> tuple:
     """The canonical properties an extractor declares for a resource type (used to generate the capability matrix)."""
     if name == "network_ingress":
@@ -551,12 +574,14 @@ def extractor_properties(name: str, rtype: str) -> tuple:
     if name == "iam_policies":
         return tuple(p for table, p in ((_IDENTITY, "IAM.WILDCARD_ADMIN"), (_RESOURCE_POLICY, "IAM.PUBLIC_PRINCIPAL"),
                                         (_TRUST, "IAM.TRUST_UNRESTRICTED")) if rtype in table)
+    if name == "k8s_rbac":
+        return ("K8S.RBAC.WILDCARD_ROLE",) if rtype in ("Role", "ClusterRole") else ("K8S.RBAC.CLUSTER_ADMIN_BINDING", "K8S.RBAC.ANONYMOUS_BINDING")
     return {"gcp_iam": ("IAM.PUBLIC_PRINCIPAL", "IAM.WILDCARD_ADMIN"), "gcp_sql": ("DB.PUBLICLY_ACCESSIBLE",),
             "k8s_netpol": ("K8S.NETPOL.ALLOW_ALL",),
             "k8s_workload": ("K8S.POD.HOST_NETWORK", "K8S.POD.HOST_PID", "K8S.CONTAINER.PRIVILEGED", "K8S.CONTAINER.RUN_AS_ROOT",
-                             "K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION", "K8S.CONTAINER.CAP_ADD_ALL", "K8S.CONTAINER.IMAGE_UNPINNED")}[name]
+                             "K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION", "K8S.CONTAINER.CAP_ADD_ALL", "K8S.CONTAINER.IMAGE_UNPINNED", "K8S.POD.HOST_IPC", "K8S.POD.HOSTPATH_VOLUME", "K8S.CONTAINER.WRITABLE_ROOT_FS")}[name]
 
 
 REGISTRY: Dict[str, Callable[[Resource], Dict[str, Optional[bool]]]] = {
     "network_ingress": network_ingress, "iam_policies": iam_policies, "gcp_iam": gcp_iam, "gcp_sql": gcp_sql,
-    "k8s_workload": k8s_workload, "k8s_netpol": k8s_netpol}
+    "k8s_workload": k8s_workload, "k8s_netpol": k8s_netpol, "k8s_rbac": k8s_rbac}

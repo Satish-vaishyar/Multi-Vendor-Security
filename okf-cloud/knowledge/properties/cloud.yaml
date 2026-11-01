@@ -29,4 +29,10 @@ properties:
   - {id: K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION, type: boolean, category: workload, description: "A container may gain more privileges than its parent (Kubernetes default is true)"}
   - {id: K8S.CONTAINER.CAP_ADD_ALL, type: boolean, category: workload, description: "A container adds all Linux capabilities"}
   - {id: K8S.CONTAINER.IMAGE_UNPINNED, type: boolean, category: supply_chain, description: "A container image uses no tag, the latest tag, or no digest"}
+  - {id: K8S.POD.HOST_IPC, type: boolean, category: workload, description: "Pod shares the host IPC namespace"}
+  - {id: K8S.POD.HOSTPATH_VOLUME, type: boolean, category: workload, description: "Pod mounts a hostPath volume"}
+  - {id: K8S.CONTAINER.WRITABLE_ROOT_FS, type: boolean, category: workload, description: "A container root filesystem is writable (readOnlyRootFilesystem is not true)"}
+  - {id: K8S.RBAC.WILDCARD_ROLE, type: boolean, category: identity, description: "A Role/ClusterRole grants every verb on every resource"}
+  - {id: K8S.RBAC.CLUSTER_ADMIN_BINDING, type: boolean, category: identity, description: "A binding grants the cluster-admin role"}
+  - {id: K8S.RBAC.ANONYMOUS_BINDING, type: boolean, category: identity, description: "A binding grants a role to anonymous or unauthenticated subjects"}
   - {id: K8S.NETPOL.ALLOW_ALL, type: boolean, category: network_exposure, description: "A NetworkPolicy selects every pod and allows all traffic"}

@@ -39,9 +39,10 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S20 JSON / CSV / SARIF export (PDF not produced) | ✅ | `cloud/export.py` |
 | S17 relationship graph + effective exposure (note only; evidence state untouched) | ✅ | `cloud/graph.py` |
 | S19 remediation snippets (un-applied) + explain-only prompt builder | ✅ | `cloud/remediation.py` |
-| S14 backend API + findings UI, S15, S16, S22-S24, S27-S34 | ⬜ not started | - |
+| S22 deeper Kubernetes rules: hostIPC, hostPath, read-only root FS, RBAC wildcard, cluster-admin and anonymous bindings (CLOUD-K8S-009..014; 31 controls total) | ✅ | `cloud/rules/extractors.py`, `okf-cloud/` |
+| S14 backend API + findings UI, S15, S16-S24, S27-S34 | ⬜ not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (328 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (330 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)
