@@ -53,7 +53,7 @@ canonical IR → (same downstream).
 
 ## 7. Verification
 
-`uv run pytest -q` (56 tests, 100% coverage): auth+dashboard · full audit flow (upload→parse→
+`uv run pytest -q` (506 tests, 93% coverage): auth+dashboard · full audit flow (upload→parse→
 canonical→audit→results→evidence→engine reads→findings→training→remediation
 dry-run→PDF, asserts insecure<secure ordering) · secure-vs-insecure scoring ·
 OKF browser + M1 detection. Plus manual `/ui` walkthrough recorded in test output.

@@ -1,9 +1,8 @@
 # Build status - what is built, missing, and extra w.r.t. the PS
 
 Reference: official SIH26155 problem statement (NTRO) - see `docs/RTM_PS.md` for the
-line-by-line RTM. Status date 2026-09-27. Verdicts from `uv run pytest -q --cov` (56 tests collected,
-100% statement coverage over `app/`, enforced by `fail_under`) plus live HTTP checks of both `.env` APIs
-(Featherless LLM online; NVD sync with keyless fallback), a 60-route OpenAPI surface (56 under `/api/v1`),
+line-by-line RTM. Status date 2026-09-27. Verdicts from `uv run pytest -q --cov` (historic figures: 56 tests, since grown to 506 at 93% coverage with an enforced floor of 88%) plus live HTTP checks of both `.env` APIs
+(Featherless LLM online; NVD sync with keyless fallback), a 106-route OpenAPI surface (103 under `/api/v1`),
 and a real Chromium E2E journey (12/12 green: login → upload → 80-finding audit → evidence →
 remediation dry-run → training suggest → PQC → PDF download). Legend: ✅ done · 🟡 roadmap · ⬜ non-code deliverable.
 

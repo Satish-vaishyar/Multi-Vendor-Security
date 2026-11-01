@@ -1,12 +1,13 @@
-# Multi-Vendor Security - AI-Driven Network Security Compliance Auditor
+# Orbit - Multi-Vendor Security
+### AI-Driven Network Security Compliance Auditor
 ### SIH 2026 · Problem Statement 26155 · NTRO
-### Team: KT@UnseenGeeks
+### Team: KT@UnseenGeeks · maintained under Qirova Technologies
 
 Vendor-neutral network security auditing: heterogeneous device configs in,
 **Canonical Security Baseline Model** in the middle, Compliance + PQC +
 Security Analytics + CVE engines, evidence-backed findings and PDF reports out.
 
-Repo: https://github.com/Satish-vaishyar/Multi-Vendor-Security
+Repo: https://github.com/Qirova-Technologies/Orbit-Multi-Vendor-Security
 
 Remediation **Apply is always a dry run** (`device_touched: false`) by design -
 no flow in this repo contacts real network devices.
@@ -106,11 +107,22 @@ auditable engines handle security decisions.
   re-audit diff (`verified_fixed`), `device_touched: false` always.
 - Fleet anomaly review (`POST /analytics/fleet`), semantic dedup (M8), CVE
   blast-radius ("new CVE → which assets are affected").
+- **Read-only SSH collection** of live configs (allow-list, host-key pinning,
+  encrypted credential vault); nothing is ever written back to a device.
+- **Background jobs + recurring audits**: async queue/worker, schedules,
+  audit history and config drift between runs, retention policy.
+- **Signed webhooks** (HMAC) to SIEM/ticketing, with SSRF protection and
+  delivery receipts.
+- **Risk acceptance** with expiry and justification, enforced in every score.
+- **Admin surface**: users + 5 roles (RBAC), TOTP MFA, OIDC SSO, audit log,
+  tenant isolation (app scoping + Postgres RLS).
+- **Control catalogue import** (OSCAL/CIS/STIG/CSV) so licensed frameworks can
+  be added without code, with honest `UNKNOWN` coverage where no check exists.
 - Per-device PDF (device ID, scores, findings, CVE/PQC/remediation/evidence)
   + dashboard executive summary.
 - Reproducibility: knowledge versions + config hash + timestamps on every
-  audit; 208-case CVE golden set; 200 golden configs; 56 pytest cases at 100%
-  statement coverage (`fail_under=100`).
+  audit; 208-case CVE golden set; 200 golden configs; 506 backend pytest cases at 93% measured
+  statement coverage (enforced floor 88%), 75 OKF tests, 70 Playwright end-to-end tests.
 
 ---
 
@@ -130,9 +142,9 @@ auditable engines handle security decisions.
    math + NVD sync + blast-radius + CBOM shared with PQC.
 6. **Simulation-safe remediation.** Approve → dry-run → re-audit diff gives the
    "before 12 findings → after 5, 7 resolved" narrative without touching devices.
-7. **Monolith that stays honest.** One FastAPI service (60 routes, 56 under
-   `/api/v1`) reuses `okf/` + `models/` instead of duplicating rules, CVE data
-   or trained weights.
+7. **Monolith that stays honest.** One FastAPI service (106 documented routes,
+   103 under `/api/v1`) reuses `okf/` + `models/` instead of duplicating rules,
+   CVE data or trained weights.
 
 ---
 
@@ -240,13 +252,13 @@ Endpoints: `GET /vulnerabilities/{audit}`, `GET .../{finding}`,
 ```
 +---------------------------------------------------------------------+
 | FRONTEND: React 19 + Vite + Tailwind + React Query + Zustand +      |
-| Recharts (20 pages). Talks ONLY to /api/v1 (HTTPS/JSON + JWT).      |
+| Recharts (30 pages). Talks ONLY to /api/v1 (HTTPS/JSON + JWT).      |
 | Never touches devices, DB, LLM, NVD or models directly.             |
 +---------------------------------------------------------------------+
                                   |
                                   v
 +---------------------------------------------------------------------+
-| BACKEND: FastAPI modular monolith, 60 routes (56 under /api/v1).    |
+| BACKEND: FastAPI modular monolith, 106 routes (103 under /api/v1).   |
 | OpenAPI at /docs. HTML console at /ui (API-only).                   |
 |                                                                     |
 | Ingest (validation, 5 MB, SHA-256, single + bulk upload)            |
@@ -304,35 +316,46 @@ POST /configurations/upload → CFG-... → POST /audits → AUD-...
 ## 10. Repository structure (high level)
 
 ```
-Multi-Vendor-Security/
+Orbit-Multi-Vendor-Security/
   README.md / APPLICATION_SETUP.md / FRONTEND_GUIDE.md / DEPLOY.md
+├── .github/workflows/ci.yml          # backend tests+coverage, frontend lint/build,
+│                                     # dependency audit, secret scan, image scan/SBOM
 ├── docker-compose.yml                # prod: backend :8000 + frontend :8080, Supabase DB
 ├── backend/                          # runnable FastAPI API + /ui console (START HERE)
 │   ├── README.md  docs/              # SETUP, USER_GUIDE, API_REFERENCE,
 │   │                                 # IMPLEMENTATION, RTM_PS, TRM_ARCH,
 │   │                                 # BUILD_STATUS, ARCHITECTURE
 │   ├── app/
-│   │   ├── main.py                   # /, /health, /readyz, /ui, router wiring
-│   │   ├── api/v1/                   # auth, assets, configurations, audits,
+│   │   ├── main.py  worker.py  cli.py # app wiring, job worker, migrate CLI
+│   │   ├── api/v1/                   # auth, sso, assets, configurations, audits,
 │   │   │                             # engines (compliance/vuln/pqc/analytics),
 │   │   │                             # findings, training, remediation, reports,
-│   │   │                             # misc (dashboard/okf/detection)
-│   │   ├── core/                     # config, security (JWT), store, persist, db
+│   │   │                             # jobs, history, integrations, exceptions,
+│   │   │                             # collection, fix_verification, admin,
+│   │   │                             # misc (dashboard/okf/detection), paging
+│   │   ├── core/                     # config, security (JWT/RBAC/MFA), db,
+│   │   │                             # persist, tenancy, crypto, oidc, limits,
+│   │   │                             # jobs, schedules, webhooks, collector,
+│   │   │                             # auditlog, metrics, redact, urlcheck
 │   │   ├── parsers/                  # ingestion, vendor_detector, canonical
-│   │   ├── engines/                  # security, pqc (compliance+CVE from okf)
-│   │   ├── services/                 # audit_service, integration (OKF/ML bridge)
-│   │   └── db/                       # schema.sql + migrations
-│   ├── tests/                        # 56 pytest cases (flows, errors, engines, models)
+│   │   ├── engines/                  # security (+ rules/security_rules.yaml), pqc
+│   │   ├── services/                 # audit_service, integration (OKF/ML bridge),
+│   │   │                             # collection, catalogue, history, retention,
+│   │   │                             # job_handlers, report_packs, fix_lab, events
+│   │   └── db/                       # schema.sql, migrations 001-016, RLS scripts
+│   ├── tests/                        # 506 pytest cases (flows, security review, tenancy, SSO, collection, ...)
 │   └── frontend/index.html           # API-only test console served at /ui
-├── frontend/                         # runnable React UI (20 pages)
+├── frontend/                         # runnable React UI (30 page components, 40 routes)
 │   ├── src/
 │   │   ├── api/                      # axios client + endpoint wrappers
-│   │   ├── pages/                    # Login, Dashboard, Upload, ConfigDetails,
-│   │   │                             # Audits, AuditResults, Compliance,
+│   │   ├── pages/                    # GetStarted, Dashboard, QuickAudit, Assets,
+│   │   │                             # Configurations, Audits, Compliance,
 │   │   │                             # Vulnerabilities, PQC, Analytics, Findings,
-│   │   │                             # Remediation, Training, Assets, Reports,
-│   │   │                             # Settings (+ detail pages)
+│   │   │                             # Remediation, Reports, Exceptions, Jobs,
+│   │   │                             # Schedules, Integrations, Training, Admin,
+│   │   │                             # Settings, Login, SSO (+ detail pages)
 │   │   └── components/ stores/ hooks/ types/ utils/
+│   ├── tests/e2e/                    # 70 Playwright specs + page objects
 │   └── .env.development / .env.production
 │                                     # VITE_API_BASE_URL only (no secrets)
 ├── okf/                              # knowledge layer (library used by backend)
@@ -342,8 +365,12 @@ Multi-Vendor-Security/
 │   ├── README.md  MODELS_PERFORMANCE.md  RTM_MODELS.md  requirements.txt
 │   ├── src/m1_vendor.py ... m13_vqe.py (+ common, embed, evaluate_all)
 │   └── scripts/ datasets/ artifacts/ evaluation/
-├── docs/                             # problem specification (read-only)
-│   └── arch.md  api.md  models.md  okf.md  cve_okf.md  tech_stack.md  frontend.md
+├── docs/                             # product + operations guides
+│   ├── ops/prometheus_alerts.yml     # alert rules referenced by OPERATIONS.md
+│   └── SECURITY, OPERATIONS, COLLECTION, JOBS, HISTORY, INTEGRATIONS,
+│       REMEDIATION, CATALOGUES, QA_REPORT, PRODUCT_BRIEF, PILOT_KIT,
+│       REMAINING_WORK, UI_GUIDE, FRONTEND_GUIDE, product_readiness_gaps
+│       (+ the read-only SIH spec: arch, api, models, okf, cve_okf, tech_stack)
 └── test-files/                       # 7 sample configs (Cisco x2, Juniper,
                                       # Fortinet, Palo Alto, Arista + edge-case)
 ```
@@ -357,17 +384,18 @@ Multi-Vendor-Security/
 
 | Layer | Used here | Role |
 |---|---|---|
-| Backend | Python 3.12+, FastAPI, Pydantic, `uv`, pytest + pytest-cov (`fail_under=100`), httpx | REST orchestration, Canonical-IR validation, 56-test suite |
-| Frontend | React 19, Vite, Tailwind, React Query, Zustand, Recharts, axios, react-router | 20-page UI; talks only to `/api/v1` |
+| Backend | Python 3.12+, FastAPI, Pydantic, `uv`, pytest + pytest-cov (floor 88%), httpx | REST orchestration, Canonical-IR validation, 106-route surface, 506-test suite |
+| Frontend | React 19, Vite, Tailwind, React Query, Zustand, Recharts, axios, react-router | 30-page UI (40 routes); talks only to `/api/v1` |
 | AI/ML | scikit-learn, XGBoost, HDBSCAN, PyTorch (CPU), sentence-transformers (MiniLM-L6-v2 384-d), joblib | M1-M9 training/serving; TF-IDF fallback offline |
 | LLM | Featherless `openai/gpt-oss-120b` via single `okf/llm_gateway.py` + offline heuristic | Unknown-syntax translation only; never verdicts |
 | Knowledge | YAML + JSON Schema + Python rule engine + OSCAL-normalized NIST subset | 103 props, 82 controls, crosswalk, remediation/risk/mapping registries |
 | CVE | NVD API 2.0, CPE dictionary/match, custom version-range engine, local KB | Deterministic correlation, sync, blast-radius, CBOM |
 | Crypto/PQC | `cryptography` + policy engine (CBOM classification) | Readiness 0-100, migration recs, kept separate from compliance |
 | Reports | ReportLab | Per-device PDF |
-| Data | In-memory stores (dev); Supabase Postgres + pgvector + pgcrypto (prod); Redis/Celery (prod jobs) | Assets, audits, findings, OKF, mappings, CVE, jobs |
+| Data | In-memory stores (dev); Supabase Postgres + pgvector + pgcrypto (prod); Postgres job queue + `worker.py` | Assets, audits, findings, OKF, mappings, CVE, jobs, history |
+| Ops | Job worker, recurring schedules, HMAC webhooks, Prometheus `/metrics`, retention job | Background work, SIEM/ticketing push, monitoring, data retention |
 | Deploy | Docker + Compose, Nginx (frontend image), GitHub repo | `docker compose up --build` (:8080 → :8000) |
-| Auth | JWT (PyJWT), `ADMIN_EMAIL`/`ADMIN_PASSWORD` seed, `REQUIRE_AUTH` gate | Login + token auth; RBAC/encryption are prod scope |
+| Auth | JWT (PyJWT), TOTP MFA, OIDC SSO, 5-role RBAC, tenant scoping + Postgres RLS, encrypted secrets at rest | Login, SSO, least privilege, tenant isolation, audit log |
 
 Deliberately **not** added: Kubernetes, Kafka, Elasticsearch, Neo4j (NetworkX
 suffices for the prototype graph), separate vector DB (pgvector covers it),
@@ -387,8 +415,8 @@ multiple LLMs, custom CVE-prediction model, quantum hardware dependency.
 ## 13. Run it (5 minutes, local dev)
 
 ```powershell
-git clone https://github.com/Satish-vaishyar/Multi-Vendor-Security.git
-cd Multi-Vendor-Security
+git clone https://github.com/Qirova-Technologies/Orbit-Multi-Vendor-Security.git
+cd Orbit-Multi-Vendor-Security
 
 # Terminal 1 - backend
 cd backend
@@ -435,12 +463,24 @@ Checklist (env, Supabase schema, verification, security notes): `DEPLOY.md`.
 | `APPLICATION_SETUP.md` | **Complete setup for all modules** - prerequisites, backend, frontend, okf, models, Docker, env reference, verification, troubleshooting |
 | `backend/docs/SETUP.md` | Prerequisites, install with `uv`, `.env` keys, running, verification, troubleshooting |
 | `backend/docs/USER_GUIDE.md` | Starting the server, using the console tab-by-tab, training-loop demo, curl flows |
-| `backend/docs/API_REFERENCE.md` | All 60 live endpoints (56 under `/api/v1`) with methods, payloads, examples |
+| `backend/docs/API_REFERENCE.md` | All 106 documented endpoints (103 under `/api/v1`, 122 operations) with methods, payloads, examples |
 | `backend/docs/IMPLEMENTATION.md` | Spec traceability: `arch.md` layers L1-L10 and `api.md` groups → code files |
 | `backend/docs/RTM_PS.md` | SIH-26155 problem statement → implementation (10/10 features) |
 | `backend/docs/TRM_ARCH.md` | `arch.md` → implementation traceability |
 | `backend/docs/BUILD_STATUS.md` | Built vs missing vs extra w.r.t. the problem statement (gap analysis) |
 | `backend/docs/ARCHITECTURE.md` | 2-page architecture (SIH evaluation deliverable) |
+| `docs/PRODUCT_BRIEF.md` | Who pays and why, pricing hypotheses, pilot success metrics |
+| `docs/PILOT_KIT.md` | 30-day design-partner pilot plan, data handling, success bars measured by `corpus-eval` |
+| `docs/COLLECTION.md` | Live read-only SSH collection: allow-list, host-key pinning, credential vault, setup |
+| `docs/CATALOGUES.md` | Importing licensed / public control catalogues; honest coverage (unmapped = UNKNOWN) |
+| `docs/REMAINING_WORK.md` | Honest list of what is still open before a paid launch |
+| `docs/SECURITY.md` / `docs/SECURITY_REVIEW.md` | Security model (auth, MFA, RBAC, encryption, tenancy) and penetration-review findings |
+| `docs/OPERATIONS.md` | Metrics, alerts, retention, backups, runbook (`docs/ops/prometheus_alerts.yml`) |
+| `docs/QA_REPORT.md` | End-to-end (Playwright) test report and known limits |
+| `docs/UI_GUIDE.md` | UI design system, themes, first-run onboarding |
+| `docs/JOBS.md`, `docs/HISTORY.md`, `docs/INTEGRATIONS.md`, `docs/REMEDIATION.md`, `docs/PARSERS.md` | Job queue, history/drift, webhooks and ticketing, remediation, parser coverage |
+| `docs/product_readiness_gaps.md` | Prioritised gap register with status of every item |
+| `CHANGELOG.md` | Notable changes, including the move to the Qirova Technologies repository |
 | `FRONTEND_GUIDE.md` | Frontend user guide: login → upload → audit → results → remediation |
 | `DEPLOY.md` | Production hosting checklist (env, Supabase, Docker, verification) |
 | `test-files/README.md` | What each sample config proves |
@@ -451,11 +491,17 @@ Checklist (env, Supabase schema, verification, security notes): `DEPLOY.md`.
 
 ## 16. Verification & test evidence
 
-- `cd backend; uv run pytest -q` - 56 tests (upload→parse→canonical→audit→
+Test and endpoint counts below come from the last full run on `main`
+(`pytest --collect-only`: 506 backend, 75 OKF, 70 Playwright; OpenAPI:
+106 paths / 122 operations). Re-run the commands to confirm on your machine.
+
+- `cd backend; uv run pytest -q` - 506 tests (upload→parse→canonical→audit→
   results→evidence→engines→findings→training→remediation dry-run→PDF,
   secure-vs-insecure ordering, OKF browser, M1 detection).
-- `uv run pytest -q --cov` - 100% statement coverage over `app/`
-  (`fail_under=100` enforced).
+- `uv run pytest -q --cov` - 93% statement coverage over `app/` (floor 88%, enforced; measured on a clean
+  database - the old "100%" only held against a pre-populated one).
+- `TEST_RLS=1 uv run pytest -q` - the same suite as a non-bypass database role with row-level security enforced.
+- `cd okf; python -m pytest -q` - 75 tests; `cd frontend; npx playwright test` - 70 end-to-end tests (`docs/QA_REPORT.md`).
 - `/health` → `{"success":true,"status":"healthy"}`; `/readyz` → readiness + DB.
 - Sample proof: `test-files/01-cisco-insecure-router.txt` (low score) vs
   `02-cisco-secure-router.txt` (high score); `03-06` vendor auto-detection;
@@ -468,13 +514,20 @@ Checklist (env, Supabase schema, verification, security notes): `DEPLOY.md`.
 
 - **Secrets live only in `backend/.env`** (git-ignored, never committed, excluded from
   Docker images via `backend/.dockerignore`). Copy from `backend/.env.example` and fill in.
-- Never commit API keys (`FEATHERLESS_API_KEY`, `NVD_API_KEY`) or the Supabase
-  `DATABASE_URL` - if a secret ever leaks into git history, **rotate it immediately**.
+- Never commit API keys (`FEATHERLESS_API_KEY`, `NVD_API_KEY`), the Supabase
+  `DATABASE_URL`, `DATA_ENCRYPTION_KEYS` or KMS credentials - if a secret ever leaks
+  into git history, **rotate it immediately**.
 - Production requires a strong `JWT_SECRET` (the dev default is rejected), explicit
-  `CORS_ORIGINS` (no `*`), and `REQUIRE_AUTH=true`. See `DEPLOY.md`.
-- Honest roadmap (out of prototype scope): live SSH/Netmiko pull, full Postgres +
-  Redis/Celery swap, config encryption at rest + 5-role RBAC, exhaustive FP/FN +
-  PQC-accuracy harnesses, demo video + 5-slide deck.
+  `CORS_ORIGINS` (no `*`), and `REQUIRE_AUTH=true`. Run
+  `python -m app.cli check-config` before the first start. See `DEPLOY.md` and
+  `docs/SECURITY.md`.
+- Built but not yet proven against real infrastructure: live read-only SSH
+  collection, OIDC SSO, row-level security, KMS-backed key wrapping and the CI
+  pipeline (written, not yet run on a hosted runner). `docs/REMAINING_WORK.md`
+  names the exact external input each item needs.
+- Deliberately out of scope: pushing configuration to production devices
+  (remediation is dry-run by design), raw syslog output, EPSS/PSIRT feeds and a
+  full WCAG/assistive-tech audit.
 
 ---
 
@@ -490,10 +543,11 @@ Checklist (env, Supabase schema, verification, security notes): `DEPLOY.md`.
 - Sentence-Transformers (MiniLM-L6-v2): https://www.sbert.net
 - HDBSCAN: https://hdbscan.readthedocs.io
 - XGBoost: https://xgboost.readthedocs.io
-- This repo: https://github.com/Satish-vaishyar/Multi-Vendor-Security
+- This repo: https://github.com/Qirova-Technologies/Orbit-Multi-Vendor-Security
 - In-repo spec: `docs/arch.md`, `docs/api.md`, `docs/models.md`, `docs/okf.md`, `docs/cve_okf.md`, `docs/tech_stack.md`, `docs/frontend.md`
 
 ---
 
-*Built by **KT@UnseenGeeks** for SIH 2026 - vendor-neutral auditing with
-deterministic verdicts, AI-assisted learning, and evidence you can appeal.*
+*Built by **KT@UnseenGeeks** for SIH 2026, maintained by **Qirova Technologies** -
+vendor-neutral auditing with deterministic verdicts, AI-assisted learning, and
+evidence you can appeal.*

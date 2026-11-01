@@ -1,16 +1,17 @@
-# Frontend User Guide - Security Compliance Auditor (SIH 26155)
+# Frontend User Guide - Orbit Multi-Vendor Security (SIH 26155)
 
-Repo: https://github.com/Satish-vaishyar/Multi-Vendor-Security
+Repo: https://github.com/Qirova-Technologies/Orbit-Multi-Vendor-Security
 
-React 19 + Vite + Tailwind frontend in `frontend/`. It talks to the FastAPI backend
-(`backend/`, 56 routes under `/api/v1`). The frontend never touches devices -
-uploads are analyzed locally and findings/remediation are dry-run only.
+React 19 + Vite + Tailwind frontend in `frontend/` (30 page components, 40 routes).
+It talks to the FastAPI backend (`backend/`, 103 routes under `/api/v1`). The
+frontend never touches devices - uploads are analyzed locally, live collection is
+read-only and remediation apply is dry-run only.
 
 ## 0. Get the code
 
 ```powershell
-git clone https://github.com/Satish-vaishyar/Multi-Vendor-Security.git
-cd Multi-Vendor-Security
+git clone https://github.com/Qirova-Technologies/Orbit-Multi-Vendor-Security.git
+cd Orbit-Multi-Vendor-Security
 ```
 
 ## 1. Prerequisites
@@ -56,9 +57,14 @@ Start with `test-files/01-cisco-insecure-router.txt`.
 
 ### Step 1 - Upload
 
-1. Sidebar → **Upload** (or **Configurations → Upload Configuration**).
-2. **Configuration Files** card: drag & drop the file (or Browse). Single file =
-   single-upload path; selecting several files = bulk-upload path.
+The sidebar is grouped as **Start / Audit / Findings / Fix & report / Automate /
+Admin**. `Get started` (`/get-started`) is a 5-step checklist that links to each
+screen below.
+
+1. Sidebar → **Audit → Upload & audit** (`/quick-audit`). The advanced form is at
+   `/configurations/upload` if you need vendor/platform overrides or asset details.
+2. Drag & drop the file (or Browse). Single file = single-upload path; selecting
+   several files = bulk-upload path.
 3. **Vendor / Platform** fields: leave blank - auto-detection handles all 7 sample
    files. Fill them only to override detection.
 4. **Target Asset** card: either pick an existing asset or keep **Create new asset**
@@ -101,9 +107,14 @@ On the Configuration details page there are 4 tabs:
 | Findings | All findings across audits; click a row for evidence + fix guidance. |
 | Reports | Generate/download the PDF audit report (if not generated at audit time). |
 | Remediation | Approve a finding → dry-run apply with corrected config (device is never touched - `device_touched: false`). |
+| Risk acceptance (Exceptions) | Accept a finding knowingly, with justification and an expiry date. |
+| Recurring audits (Schedules) | Re-audit devices on a cadence; history shows drift between snapshots. |
+| Background jobs | Progress of long-running work (audits, collection, CVE sync, retention). |
+| Integrations (Admin) | Signed webhooks to SIEM/ticketing; non-admins cannot open this page. |
+| Administration (Admin) | Users, roles, MFA enforcement and the audit log. |
 | Training | Unknown-token queue from file 07 → Suggest mapping → Approve. |
-| Assets | Asset inventory (created inline at upload or via Assets page). |
-| Settings | App/token settings. |
+| Devices (Assets) | Asset inventory (created inline at upload or via Devices page). |
+| Settings | Account, theme, password and two-factor authentication. |
 
 ## 5. Suggested test script (10 minutes)
 
@@ -116,6 +127,9 @@ On the Configuration details page there are 4 tabs:
 5. Upload `07-edge-unknown-tokens.txt` → **Unknown Tokens** tab → **Training** page.
 6. From an audit: open Vulnerabilities, PQC, Analytics, then Reports → download PDF.
 7. Pick a compliance finding → Remediation → Approve → dry-run apply.
+8. Optional operations tour: **Schedules** (create a recurring audit), **Jobs**
+   (watch it run), **Integrations** (admin-only webhook test), **Administration**
+   (users, roles, audit log) and **Settings → Two-factor authentication**.
 
 ## 6. Troubleshooting
 
@@ -135,4 +149,7 @@ On the Configuration details page there are 4 tabs:
 - Best multi-vendor demo: bulk-upload `03`-`06` to show vendor auto-detection
   across Juniper / Fortinet / Palo Alto / Arista.
 - Nothing in this flow contacts real network devices; remediation Apply is always
-  a dry run (`device_touched: false`).
+  a dry run (`device_touched: false`). Live collection (`docs/COLLECTION.md`) is a
+  separate, read-only SSH pull configured by an admin and executed by the worker.
+- Role-aware UI: `ADMIN` sees Administration and Integrations; `AUDITOR` can upload
+  and run audits; read-only roles see findings and reports only.

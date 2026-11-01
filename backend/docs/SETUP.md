@@ -62,8 +62,8 @@ If port 8000 is taken: `--port 8001` (and point the `/ui` base-URL box at it).
 ## 5. Verify
 
 ```powershell
-uv run pytest -q            # 56 tests (flows + every error branch + engine/model units)
-uv run pytest -q --cov     # 100% statement coverage over app/ (fail_under=100 enforced)
+uv run pytest -q            # 506 tests (flows, security review, tenancy, SSO, collection, engine/model units)
+uv run pytest -q --cov     # 93% statement coverage over app/ (floor 88% enforced)
 ```
 
 Then in a browser: `http://127.0.0.1:8000/health` → `{"success":true,"status":"healthy"}`,

@@ -1,0 +1,75 @@
+# Sample Prometheus alert rules for the auditor backend.
+# Scrape config (token from METRICS_TOKEN):
+#   scrape_configs:
+#     - job_name: auditor-api
+#       metrics_path: /metrics
+#       authorization: { type: Bearer, credentials_file: /etc/prometheus/auditor_metrics_token }
+#       static_configs: [{ targets: ["api.example.com:8000"] }]
+# Grafana: import panels on auditor_http_request_duration_seconds_bucket (histogram_quantile by route),
+# auditor_http_requests_total (rate by status), auditor_jobs (by status) and auditor_job_queue_oldest_age_seconds.
+groups:
+  - name: auditor
+    rules:
+      - alert: AuditorApiDown
+        expr: up{job="auditor-api"} == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "Auditor API is not scrapeable"
+          runbook: "docs/OPERATIONS.md#api-down"
+
+      - alert: AuditorDatabaseUnreachable
+        expr: auditor_db_up == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "API cannot query the database (failover or credentials?)"
+          runbook: "docs/OPERATIONS.md#database-failover"
+
+      - alert: AuditorWorkerDown
+        # no worker has written a heartbeat for 5 minutes (workers beat every ~60 s); -1 means never seen
+        expr: auditor_worker_last_heartbeat_age_seconds > 300 or auditor_worker_last_heartbeat_age_seconds < 0
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: "No background worker heartbeat"
+          runbook: "docs/OPERATIONS.md#worker-down"
+
+      - alert: AuditorQueueStuck
+        expr: auditor_job_queue_oldest_age_seconds > 900 and auditor_jobs{status="QUEUED"} > 0
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: "Oldest runnable job has waited > 15 min"
+          runbook: "docs/OPERATIONS.md#queue-stuck"
+
+      - alert: AuditorJobsFailing
+        expr: increase(auditor_jobs{status="FAILED"}[1h]) > 10
+        labels: { severity: warn }
+        annotations:
+          summary: "More than 10 jobs failed in the last hour"
+
+      - alert: AuditorHigh5xxRate
+        expr: |
+          sum(rate(auditor_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(auditor_http_requests_total[5m])), 1) > 0.05
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: "More than 5% of requests are failing with 5xx"
+
+      - alert: AuditorSlowRequests
+        expr: |
+          histogram_quantile(0.95, sum by (le, route) (rate(auditor_http_request_duration_seconds_bucket{route!~"/api/v1/(audits|reports).*"}[5m]))) > 2
+        for: 15m
+        labels: { severity: warn }
+        annotations:
+          summary: "p95 latency above 2 s on {{ $labels.route }}"
+
+      - alert: AuditorRetentionNotRunning
+        expr: time() - auditor_retention_last_run_timestamp_seconds > 7200
+        for: 30m
+        labels: { severity: warn }
+        annotations:
+          summary: "Data-retention job has not run for > 2 h (worker maintenance loop is hourly)"
+          runbook: "docs/OPERATIONS.md#data-retention"

@@ -5,7 +5,7 @@ Covers every module of this repo: `backend/`, `frontend/`, `okf/`, `models/`,
 Commands below are **PowerShell** (Windows 10/11). On macOS/Linux use `cp`
 instead of `copy` and `export` instead of `$env:`.
 
-Repo: https://github.com/Satish-vaishyar/Multi-Vendor-Security
+Repo: https://github.com/Qirova-Technologies/Orbit-Multi-Vendor-Security
 
 ## 0. Prerequisites
 
@@ -27,20 +27,20 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 ## 1. Get the code
 
 ```powershell
-git clone https://github.com/Satish-vaishyar/Multi-Vendor-Security.git
-cd Multi-Vendor-Security
+git clone https://github.com/Qirova-Technologies/Orbit-Multi-Vendor-Security.git
+cd Orbit-Multi-Vendor-Security
 ```
 
 Expected layout (all modules must stay siblings - `backend/` finds `okf/`
 and `models/` via `OKF_DIR=../okf`, `MODELS_DIR=../models`):
 
 ```
-Multi-Vendor-Security\
+Orbit-Multi-Vendor-Security\
   backend/    # runnable FastAPI API + /ui test console (START HERE for running)
   frontend/   # runnable React UI
   okf/        # knowledge layer (library used by backend; optionally standalone)
   models/     # ML training/eval + committed trained artifacts (library used by backend)
-  docs/       # problem specification (read-only)
+  docs/       # product + operations guides (+ the read-only SIH spec)
   test-files/ # 7 sample configs for the demo flow (read-only)
   docker-compose.yml  # production stack (backend + frontend, Supabase DB)
   DEPLOY.md   # production checklist
@@ -48,8 +48,10 @@ Multi-Vendor-Security\
 
 ## 2. Module: `backend/` (the API - required)
 
-The unified FastAPI service. Serves **60 routes** (56 under `/api/v1` + meta/UI/docs),
-orchestrates `okf/` + `models/`, owns auth, audit pipeline, findings, PDF reports.
+The unified FastAPI service. Serves **106 documented routes** (103 under `/api/v1`
++ meta/UI/docs, 122 operations), orchestrates `okf/` + `models/`, owns auth
+(JWT, MFA, SSO, RBAC, tenancy), the audit pipeline, findings, jobs/webhooks,
+live collection and PDF reports.
 
 ```powershell
 cd backend
@@ -60,6 +62,11 @@ uv run pytest -q         # tests must pass before first run
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 # add --reload for development auto-reload
 # if port 8000 is taken: --port 8001
+
+# optional worker: background jobs, live collection, schedules, CVE sync
+uv run python -m app.worker
+# with Postgres configured, apply migrations first (005-016)
+uv run python -m app.cli migrate
 ```
 
 Verify:
@@ -75,7 +82,7 @@ Demo login: `admin@example.com` / `admin123` (override via `ADMIN_EMAIL` /
 
 Module docs: `backend/README.md` (overview) → `backend/docs/SETUP.md`
 (install/config/troubleshoot) → `backend/docs/USER_GUIDE.md` (console + curl flows)
-→ `backend/docs/API_REFERENCE.md` (all 60 endpoints).
+→ `backend/docs/API_REFERENCE.md` (all 106 documented endpoints).
 
 > First run downloads the MiniLM embedding model (~90 MB, HuggingFace cache) so
 > M2/M3/M8 use the real 384-dim backbone the artifacts were trained on. Without
@@ -145,9 +152,12 @@ M5 validate, M6 risk, M7 fleet, M8 dedup. M9-M13 are research-only.
 
 ## 6. Module: `docs/` + `test-files/` (read-only, no setup)
 
-- `docs/`: problem specification - read `arch.md` (10-layer architecture) and
-  `api.md` (API contract) first; then `models.md`, `okf.md`, `cve_okf.md`,
-  `tech_stack.md`, `frontend.md`.
+- `docs/`: product and operations guides. Start with `SECURITY.md`,
+  `OPERATIONS.md` and `REMAINING_WORK.md`, then the feature notes
+  (`COLLECTION.md`, `JOBS.md`, `HISTORY.md`, `INTEGRATIONS.md`,
+  `REMEDIATION.md`, `CATALOGUES.md`). The SIH specification is still there:
+  `arch.md` (10-layer architecture), `api.md` (API contract), `models.md`,
+  `okf.md`, `cve_okf.md`, `tech_stack.md`, `frontend.md`.
 - `test-files/`: 7 sample configs for the demo (see `test-files/README.md`):
   `01` insecure Cisco (low score) vs `02` secure Cisco (high score),
   `03-06` Juniper/Fortinet/Palo Alto/Arista bulk-upload,

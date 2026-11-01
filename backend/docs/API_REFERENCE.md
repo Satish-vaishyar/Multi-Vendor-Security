@@ -1,10 +1,11 @@
 # API reference - endpoints exposed once the server is up
 
 Base URL `http://127.0.0.1:8000`, API root **`/api/v1`**.
-Live list verified from the codebase (`60` route decorators:
-56 under `/api/v1`, plus `GET /`, `GET /health`, `GET /readyz`, `GET /ui`).
-OpenAPI-visible paths = 59 (`/ui` has `include_in_schema=False`);
-plus auto-generated `/docs`, `/redoc`, `/openapi.json`.
+Live list verified from the running app's OpenAPI schema:
+**106 paths / 122 operations** - 103 paths under `/api/v1`, plus `GET /`,
+`GET /health`, `GET /readyz` (`/metrics` and `/ui` are
+`include_in_schema=False`), plus the auto-generated `/docs`, `/redoc`,
+`/openapi.json`.
 
 Common envelope (`api.md` §3): success → `{success:true, data:{…}, message:"…"}`;
 error → `{success:false, error:{code, message, details}}`.

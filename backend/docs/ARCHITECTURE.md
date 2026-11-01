@@ -27,8 +27,9 @@ an admin approves in the Training GUI, the mapping persists without redeployment
 (“learn once, audit automatically thereafter”) - then rejoins the identical
 downstream. AI interprets syntax; **deterministic engines decide verdicts**.
 Quantum models (M10-M13) are isolated research, never in the audit path.
-One FastAPI modular monolith (`/api/v1`, 60 routes - 56 under `/api/v1`) + API-only HTML console;
-in-memory stores for the prototype (PostgreSQL/Redis/Celery in production).
+One FastAPI modular monolith (106 documented routes - 103 under `/api/v1`) + API-only HTML console;
+in-memory stores for local dev (PostgreSQL + pgvector + RLS and a Postgres-backed
+job queue with `app/worker.py` in production).
 
 ## 3. PS coverage & evidence
 
@@ -36,7 +37,7 @@ All 10 PS features ship: single/bulk ingestion; training GUI; user-selected
 CIS/NIST/STIG/ISO; per-device PDF (serial/hardware ID, Pass/Fail + severity,
 device-specific CLI fixes); no-redeploy scalability; JSON-schema normalization;
 deviation analysis with line-level evidence; pattern-recognition/NLP adaptation;
-live SSH pull is the only roadmap item (file/API ingestion is the mandated
-interface). Verified by 56 pytest cases at 100% statement coverage and a live HTTP smoke run
+live read-only SSH collection (write-back remains out of scope by design).
+Verified by 506 pytest cases at 93% statement coverage and a live HTTP smoke run
 (Cisco IOS-XE 17.9.2 → 80 unified findings → evidence → PDF).
 Traceability: `docs/RTM_PS.md` (official PS), `docs/TRM_ARCH.md` (arch §1-§64).
