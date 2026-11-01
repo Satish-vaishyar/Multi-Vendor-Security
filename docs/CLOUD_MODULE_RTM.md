@@ -87,6 +87,19 @@ Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ---
 
+### End-to-end verification (2026-11-02, dev laptop)
+
+Run locally with the real scanner service (flag on), the real backend cloud router and `cloud_store` against a scratch
+PostgreSQL (`migrate_017.sql` applied; the rest of the schema is stubbed because the scratch server lacks `pgcrypto`/`citext`),
+dev-admin auth (`REQUIRE_AUTH=false`) and the Vite dev server:
+
+* Upload of a Terraform file and of a cloud-init file through the `/cloud` page produced stored scans and findings
+  (CLOUD-NET-001 FAIL, CLOUD-INIT-001/004 FAIL); the scan list, findings table and filters render.
+* JSON, CSV, SARIF and PDF exports return 200 with the right content types; the PDF button works from the UI.
+* With `CLOUD_MODULE_ENABLED=false` the API returns 404 and the page shows "The cloud security module is not enabled."
+* Not verified: Docker image builds, the full backend suite, real login/RBAC through the production auth stack, and
+  cookie-mode auth. These need Docker and PostgreSQL with `citext`/`pgcrypto`.
+
 ## 1. Step plan (34 steps, 6 phases)
 
 | Step | Phase | Deliverable | Depends on | Exit criterion | Effort |
