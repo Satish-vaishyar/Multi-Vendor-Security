@@ -15,6 +15,7 @@ step's status and what is not done). Plan, traceability and the live progress lo
 | `parsers/cloudformation.py`, `arm.py`, `kubernetes.py` | CloudFormation/SAM, Azure ARM (Bicep is not compiled), rendered Kubernetes manifests |
 | `parsers/heat.py` | OpenStack Heat (HOT) templates; `get_param` defaults resolved, other intrinsics Unknown |
 | `parsers/ansible.py` | Ansible playbooks: only `ec2_group` tasks are read (mapped to the AWS security-group rules); the playbook is never run |
+| `parsers/cloudinit.py` | `#cloud-config` files: SSH password auth, clear-text passwords, passwordless sudo, curl-to-shell; password values are never kept |
 | `parsers/pulumi.py` | `pulumi stack export` JSON: a small explicit type table; unmapped types are reported as not assessed |
 | `ir.py` | Resource IR, Finding, JSON-safe serialisation with secret redaction, validation |
 | `rules/` | Rule engine, named extractors, strict pack loader, customer packs (`customer.py`) |
@@ -26,7 +27,7 @@ step's status and what is not done). Plan, traceability and the live progress lo
 
 ## Not implemented (see the RTM for the reason)
 Real AWS/Azure/GCP connectors and org-wide inventory (need a test cloud account), Bicep compile, bundled Checkov/Trivy,
-pinned provider schemas (CM-142), VMware/NSX, Nutanix, cloud-init rules, IBM/Vultr/UpCloud firewall rules, schedules and
+pinned provider schemas (CM-142), VMware/NSX and Nutanix (researched, see `../docs/CLOUD_PROVIDER_SOURCES.md`), schedules and
 webhooks, opt-in asset links, on-prem packaging.
 
 ## Isolation rules (RTM CM-150..157)

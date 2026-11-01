@@ -50,11 +50,12 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S30 India provider discovery: evidence framework and decision rule only; NO provider conclusions are written (they need primary sources the study has not collected) | 🟡 | `docs/CLOUD_INDIA_PROVIDER_DISCOVERY.md` |
 | S31/S32 foundations (no cloud client, no network): read-only operation guard, authorisation record, un-leakable Secret, static/live reconcile giving PASS_LIVE / FAIL_LIVE / CONFLICT. Real AWS/Azure/GCP connectors need a test cloud account and are not built | 🟡 | `cloud/live.py` |
 | S29 (partial) OpenStack Heat security groups, Ansible `ec2_group` tasks, Pulumi stack-export AWS security groups; VMware/NSX, Nutanix and cloud-init are NOT done (no verified schemas / rules) | 🟡 | `cloud/parsers/heat.py`, `ansible.py`, `pulumi.py`, `cloud/tests/test_s29.py` |
-| S28 (more) OVH IP firewall rule added; IBM, Vultr, UpCloud still not covered (nested/range source attributes need engine work and pinned schemas) | 🟡 | `cloud/rules/extractors.py` (`_FW_SPECS`) |
+| S28 (more) OVH, Vultr, IBM Cloud and UpCloud firewall rules, built from the official provider documentation (cited in `docs/CLOUD_PROVIDER_SOURCES.md`); anything the docs leave open is UNKNOWN | 🟡 (attribute names not yet validated against pinned schemas, CM-142) | `cloud/rules/extractors.py` (`_vultr`, `_ibm`, `_upcloud`), `cloud/tests/test_vendors.py` |
+| S29 (more) cloud-init: SSH password auth, clear-text passwords, passwordless sudo, download-piped-to-shell (CLOUD-INIT-001..004; 35 controls total); VMware NSX-T and Nutanix researched but NOT implemented (official argument references could not be retrieved) | 🟡 | `cloud/parsers/cloudinit.py`, `okf-cloud/` |
 | S20 PDF report: dependency-free text PDF (statement, coverage, not-assessed list, summary, findings with file/line), redacted, bounded; served by the scanner and the backend export route and offered on the Cloud page | ✅ | `cloud/export.py` (`to_pdf`) |
 | S33 org-wide inventory, S31/S32 real connectors, S23 schedules/webhooks/asset links | ⬜ blocked: need a test cloud account / a reviewed design for outbound webhooks and scheduled jobs; not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (408 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (472 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)

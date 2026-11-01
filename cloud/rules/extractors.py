@@ -474,6 +474,107 @@ def _generic_firewall(res: Resource) -> Optional[List[Rule]]:
     return _flatten(parts)
 
 
+# ------------------------------------------------------------------ Vultr, IBM Cloud, UpCloud (RTM S27/S28; sources in docs/CLOUD_PROVIDER_SOURCES.md)
+def _vultr(res: Resource) -> Optional[List[Rule]]:
+    """vultr_firewall_rule has no action or direction argument: every rule is an inbound allow rule (provider documentation).
+    `source = "cloudflare"` means Cloudflare's ranges, whose exposure is not decided here (UNKNOWN)."""
+    p = res.properties
+    vals = [p.get(k, MISSING) for k in ("protocol", "subnet", "subnet_size", "port", "source")]
+    if any(isinstance(v, (Unknown, Ref)) for v in vals) or _blank(vals[1]) or _blank(vals[2]) or not _blank(vals[4]):
+        return None
+    try:
+        net = ipaddress.ip_network(f"{str(vals[1]).strip()}/{int(vals[2])}", strict=False)
+    except (ValueError, TypeError):
+        return None
+    proto = vals[0]
+    if _blank(vals[3]):
+        # port is optional and "TCP/UDP only"; what an omitted port means is not documented, so it is never read as "all ports" for them
+        port: List[Any] = [Unknown("omitted port on a tcp/udp rule")] if str(proto).strip().lower() in ("tcp", "udp") else []
+    else:
+        port = [str(vals[3]).strip().replace(":", "-")]
+    return _port_rules([str(net)], proto, port)
+
+
+def _ibm(res: Resource) -> Optional[List[Rule]]:
+    """ibm_is_security_group_rule: `remote` omitted is not documented, so it is UNKNOWN; a security-group id as `remote` cannot
+    be judged and is UNKNOWN too. An omitted protocol is documented as icmp_tcp_udp (every protocol and port)."""
+    d = res.properties
+    direction = d.get("direction", MISSING)
+    if direction is MISSING or isinstance(direction, (Unknown, Ref)):
+        return None
+    dv = str(direction).strip().lower()
+    if dv in ("outbound", "egress"):                                  # the provider page uses both spellings
+        return []
+    if dv not in ("inbound", "ingress"):
+        return None
+    remote = d.get("remote", MISSING)
+    if _blank(remote):
+        return None
+    sources = [remote]
+    legacy = [(k, b) for k in ("tcp", "udp", "icmp") for b in as_list(d.get(k, [])) if isinstance(b, dict)]
+    if legacy:                                                        # deprecated nested blocks
+        return [r for k, b in legacy for r in _port_rules(sources, k, _fw_ports(b, {"minmax": ("port_min", "port_max")}) if k != "icmp" else [])]
+    proto = d.get("protocol", MISSING)
+    if proto is MISSING or (not isinstance(proto, (Unknown, Ref)) and str(proto).strip().lower() in ("icmp_tcp_udp", "any")):
+        return _port_rules(sources, "all", [])
+    ports = _fw_ports(d, {"minmax": ("port_min", "port_max")})
+    if not ports and str(proto).strip().lower() in ("tcp", "udp"):
+        ports = [Unknown("port_min and port_max are required for tcp and udp")]
+    return _port_rules(sources, proto, ports)
+
+
+MAX_UPCLOUD_NETS = 32
+
+
+def _upcloud_sources(d: Dict[str, Any]) -> Optional[List[str]]:
+    lo, hi, family = d.get("source_address_start", MISSING), d.get("source_address_end", MISSING), d.get("family", MISSING)
+    if isinstance(family, (Unknown, Ref)) or any(isinstance(v, (Unknown, Ref)) for v in (lo, hi)):
+        return None
+    if _blank(lo) and _blank(hi):
+        return ["::/0"] if str(family).strip().lower() == "ipv6" else ["0.0.0.0/0", "::/0"] if _blank(family) else ["0.0.0.0/0"]
+    if _blank(lo) or _blank(hi):
+        return None                                                   # the provider requires both ends of a range
+    try:
+        nets = list(ipaddress.summarize_address_range(ipaddress.ip_address(str(lo).strip()), ipaddress.ip_address(str(hi).strip())))
+    except (ValueError, TypeError):
+        return None
+    return [str(n) for n in nets] if len(nets) <= MAX_UPCLOUD_NETS else None
+
+
+def _upcloud(res: Resource) -> Optional[List[Rule]]:
+    """upcloud_firewall_rules: rules are evaluated in order and a catch-all rule is defined last. The behaviour when no rule
+    matches is NOT documented, so without a trailing catch-all drop the result is UNKNOWN rather than a pass."""
+    blocks = res.properties.get("firewall_rule", [])
+    items = as_list(blocks)
+    if isinstance(blocks, (Unknown, Ref)) or not all(isinstance(d, dict) for d in items):
+        return None
+    rules: List[Rule] = []
+    for d in items:
+        direction, action = d.get("direction", MISSING), d.get("action", MISSING)
+        if any(v is MISSING or isinstance(v, (Unknown, Ref)) for v in (direction, action)):
+            return None
+        act = str(action).strip().lower()
+        if act not in ("accept", "drop"):
+            return None
+        if str(direction).strip().lower() != "in":
+            continue
+        keys = ("protocol", "source_address_start", "source_address_end", "destination_port_start", "destination_port_end",
+                "source_port_start", "source_port_end", "destination_address_start", "destination_address_end", "icmp_type")
+        if act == "drop":
+            if all(_blank(d.get(k, MISSING)) for k in keys):
+                return rules                                          # the catch-all drop: later rules never match
+            continue                                                  # a partial drop can only narrow what an accept admits
+        sources = _upcloud_sources(d)
+        lo, hi = d.get("destination_port_start", MISSING), d.get("destination_port_end", MISSING)
+        if sources is None or any(isinstance(v, (Unknown, Ref)) for v in (lo, hi)) or _blank(lo) != _blank(hi):
+            return None
+        proto = d.get("protocol", MISSING)
+        proto = "all" if _blank(proto) else proto
+        rules.extend(_port_rules(sources, proto, [] if _blank(lo) else [f"{lo}-{hi}"]))
+    unknown = Unknown("the default action when no rule matches is not documented")
+    return rules + [Rule(["0.0.0.0/0", "::/0"], unknown, unknown, unknown)]
+
+
 _RULE_SOURCES: Dict[str, Callable[[Resource], Optional[List[Rule]]]] = {
     **{t: _aws_sg for t in ("aws_security_group", "aws_security_group_rule", "aws_vpc_security_group_ingress_rule",
                             "AWS::EC2::SecurityGroup", "AWS::EC2::SecurityGroupIngress")},
@@ -482,6 +583,7 @@ _RULE_SOURCES: Dict[str, Callable[[Resource], Optional[List[Rule]]]] = {
                                "Microsoft.Network/networkSecurityGroups")},
     **{t: _oci for t in ("oci_core_security_list", "oci_core_network_security_group_security_rule")},
     **{t: _generic_firewall for t in _FW_SPECS},
+    "vultr_firewall_rule": _vultr, "ibm_is_security_group_rule": _ibm, "upcloud_firewall_rules": _upcloud,
 }
 
 
@@ -675,6 +777,30 @@ def k8s_rbac(res: Resource) -> Dict[str, Optional[bool]]:
     return {"K8S.RBAC.CLUSTER_ADMIN_BINDING": ref.get("name") == "cluster-admin", "K8S.RBAC.ANONYMOUS_BINDING": anonymous}
 
 
+# ------------------------------------------------------------------ cloud-init (RTM S29; keys and defaults from the cloud-init module reference)
+_TRUE, _FALSE = {"true", "yes", "on", "1"}, {"false", "no", "off", "0"}
+_REMOTE_EXEC = re.compile(r"\b(curl|wget)\b[^|;&]*\|\s*(sudo\s+)?(ba|da|z|k)?sh\b", re.I)
+
+
+def _cmd(item: Any) -> str:
+    return " ".join(map(str, item)) if isinstance(item, list) else str(item)
+
+
+def cloud_init(res: Resource) -> Dict[str, Optional[bool]]:
+    p = res.properties
+    pw = p.get("ssh_pwauth", MISSING)
+    word = str(pw).strip().lower()
+    ssh_pw: Optional[bool] = True if word in _TRUE else False if word in _FALSE else None   # absent / "unchanged": the image default decides
+    users = [u for u in as_list(p.get("users", [])) if isinstance(u, dict)]
+    chpasswd = p.get("chpasswd") if isinstance(p.get("chpasswd"), dict) else {}
+    plain = (any(not _blank(u.get(k, MISSING)) for u in users for k in ("plain_text_passwd", "plain-text-passwd"))
+             or any(isinstance(c, dict) and str(c.get("type", "hash")).strip().lower() == "text" for c in as_list(chpasswd.get("users", [])))
+             or not _blank(chpasswd.get("list", MISSING)) or not _blank(p.get("password", MISSING)))
+    nopasswd = any("nopasswd" in _cmd(u.get("sudo", "")).lower() for u in users)
+    remote = any(_REMOTE_EXEC.search(_cmd(c)) for c in as_list(p.get("runcmd", [])))
+    return {"INIT.SSH_PASSWORD_AUTH": ssh_pw, "INIT.PLAINTEXT_PASSWORD": plain, "INIT.SUDO_NOPASSWD": nopasswd, "INIT.REMOTE_SCRIPT_EXEC": remote}
+
+
 def extractor_properties(name: str, rtype: str) -> tuple:
     """The canonical properties an extractor declares for a resource type (used to generate the capability matrix)."""
     if name == "network_ingress":
@@ -684,7 +810,8 @@ def extractor_properties(name: str, rtype: str) -> tuple:
                                         (_TRUST, "IAM.TRUST_UNRESTRICTED")) if rtype in table)
     if name == "k8s_rbac":
         return ("K8S.RBAC.WILDCARD_ROLE",) if rtype in ("Role", "ClusterRole") else ("K8S.RBAC.CLUSTER_ADMIN_BINDING", "K8S.RBAC.ANONYMOUS_BINDING")
-    return {"gcp_iam": ("IAM.PUBLIC_PRINCIPAL", "IAM.WILDCARD_ADMIN"), "gcp_sql": ("DB.PUBLICLY_ACCESSIBLE",),
+    return {"cloud_init": ("INIT.SSH_PASSWORD_AUTH", "INIT.PLAINTEXT_PASSWORD", "INIT.SUDO_NOPASSWD", "INIT.REMOTE_SCRIPT_EXEC"),
+            "gcp_iam": ("IAM.PUBLIC_PRINCIPAL", "IAM.WILDCARD_ADMIN"), "gcp_sql": ("DB.PUBLICLY_ACCESSIBLE",),
             "k8s_netpol": ("K8S.NETPOL.ALLOW_ALL",),
             "k8s_workload": ("K8S.POD.HOST_NETWORK", "K8S.POD.HOST_PID", "K8S.CONTAINER.PRIVILEGED", "K8S.CONTAINER.RUN_AS_ROOT",
                              "K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION", "K8S.CONTAINER.CAP_ADD_ALL", "K8S.CONTAINER.IMAGE_UNPINNED", "K8S.POD.HOST_IPC", "K8S.POD.HOSTPATH_VOLUME", "K8S.CONTAINER.WRITABLE_ROOT_FS")}[name]
@@ -692,4 +819,4 @@ def extractor_properties(name: str, rtype: str) -> tuple:
 
 REGISTRY: Dict[str, Callable[[Resource], Dict[str, Optional[bool]]]] = {
     "network_ingress": network_ingress, "iam_policies": iam_policies, "gcp_iam": gcp_iam, "gcp_sql": gcp_sql,
-    "k8s_workload": k8s_workload, "k8s_netpol": k8s_netpol, "k8s_rbac": k8s_rbac}
+    "k8s_workload": k8s_workload, "k8s_netpol": k8s_netpol, "k8s_rbac": k8s_rbac, "cloud_init": cloud_init}

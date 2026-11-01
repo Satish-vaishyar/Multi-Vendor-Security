@@ -26,6 +26,9 @@ mappings:
       - openstack_networking_secgroup_rule_v2
       - OS::Neutron::SecurityGroup
       - ovh_ip_firewall_rule
+      - vultr_firewall_rule
+      - ibm_is_security_group_rule
+      - upcloud_firewall_rules
     extractors: [network_ingress]
 
   # ------------------------------------------------------------------ identity
@@ -162,6 +165,11 @@ mappings:
         paths: [enable_log_file_validation, EnableLogFileValidation]
         op: truthy
         default: false
+
+  # ------------------------------------------------------------------ cloud-init (instance bootstrap configuration)
+  - id: cloud-init-config
+    resource_types: [cloudinit_config]
+    extractors: [cloud_init]
 
   # ------------------------------------------------------------------ Kubernetes
   - id: k8s-workloads

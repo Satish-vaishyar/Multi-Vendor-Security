@@ -35,4 +35,8 @@ properties:
   - {id: K8S.RBAC.WILDCARD_ROLE, type: boolean, category: identity, description: "A Role/ClusterRole grants every verb on every resource"}
   - {id: K8S.RBAC.CLUSTER_ADMIN_BINDING, type: boolean, category: identity, description: "A binding grants the cluster-admin role"}
   - {id: K8S.RBAC.ANONYMOUS_BINDING, type: boolean, category: identity, description: "A binding grants a role to anonymous or unauthenticated subjects"}
+  - {id: INIT.SSH_PASSWORD_AUTH, type: boolean, category: identity, description: "cloud-init enables SSH password authentication (ssh_pwauth)"}
+  - {id: INIT.PLAINTEXT_PASSWORD, type: boolean, category: identity, description: "cloud-init sets a password in clear text"}
+  - {id: INIT.SUDO_NOPASSWD, type: boolean, category: identity, description: "cloud-init grants a user passwordless sudo"}
+  - {id: INIT.REMOTE_SCRIPT_EXEC, type: boolean, category: supply_chain, description: "cloud-init downloads a script and pipes it to a shell"}
   - {id: K8S.NETPOL.ALLOW_ALL, type: boolean, category: network_exposure, description: "A NetworkPolicy selects every pod and allows all traffic"}

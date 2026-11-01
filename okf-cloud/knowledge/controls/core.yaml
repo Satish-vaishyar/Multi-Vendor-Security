@@ -344,3 +344,46 @@ controls:
     frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-3, verified: false}]
     remediation: {summary: "Remove system:anonymous and system:unauthenticated subjects from the binding."}
 
+  - id: CLOUD-INIT-001
+    name: Instance bootstrap must not enable SSH password authentication
+    category: identity
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: INIT.SSH_PASSWORD_AUTH, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: IA-2, verified: false}]
+    remediation: {summary: "Set ssh_pwauth: false and use SSH keys. When ssh_pwauth is absent the image default applies and the result is UNKNOWN."}
+
+  - id: CLOUD-INIT-002
+    name: Instance bootstrap must not set clear-text passwords
+    category: identity
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: INIT.PLAINTEXT_PASSWORD, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: IA-5, verified: false}]
+    remediation: {summary: "Remove plain_text_passwd, chpasswd type text and the password key; use SSH keys. cloud-init documents an exposed plain text password as an immediate security concern."}
+
+  - id: CLOUD-INIT-003
+    name: Instance bootstrap must not grant passwordless sudo
+    category: identity
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: INIT.SUDO_NOPASSWD, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Remove NOPASSWD from the user's sudo rule, or restrict it to the specific commands that need it."}
+
+  - id: CLOUD-INIT-004
+    name: Instance bootstrap must not pipe a downloaded script to a shell
+    category: supply_chain
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: INIT.REMOTE_SCRIPT_EXEC, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SI-7, verified: false}]
+    remediation: {summary: "Download the script, verify a checksum or signature, and only then run it; or bake it into the image."}
