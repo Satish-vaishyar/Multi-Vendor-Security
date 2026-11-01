@@ -280,3 +280,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 - Every step S01-S34 delivers at least one requirement.
 - Requirements marked ⏸ depend on customer demand or a live test account and are the only ones that can slip without blocking the MVP (S14) or the recommended release (S26).
 - Open risks to track: Checkov/Trivy licence and version drift; unverified CIS IDs; the catalog's fixtures need schema validation (CM-142); no live test account for S31-S33.
+
+### Dependabot review (2026-11-01)
+- Merged: node 26-slim (#7), nginx-unprivileged 1.31-alpine (#8) - frontend images only; Docker could not be built locally, so unverified by build.
+- Closed: python 3.15-slim (#1) - hdbscan publishes wheels up to cp314 only, so the backend image would need a source build. Revisit when cp315 wheels exist.
