@@ -1,13 +1,57 @@
 # RTM - Cloud Provider Security Assessment Module (requirement → implementation → verification)
 
 Source requirements: `CLOUD_PROVIDER_SECURITY_ASSESSMENT_CATALOG.md` (referenced below as **CAT §n**).
-Status of this document: **plan**. Only S01 is implemented so far. Effort figures are estimates for one engineer.
+Status of this document: **living plan + progress log** (see section 0). Effort figures are estimates for one engineer.
 
 Legend: ⬜ planned · 🟡 in progress · ✅ implemented + tested · ⏸ deferred (needs customer demand / test account)
 
 New locations introduced by the module (nothing existing is renamed or moved):
 `cloud/` (scanner service) · `okf-cloud/` (knowledge pack) · `backend/app/api/v1/cloud.py` (thin API) ·
 `backend/app/db/migrate_017.sql` · `frontend/src/pages/cloud/` · `docker-compose.cloud.yml` · `.github/workflows/cloud.yml`
+
+---
+
+## 0. Progress log (kept current)
+
+Branching: all work is committed directly to `main` of the Orbit repository, one commit per step (security-review
+fixes are separate `fix(cloud)` commits). There are no long-lived feature branches.
+
+| Step | Status | Evidence |
+|---|---|---|
+| S01 foundation, flag, skeletons | ✅ | `cloud/flags.py`, `okf-cloud/` |
+| S02 migration `migrate_017.sql` | ✅ (SQL verified on a scratch PostgreSQL 16; full backend suite not runnable on the dev laptop, see notes) | `backend/app/db/migrate_017.sql` |
+| S03 sandboxed scanner + compose overlay | ✅ (profile locked by tests; container not started on the dev laptop, Docker daemon unavailable) | `cloud/Dockerfile`, `docker-compose.cloud.yml` |
+| S04 API shell, job kind, CI workflow | ⬜ deferred: edits `backend/` and needs the backend suite (needs PostgreSQL with `citext`) | - |
+| S05 safe intake | ✅ | `cloud/intake.py` |
+| S06 detection | ✅ | `cloud/detect.py`, `cloud/yamlutil.py` |
+| S07 secret scanner | ✅ | `cloud/secret_scan.py` |
+| S08 Terraform/OpenTofu parser | ✅ | `cloud/parsers/terraform.py` |
+| S09 CloudFormation/SAM parser | ✅ | `cloud/parsers/cloudformation.py` |
+| S10 Kubernetes parser | ✅ | `cloud/parsers/kubernetes.py` |
+| S11 IR record, findings, validation | ✅ | `cloud/ir.py` |
+| S12 okf-cloud pack + rule engine | 🟡 in progress | `cloud/rules/`, `okf-cloud/knowledge/` |
+| S13 - S34 | ⬜ | - |
+
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (151 tests at the time of writing).
+Run it with `cd cloud && uv run --frozen pytest -q --cov`.
+
+### Decisions and deviations recorded during implementation
+* **CM-094 (reuse OKF evaluator by import) changed.** Importing `okf.src.engines` would pull `pydantic` and the okf sources
+  into the sandboxed scanner image. The cloud engine implements the same condition DSL and operator semantics
+  (`all` / `any` / `{property, operator, value}`; a missing value is UNKNOWN) and a parity test imports the real
+  `eval_op` to prove the two agree.
+* **Security reviews.** Automated security reviews of the commits produced findings that were fixed as `fix(cloud)` commits:
+  intake member accounting, secret-scanner fail-open and ReDoS, Terraform recursion and expansion budgets, plan/state
+  redaction, YAML alias expansion and depth limits.
+* **Unverifiable here:** backend integration (S04, S14, S23, S24) cannot be proven locally because the project's test
+  database needs `pgcrypto` and `citext`; the embedded PostgreSQL available on the dev laptop lacks `citext`. CI is the
+  verification point for those steps.
+* **Repository housekeeping (requested by the owner).** Dependabot updates were merged into `main` (see below) and GitHub
+  Actions workflows were disabled on GitHub (not by editing files) to save Actions credits until the owner re-enables them.
+  Note that merging the Actions bumps changed `.github/workflows/ci.yml`, a deliberate exception to CM-155 (which is
+  about this module not editing CI).
+* **CI baseline.** Before this work, `main` already failed CI: the backend suite passed 634 tests but missed its 100%
+  coverage gate (99.92%), and the dependency/secret-scan job failed. Neither is caused by the cloud module.
 
 ---
 
@@ -62,9 +106,9 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
 | CM-001 | Support upload-only (static) and connected (live) assessment modes | 1 | `mode` field on scan; static path S04-S14, live path S31-S32 | S04,S31 | API test per mode | ⬜ |
-| CM-002 | Evidence states PASS/FAIL/UNKNOWN_STATIC, N/A, *_LIVE, CONFLICT | 1.1 | Enum in IR + findings table (names already listed in `okf-cloud/okf_manifest.yaml`) | S11 | Schema test | ⬜ |
+| CM-002 | Evidence states PASS/FAIL/UNKNOWN_STATIC, N/A, *_LIVE, CONFLICT | 1.1 | Enum in IR + findings table (names already listed in `okf-cloud/okf_manifest.yaml`) | S11 | Schema test | 🟡 |
 | CM-003 | Never convert UNKNOWN to PASS | 1.1, 14 | Evaluator returns UNKNOWN on `None`; property test | S12 | CFG-001 test | ⬜ |
-| CM-004 | Every finding shows source, address, file, line, parser/rule version, timestamp | 1.1 | `source{}` block in IR; stored in `cloud_findings` | S11 | Field-presence test | ⬜ |
+| CM-004 | Every finding shows source, address, file, line, parser/rule version, timestamp | 1.1 | `source{}` block in IR; stored in `cloud_findings` | S11 | Field-presence test | 🟡 |
 | CM-005 | Never claim uploaded config proves deployed state | 1 | Report wording + banner | S20 | Wording test | ⬜ |
 
 ### B. Providers and platforms (CAT §2)
@@ -91,20 +135,20 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
-| CM-050 | Terraform/OpenTofu `.tf .tfvars .tf.json .hcl`; no `apply`, no module fetch | 3.1 | `cloud/parsers/terraform.py` | S08 | Parser tests | ⬜ |
-| CM-051 | Terraform plan JSON; planned vs known vs unknown values | 3.1 | Plan-JSON reader | S08 | Unknown-value test | ⬜ |
-| CM-052 | Terraform state: opt-in only, redacted, not persisted | 3.1 | Guarded flag + redactor | S08 | State not stored test | ⬜ |
-| CM-053 | CloudFormation/SAM/CDK output | 3.1 | `cfn.py` | S09 | Intrinsic-function tests | ⬜ |
+| CM-050 | Terraform/OpenTofu `.tf .tfvars .tf.json .hcl`; no `apply`, no module fetch | 3.1 | `cloud/parsers/terraform.py` | S08 | Parser tests | ✅ |
+| CM-051 | Terraform plan JSON; planned vs known vs unknown values | 3.1 | Plan-JSON reader | S08 | Unknown-value test | ✅ |
+| CM-052 | Terraform state: opt-in only, redacted, not persisted | 3.1 | Guarded flag + redactor | S08 | State not stored test | ✅ |
+| CM-053 | CloudFormation/SAM/CDK output | 3.1 | `cfn.py` | S09 | Intrinsic-function tests | ✅ |
 | CM-054 | ARM + Bicep (pinned compiler, sandboxed) | 3.1 | `arm.py`, `bicep.py` | S15 | Equivalence test | ⬜ |
 | CM-055 | GCP Terraform/KRM/Infra Manager; Deployment Manager not a default | 3.1 | Terraform + KRM parser | S08,S12 | Fixture | ⬜ |
 | CM-056 | Alibaba ROS | 3.1 | `ros.py` | S27 | Fixture | ⏸ |
 | CM-057 | OCI Resource Manager zip; reject state | 3.1 | Archive root inspection | S16 | State rejected test | ⬜ |
-| CM-058 | Kubernetes/Helm/Kustomize | 3.1 | `k8s.py` | S10 | Fixture | ⬜ |
+| CM-058 | Kubernetes/Helm/Kustomize | 3.1 | `k8s.py` | S10 | Fixture | ✅ |
 | CM-059 | OpenStack Heat | 3.1 | `heat.py` | S29 | Fixture | ⏸ |
 | CM-060 | Policy files (Rego, Azure Policy, Sentinel) | 3.1 | Policy-quality scanner | S29 | Fixture | ⏸ |
-| CM-061 | Safe archive handling (ZIP/TAR/GZ) | 3.1, 8 | `intake.py` | S05 | Malicious corpus | ⬜ |
-| CM-062 | Do not process credentials, `.terraform/`, provider binaries, provisioners, undecryptable files as config | 3.2 | Deny-list + content sniff | S05,S07 | Rejection tests | ⬜ |
-| CM-063 | Secrets scanner runs before parsers; values masked | 3.2, 5.7 | `secrets.py` | S07 | Leak test | ⬜ |
+| CM-061 | Safe archive handling (ZIP/TAR/GZ) | 3.1, 8 | `intake.py` | S05 | Malicious corpus | ✅ |
+| CM-062 | Do not process credentials, `.terraform/`, provider binaries, provisioners, undecryptable files as config | 3.2 | Deny-list + content sniff | S05,S07 | Rejection tests | ✅ |
+| CM-063 | Secrets scanner runs before parsers; values masked | 3.2, 5.7 | `secrets.py` | S07 | Leak test | ✅ |
 
 ### D. Security checks (CAT §5)
 
@@ -116,7 +160,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | CM-073 | Logging/monitoring: audit trail, retention, tamper protection | 5.4 | `controls/logging.yaml` (static where provable, else UNKNOWN) | S12 | LOG-001, LOG-002 | ⬜ |
 | CM-074 | Compute/workload: IMDS, volume encryption, privileged containers | 5.5 | `controls/compute.yaml`, `k8s.yaml` | S12,S22 | K8S-001..003 | ⬜ |
 | CM-075 | Managed services: DB, K8s, LB, DNS, secrets manager, serverless | 5.6 | `controls/managed.yaml` | S12,S22 | DB-001 + per-family | ⬜ |
-| CM-076 | Secrets/sensitive data in uploads; rotation advice; no secret in LLM context | 5.7 | `secrets.py` + redaction hooks | S07 | SEC-001 | ⬜ |
+| CM-076 | Secrets/sensitive data in uploads; rotation advice; no secret in LLM context | 5.7 | `secrets.py` + redaction hooks | S07 | SEC-001 | 🟡 |
 | CM-077 | Image/package CVE scanning kept separate from config checks | 5.5 | Out of scope until requested | - | - | ⏸ |
 
 ### E. Compliance mapping (CAT §6)
@@ -127,7 +171,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | CM-081 | Rule metadata (id, provider, resource types, severity, mode, logic version, mappings, unknown handling, remediation, references) | 6.2 | Control YAML schema + validator | S12 | Schema validation in CI | ⬜ |
 | CM-082 | Per-framework/edition/scope scoring; separate Passed/Failed/Unknown/N-A/Not-assessed; no single global % | 6.3 | `cloud/scoring.py` | S18 | Denominator test | ⬜ |
 | CM-083 | Exceptions with owner, justification, expiry, approval | 6.3 | `cloud_exceptions` + API/UI | S21 | Expiry test | ⬜ |
-| CM-084 | Licensed benchmark text not redistributed; customer-import path | 6.1 | Reuse `catalogue-import` pattern, separate output dir (git-ignored, see `okf-cloud/.gitignore`) | S18 | Import test | ⬜ |
+| CM-084 | Licensed benchmark text not redistributed; customer-import path | 6.1 | Reuse `catalogue-import` pattern, separate output dir (git-ignored, see `okf-cloud/.gitignore`) | S18 | Import test | 🟡 |
 
 ### F. Architecture (CAT §7)
 
@@ -135,24 +179,24 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 |---|---|---|---|---|---|---|
 | CM-090 | Pipeline: detect → safety/secrets → parse → IR → rules → graph → evidence → report | 7 | `cloud/pipeline.py` | S04-S14 | End-to-end test | ⬜ |
 | CM-091 | External scanners (Checkov, Trivy, optionally KICS/OPA) as independent engines | 7.1 | `cloud/engines/*.py`, pinned in scanner image | S13 | Merge/dedupe test; engine+version recorded | ⬜ |
-| CM-092 | Normalised IR keeping `provider_raw`; no attribute dropped | 7.2 | IR dataclass | S11 | Round-trip test | ⬜ |
+| CM-092 | Normalised IR keeping `provider_raw`; no attribute dropped | 7.2 | IR dataclass | S11 | Round-trip test | ✅ |
 | CM-093 | Relationship graph with edge provenance/certainty | 7.3 | `cloud/graph.py` (NetworkX is already used elsewhere in the repo) | S17 | Edge-certainty test | ⬜ |
-| CM-094 | Reuse OKF evaluator by import, without editing `okf/` | 7 | `okf-cloud/evaluator.py` imports `okf.src.engines` | S12 | Import + UNKNOWN-mapping test | ⬜ |
+| CM-094 | Reuse OKF evaluator semantics without editing `okf/` | 7 | `cloud/rules/engine.py` re-implements the same DSL; parity test imports the real `okf.src.engines.eval_op` (see section 0) | S12 | Parity test over the operator matrix | ⬜ |
 
 ### G. Upload pipeline and security (CAT §8)
 
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
-| CM-100 | Size, file-count, depth, path, time limits | 8.1 | `intake.py` limits | S05 | Limit tests | ⬜ |
-| CM-101 | ZIP-slip, traversal, symlink, bomb, recursion defences | 8.2 | `intake.py` | S05 | Attack corpus | ⬜ |
-| CM-102 | Content-based type detection; reject binaries | 8.3 | `detect.py` | S06 | Spoofed-extension test | ⬜ |
-| CM-103 | Ephemeral unprivileged container, read-only FS, no credentials | 8.4 | Scanner container profile | S03 | Container policy test | ⬜ |
-| CM-104 | No network; no module/remote/URL/git fetch | 8.5 | Network-off + parser refuses remote refs | S03,S08 | Egress test | ⬜ |
-| CM-105 | No provisioners, scripts, hooks or side-effect functions executed | 8.6 | Parsers are static only | S08 | Provisioner fixture inert | ⬜ |
-| CM-106 | No `terraform init` on untrusted input | 8.7 | Never invoked; schema from pinned mirror data | S08 | Static assertion | ⬜ |
-| CM-107 | Filename sanitising and tenant path isolation | 8.8, 8.10 | Per-org storage prefix | S05 | Cross-tenant test | ⬜ |
+| CM-100 | Size, file-count, depth, path, time limits | 8.1 | `intake.py` limits | S05 | Limit tests | ✅ |
+| CM-101 | ZIP-slip, traversal, symlink, bomb, recursion defences | 8.2 | `intake.py` | S05 | Attack corpus | ✅ |
+| CM-102 | Content-based type detection; reject binaries | 8.3 | `detect.py` | S06 | Spoofed-extension test | ✅ |
+| CM-103 | Ephemeral unprivileged container, read-only FS, no credentials | 8.4 | Scanner container profile | S03 | Container policy test | 🟡 |
+| CM-104 | No network; no module/remote/URL/git fetch | 8.5 | Network-off + parser refuses remote refs | S03,S08 | Egress test | 🟡 |
+| CM-105 | No provisioners, scripts, hooks or side-effect functions executed | 8.6 | Parsers are static only | S08 | Provisioner fixture inert | ✅ |
+| CM-106 | No `terraform init` on untrusted input | 8.7 | Never invoked; schema from pinned mirror data | S08 | Static assertion | ✅ |
+| CM-107 | Filename sanitising and tenant path isolation | 8.8, 8.10 | Per-org storage prefix | S05 | Cross-tenant test | 🟡 |
 | CM-108 | Encryption at rest/in transit; retention and deletion | 8.9 | Reuse `core/crypto` and retention service via import | S02,S23 | Retention test | ⬜ |
-| CM-109 | Secrets redacted from logs, traces, LLM context | 8.11 | Reuse `core/redact` via import | S07 | Log scan test | ⬜ |
+| CM-109 | Secrets redacted from logs, traces, LLM context | 8.11 | Reuse `core/redact` via import | S07 | Log scan test | 🟡 |
 | CM-110 | Report rendering safe from HTML/Markdown injection | 8.12 | Escape on output | S14,S20 | Injection test | ⬜ |
 | CM-111 | Immutable audit record of upload/scan/view/export/delete | 8.13 | Reuse `core/auditlog` | S14,S23 | Audit-entry test | ⬜ |
 | CM-112 | LLM explains only; deterministic rules decide; remediation shown as proposal | 8.1 | Gateway reuse, explain endpoints only | S19 | No-LLM-in-verdict test | ⬜ |
@@ -176,11 +220,11 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | Req | Requirement | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|
 | CM-150 | With `CLOUD_MODULE_ENABLED=false` the application behaves exactly as today | `cloud/flags.py` (fail-closed, done in S01); conditional router/handler/route registration later | S01,S04 | Flag tests; full existing suite green, flag off and on | 🟡 |
-| CM-151 | No writes to existing tables; cloud data only in `cloud_*` tables | New migration only | S02 | Dashboard/finding counts identical before and after | ⬜ |
-| CM-152 | No change to `backend/pyproject.toml` / `uv.lock` | Dependencies live in `cloud/` image | S03 | `git diff` shows lockfile untouched | ⬜ |
+| CM-151 | No writes to existing tables; cloud data only in `cloud_*` tables | New migration only | S02 | Dashboard/finding counts identical before and after | 🟡 |
+| CM-152 | No change to `backend/pyproject.toml` / `uv.lock` | Dependencies live in `cloud/` image | S03 | `git diff` shows lockfile untouched | ✅ |
 | CM-153 | Backend coverage gate (`fail_under = 100`) stays intact and unlowered | Thin glue fully tested; engine has its own gate | S04,S14 | CI | ⬜ |
 | CM-154 | `okf/knowledge/*` unchanged; cloud knowledge in `okf-cloud/` | Separate loader root (skeleton done in S01) | S01,S12 | Existing manifest counts (82 controls, 103 properties) unchanged | 🟡 |
-| CM-155 | `docker-compose.yml`, existing Dockerfiles and `ci.yml` unchanged | Override compose file, separate workflow | S03,S04 | `git diff` check | ⬜ |
+| CM-155 | `docker-compose.yml`, existing Dockerfiles and `ci.yml` unchanged | Override compose file, separate workflow | S03,S04 | `git diff` check | 🟡 |
 | CM-156 | Scanner failure cannot affect audits | Separate container and job kind | S04 | Kill-scanner test | ⬜ |
 | CM-157 | Only these existing files edited: `main.py` (1 conditional line), `job_handlers.py` (1 entry), `App.tsx` + nav (1 route, 1 flag-gated entry) | Review gate in PR template | S04,S14 | Diff review | ⬜ |
 
