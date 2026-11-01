@@ -160,7 +160,7 @@ _PRIVATE = [ipaddress.ip_network(n) for n in (
     "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "0.0.0.0/8",
     "fc00::/7", "fe80::/10", "::1/128")]
 # IPv6 transition / mapped ranges can embed IPv4 space: their reach depends on the translator, so they are UNKNOWN.
-_TRANSITION = [ipaddress.ip_network(n) for n in ("::ffff:0:0/96", "64:ff9b::/96", "64:ff9b:1::/48", "2002::/16", "::/96")]
+_TRANSITION = [ipaddress.ip_network(n) for n in ("::ffff:0:0/96", "64:ff9b::/96", "64:ff9b:1::/48", "2002::/16", "::/96", "2001::/32")]
 _BROAD_PUBLIC = {4: 8, 6: 8}            # prefix <= this: "the Internet" (or a large share of it)
 _AMBIGUOUS = {4: 15, 6: 16}             # prefix <= this (and above _BROAD_PUBLIC): a very large range, needs a human
 
@@ -187,10 +187,10 @@ def _public(src: Any, kind: str) -> Optional[bool]:
         return True
     if any(net.version == t.version and net.subnet_of(t) for t in _PRIVATE):
         return False
+    if net.prefixlen <= _BROAD_PUBLIC[net.version]:
+        return True                       # decided BEFORE the transition check: a very broad range is the Internet, full stop
     if net.version == 6 and any(net.overlaps(t) for t in _TRANSITION):
         return None
-    if net.prefixlen <= _BROAD_PUBLIC[net.version]:
-        return True
     if net.prefixlen <= _AMBIGUOUS[net.version]:
         return None
     return False
@@ -308,8 +308,12 @@ def _g(d: Dict[str, Any], *keys: str) -> Any:
     return MISSING
 
 
-def _azure_rule(d: Dict[str, Any]) -> List[Rule]:
-    if str(_g(d, "access", "Access")).lower() != "allow" or str(_g(d, "direction", "Direction")).lower() != "inbound":
+def _azure_rule(d: Dict[str, Any]) -> Optional[List[Rule]]:
+    """None = UNKNOWN: access and direction are required, so an omitted or computed value cannot be read as "not an allow rule"."""
+    access, direction = _g(d, "access", "Access"), _g(d, "direction", "Direction")
+    if any(v is MISSING or isinstance(v, (Unknown, Ref)) for v in (access, direction)):
+        return None
+    if str(access).lower() != "allow" or str(direction).lower() != "inbound":
         return []
     sources = _items(_g(d, "source_address_prefix", "sourceAddressPrefix")) + _items(
         _g(d, "source_address_prefixes", "sourceAddressPrefixes"))
@@ -318,18 +322,22 @@ def _azure_rule(d: Dict[str, Any]) -> List[Rule]:
     return _port_rules(sources, _g(d, "protocol", "Protocol"), ports)
 
 
+def _flatten(parts: List[Optional[List[Rule]]]) -> Optional[List[Rule]]:
+    return None if any(p is None for p in parts) else [r for p in parts for r in (p or [])]
+
+
 def _azure_nsg(res: Resource) -> Optional[List[Rule]]:
     p = res.properties
     if res.resource_type == "azurerm_network_security_rule":
         return _azure_rule(p)
     if res.resource_type == "azurerm_network_security_group":
         rules = p.get("security_rule", [])
-        return None if isinstance(rules, Unknown) else [r for d in as_list(rules) if isinstance(d, dict) for r in _azure_rule(d)]
+        return None if isinstance(rules, Unknown) else _flatten([_azure_rule(d) for d in as_list(rules) if isinstance(d, dict)])
     rules = get_path(p, "properties.securityRules")
     if isinstance(rules, Unknown):
         return None
-    return [r for d in as_list(rules if rules is not MISSING else []) if isinstance(d, dict)
-            for r in _azure_rule(d.get("properties", d) if isinstance(d.get("properties", d), dict) else d)]
+    return _flatten([_azure_rule(d.get("properties", d) if isinstance(d.get("properties", d), dict) else d)
+                     for d in as_list(rules if rules is not MISSING else []) if isinstance(d, dict)])
 
 
 def _oci_ports(opts: Any) -> List[Any]:
@@ -351,7 +359,10 @@ def _oci(res: Resource) -> Optional[List[Rule]]:
             return None
         return [r for d in as_list(ing) if isinstance(d, dict)
                 for r in _port_rules(_items(d.get("source", MISSING)), d.get("protocol", MISSING), _oci_ports(d.get("tcp_options")))]
-    if str(p.get("direction", "")).upper() != "INGRESS":
+    direction = p.get("direction", MISSING)
+    if direction is MISSING or isinstance(direction, (Unknown, Ref)):
+        return None                                   # required attribute omitted or computed: UNKNOWN, not "no rule"
+    if str(direction).upper() != "INGRESS":
         return []
     return _port_rules(_items(p.get("source", MISSING)), p.get("protocol", MISSING), _oci_ports(p.get("tcp_options")))
 
@@ -531,6 +542,19 @@ def k8s_netpol(res: Resource) -> Dict[str, Optional[bool]]:
     selects_all = spec.get("podSelector") in ({}, None)
     open_rule = any(r == {} for key in ("ingress", "egress") for r in (spec.get(key) or []))
     return {"K8S.NETPOL.ALLOW_ALL": bool(selects_all and open_rule)}
+
+
+def extractor_properties(name: str, rtype: str) -> tuple:
+    """The canonical properties an extractor declares for a resource type (used to generate the capability matrix)."""
+    if name == "network_ingress":
+        return tuple(TARGETS)
+    if name == "iam_policies":
+        return tuple(p for table, p in ((_IDENTITY, "IAM.WILDCARD_ADMIN"), (_RESOURCE_POLICY, "IAM.PUBLIC_PRINCIPAL"),
+                                        (_TRUST, "IAM.TRUST_UNRESTRICTED")) if rtype in table)
+    return {"gcp_iam": ("IAM.PUBLIC_PRINCIPAL", "IAM.WILDCARD_ADMIN"), "gcp_sql": ("DB.PUBLICLY_ACCESSIBLE",),
+            "k8s_netpol": ("K8S.NETPOL.ALLOW_ALL",),
+            "k8s_workload": ("K8S.POD.HOST_NETWORK", "K8S.POD.HOST_PID", "K8S.CONTAINER.PRIVILEGED", "K8S.CONTAINER.RUN_AS_ROOT",
+                             "K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION", "K8S.CONTAINER.CAP_ADD_ALL", "K8S.CONTAINER.IMAGE_UNPINNED")}[name]
 
 
 REGISTRY: Dict[str, Callable[[Resource], Dict[str, Optional[bool]]]] = {
