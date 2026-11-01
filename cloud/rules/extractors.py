@@ -367,6 +367,83 @@ def _oci(res: Resource) -> Optional[List[Rule]]:
     return _port_rules(_items(p.get("source", MISSING)), p.get("protocol", MISSING), _oci_ports(p.get("tcp_options")))
 
 
+# ------------------------------------------------------------------ other providers' firewall resources (RTM S27/S28)
+# Data-driven. Attribute names follow each Terraform provider's documentation but are NOT yet validated against pinned provider
+# schemas (CM-142), so the capability matrix reports these providers no higher than P3 and every claim is a static one.
+_FW_SPECS: Dict[str, Dict[str, Any]] = {
+    "digitalocean_firewall": {"block": "inbound_rule", "src": ("source_addresses",), "proto": "protocol", "ports": ("port_range",)},
+    "linode_firewall": {"block": "inbound", "gate": ("action", ("accept",), True), "src": ("ipv4", "ipv6"), "proto": "protocol", "ports": ("ports",)},
+    "hcloud_firewall": {"block": "rule", "gate": ("direction", ("in",), True), "src": ("source_ips",), "proto": "protocol", "ports": ("port",)},
+    "scaleway_instance_security_group": {"block": "inbound_rule", "gate": ("action", ("accept",), True), "src": ("ip_range",),
+                                         "src_default": "0.0.0.0/0", "proto": "protocol", "ports": ("port",)},
+    "alicloud_security_group_rule": {"gate": ("type", ("ingress",), True), "gate2": ("policy", ("accept",), False), "src": ("cidr_ip", "ipv6_cidr_ip"),
+                                     "proto": "ip_protocol", "ports": ("port_range",)},
+    "tencentcloud_security_group_rule": {"gate": ("type", ("ingress",), True), "gate2": ("policy", ("accept",), True), "src": ("cidr_ip",),
+                                         "proto": "ip_protocol", "ports": ("port_range",)},
+    "huaweicloud_networking_secgroup_rule": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "proto": "protocol",
+                                             "minmax": ("port_range_min", "port_range_max")},
+    "openstack_networking_secgroup_rule_v2": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "proto": "protocol",
+                                              "minmax": ("port_range_min", "port_range_max")},
+}
+
+
+def _gate(d: Dict[str, Any], gate: Any) -> Optional[bool]:
+    """True = rule applies (an allow/inbound rule), False = it does not, None = cannot tell (value computed, or a required one omitted)."""
+    attr, allowed, required = gate
+    v = d.get(attr, MISSING)
+    if isinstance(v, (Unknown, Ref)) or (v is MISSING and required):
+        return None
+    return True if v is MISSING else str(v).strip().lower() in allowed
+
+
+def _fw_ports(d: Dict[str, Any], spec: Dict[str, Any]) -> List[Any]:
+    if "minmax" in spec:
+        lo, hi = d.get(spec["minmax"][0], MISSING), d.get(spec["minmax"][1], MISSING)
+        if lo is MISSING and hi is MISSING:
+            return []
+        if any(isinstance(v, (Unknown, Ref)) for v in (lo, hi)):
+            return [Unknown("computed port range")]
+        lo = hi if lo is MISSING else lo
+        return [f"{lo}-{lo if hi is MISSING else hi}"]
+    raw = d.get(spec["ports"][0], MISSING)
+    if raw is MISSING:
+        return []                                                     # omitted port: every port, as documented for these providers
+    if isinstance(raw, (Unknown, Ref)):
+        return [raw]
+    out: List[Any] = []
+    for part in str(raw).replace("/", "-").split(","):
+        part = part.strip()
+        out.append("*" if part in ("-1", "-1--1", "1-65535") else part)
+    return out
+
+
+def _fw_rule(d: Dict[str, Any], spec: Dict[str, Any]) -> Optional[List[Rule]]:
+    for key in ("gate", "gate2"):
+        if key in spec:
+            g = _gate(d, spec[key])
+            if g is None:
+                return None
+            if not g:
+                return []
+    sources: List[Any] = []
+    for attr in spec["src"]:
+        sources += _items(d.get(attr, MISSING))
+    if not sources and "src_default" in spec:
+        sources = [spec["src_default"]]
+    return _port_rules(sources, d.get(spec["proto"], MISSING), _fw_ports(d, spec))
+
+
+def _generic_firewall(res: Resource) -> Optional[List[Rule]]:
+    spec = _FW_SPECS[res.resource_type]
+    if "block" not in spec:
+        return _fw_rule(res.properties, spec)
+    blocks = res.properties.get(spec["block"], [])
+    if isinstance(blocks, (Unknown, Ref)):
+        return None
+    parts = [_fw_rule(d, spec) for d in as_list(blocks) if isinstance(d, dict)]
+    return _flatten(parts)
+
+
 _RULE_SOURCES: Dict[str, Callable[[Resource], Optional[List[Rule]]]] = {
     **{t: _aws_sg for t in ("aws_security_group", "aws_security_group_rule", "aws_vpc_security_group_ingress_rule",
                             "AWS::EC2::SecurityGroup", "AWS::EC2::SecurityGroupIngress")},
@@ -374,6 +451,7 @@ _RULE_SOURCES: Dict[str, Callable[[Resource], Optional[List[Rule]]]] = {
     **{t: _azure_nsg for t in ("azurerm_network_security_rule", "azurerm_network_security_group",
                                "Microsoft.Network/networkSecurityGroups")},
     **{t: _oci for t in ("oci_core_security_list", "oci_core_network_security_group_security_rule")},
+    **{t: _generic_firewall for t in _FW_SPECS},
 }
 
 

@@ -73,3 +73,28 @@ def test_line_lookup_falls_back_when_the_type_text_is_escaped_or_absent():
     from cloud.parsers.arm import _line_of
     assert _line_of("a" + chr(10) + "b é", "é", 0)[0] == 2
     assert _line_of("abc", "zz", 0) == (1, 0)
+
+
+def test_secure_parameters_depth_length_and_secret_names_are_contained():
+    key = "AK" + "IAQWERTYUIOPASDFGH"
+    doc = {"parameters": {"pw": {"type": "securestring", "defaultValue": "hunter2hunter2"}, "o": {"type": "SecureObject", "defaultValue": {"a": 1}}},
+           "resources": [{"type": "A/b", "name": key + "-" + "x" * 900, "properties": {"p": "[parameters('pw')]", "o": "[parameters('o')]"}}]}
+    r = parse_arm("a.json", json.dumps(doc))
+    props = r.resources[0].properties["properties"]
+    assert isinstance(props["p"], Unknown) and isinstance(props["o"], Unknown)
+    assert key not in r.resources[0].address and len(r.resources[0].address) < 1100 and "hunter2" not in repr(r.resources[0].properties)
+    node = {"type": "A/b", "name": "leaf"}
+    for i in range(30):
+        node = {"type": "A/b", "name": f"n{i}", "resources": [node]}
+    deep = parse_arm("a.json", json.dumps({"resources": [node]}))
+    assert deep.truncated and len(deep.resources) == 11
+
+
+def test_recursion_error_is_reported_not_raised(monkeypatch):
+    import cloud.parsers.arm as arm
+
+    def boom(*a, **k):
+        raise RecursionError()
+    monkeypatch.setattr(arm, "_value", boom)
+    r = arm.parse_arm("a.json", json.dumps({"resources": [{"type": "A/b", "name": "n"}]}))
+    assert r.truncated and "too deep" in r.errors[0]["error"]

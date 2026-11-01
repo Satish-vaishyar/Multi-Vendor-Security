@@ -41,9 +41,11 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S19 remediation snippets (un-applied) + explain-only prompt builder | ✅ | `cloud/remediation.py` |
 | S22 deeper Kubernetes rules: hostIPC, hostPath, read-only root FS, RBAC wildcard, cluster-admin and anonymous bindings (CLOUD-K8S-009..014; 31 controls total) | ✅ | `cloud/rules/extractors.py`, `okf-cloud/` |
 | S15 Azure ARM parser (parameters/variables defaults, nested resources, copy/condition noted); Bicep NOT compiled (needs a pinned compiler in the image; reported as unsupported) | ✅ ARM, ⏸ Bicep | `cloud/parsers/arm.py` |
+| S16 OCI Resource Manager zip pass/fail with line evidence | ✅ | `cloud/tests/test_oci.py` |
+| S27/S28 (partial) inbound-firewall rules for DigitalOcean, Linode, Hetzner, Scaleway, Alibaba, Tencent, Huawei, OpenStack Terraform resources; attribute names follow provider docs and are NOT yet validated against pinned schemas (CM-142). IBM, Vultr, OVH, UpCloud and non-network controls are not covered | 🟡 | `cloud/rules/extractors.py` (`_FW_SPECS`) |
 | S14 backend API + findings UI, S16-S24, S27-S34 | ⬜ not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (334 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (361 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)

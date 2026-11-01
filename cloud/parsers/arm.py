@@ -11,6 +11,7 @@ import json
 import re
 from typing import Any, Dict, List, Optional
 
+from cloud import secret_scan
 from cloud.ir import Resource, Source, Unknown
 from cloud.parsers.terraform import ParseResult
 
@@ -18,6 +19,8 @@ _PARSER = "cloud.parsers.arm 1"
 _LOOKUP = re.compile(r"^\[\s*(parameters|variables)\(\s*'([^']+)'\s*\)\s*\]$")
 MAX_DEPTH = 40
 MAX_RESOURCES = 5000
+MAX_NESTING = 10
+MAX_TEXT = 512
 
 
 def _value(v: Any, ctx: Dict[str, Dict[str, Any]], depth: int = 0) -> Any:
@@ -41,7 +44,7 @@ def _value(v: Any, ctx: Dict[str, Dict[str, Any]], depth: int = 0) -> Any:
 
 def _context(doc: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     params = {k: v["defaultValue"] for k, v in (doc.get("parameters") or {}).items()
-              if isinstance(v, dict) and "defaultValue" in v and not (isinstance(v["defaultValue"], str) and v["defaultValue"].startswith("[") and not v["defaultValue"].startswith("[["))}
+              if isinstance(v, dict) and "defaultValue" in v and str(v.get("type", "")).lower() not in ("securestring", "secureobject") and not (isinstance(v["defaultValue"], str) and v["defaultValue"].startswith("[") and not v["defaultValue"].startswith("[["))}
     variables = {k: v for k, v in (doc.get("variables") or {}).items() if not (isinstance(v, str) and v.startswith("[") and not v.startswith("[["))}
     return {"parameters": params, "variables": variables}
 
@@ -68,19 +71,22 @@ def parse_arm(path: str, text: str) -> ParseResult:
     ctx = _context(doc)
     seen: Dict[str, int] = {}
     cursor = [0]
+    ctx["parameters"].update({k: Unknown("secure parameter: its value is never read")
+                              for k, v in (doc.get("parameters") or {}).items()
+                              if isinstance(v, dict) and str(v.get("type", "")).lower() in ("securestring", "secureobject")})
 
-    def emit(item: Any, parent_type: str, parent_name: str) -> None:
-        if not isinstance(item, dict) or len(result.resources) >= MAX_RESOURCES:
-            result.truncated = result.truncated or len(result.resources) >= MAX_RESOURCES
+    def emit(item: Any, parent_type: str, parent_name: str, depth: int = 0) -> None:
+        if not isinstance(item, dict) or len(result.resources) >= MAX_RESOURCES or depth > MAX_NESTING:
+            result.truncated = result.truncated or len(result.resources) >= MAX_RESOURCES or depth > MAX_NESTING
             return
         rtype = item.get("type")
         if not isinstance(rtype, str) or not rtype:
             result.errors.append({"file": path, "error": "resource without a type"})
             return
-        full = f"{parent_type}/{rtype}" if parent_type else rtype
+        full = (f"{parent_type}/{rtype}" if parent_type else rtype)[:MAX_TEXT]
         name = _value(item.get("name"), ctx)
-        name_s = name if isinstance(name, str) else "(dynamic)"
-        name_s = f"{parent_name}/{name_s}" if parent_name else name_s
+        name_s = secret_scan.redact(name)[:MAX_TEXT] if isinstance(name, str) else "(dynamic)"
+        name_s = (f"{parent_name}/{name_s}" if parent_name else name_s)[:MAX_TEXT]
         line, cursor[0] = _line_of(text, rtype, cursor[0])
         addr = f"{full}/{name_s}"
         seen[addr] = seen.get(addr, 0) + 1
@@ -97,9 +103,13 @@ def parse_arm(path: str, text: str) -> ParseResult:
             provider="azure", service=full.split("/")[0], resource_type=full, logical_name=name_s.rsplit("/", 1)[-1], address=addr,
             properties=props, source=Source(path, line, line, "arm", _PARSER), notes=notes, provider_raw={}).finalize())
         for child in item.get("resources") or []:
-            emit(child, full, name_s)
+            emit(child, full, name_s, depth + 1)
 
     top = doc["resources"]
-    for item in (top.values() if isinstance(top, dict) else top):          # symbolic-name templates use an object
-        emit(item, "", "")
+    try:
+        for item in (top.values() if isinstance(top, dict) else top):      # symbolic-name templates use an object
+            emit(item, "", "")
+    except RecursionError:
+        result.errors.append({"file": path, "error": "template nesting too deep"})
+        result.truncated = True
     return result

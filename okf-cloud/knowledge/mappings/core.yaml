@@ -16,6 +16,14 @@ mappings:
       - Microsoft.Network/networkSecurityGroups
       - oci_core_security_list
       - oci_core_network_security_group_security_rule
+      - digitalocean_firewall
+      - linode_firewall
+      - hcloud_firewall
+      - scaleway_instance_security_group
+      - alicloud_security_group_rule
+      - tencentcloud_security_group_rule
+      - huaweicloud_networking_secgroup_rule
+      - openstack_networking_secgroup_rule_v2
     extractors: [network_ingress]
 
   # ------------------------------------------------------------------ identity
