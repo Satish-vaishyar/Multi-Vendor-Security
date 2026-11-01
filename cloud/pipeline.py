@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from cloud import detect, graph, intake, scanners, secret_scan
 from cloud.ir import Finding, Resource, jsonable, resource_to_dict, validate_resource
-from cloud.parsers import cloudformation, kubernetes, terraform
+from cloud.parsers import arm, cloudformation, kubernetes, terraform
 from cloud.rules.engine import evaluate
 from cloud.rules.pack import Pack, load_pack
 
@@ -107,6 +107,8 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
             results.append(terraform.parse_plan(d.path, text))
         elif d.format == "terraform_state":
             results.append(terraform.parse_state(d.path, text, allow_state))
+        elif d.format == "arm":
+            results.append(arm.parse_arm(d.path, text))
         elif d.format == "cloudformation":
             results.append(cloudformation.parse_cloudformation(d.path, text))
         elif d.format == "kubernetes":
