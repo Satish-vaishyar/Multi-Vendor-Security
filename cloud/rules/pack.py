@@ -45,6 +45,7 @@ class Pack:
     mappings: List[Dict[str, Any]]
     controls: List[Control]
     by_type: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    customisations: List[str] = field(default_factory=list)      # organisation changes to the built-in pack, always reported
 
 
 def default_pack_dir() -> Path:

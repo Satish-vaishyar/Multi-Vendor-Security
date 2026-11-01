@@ -20,7 +20,8 @@ from cloud import detect, graph, intake, scanners, secret_scan
 from cloud.ir import Finding, Resource, jsonable, resource_to_dict, validate_resource
 from cloud.parsers import arm, cloudformation, kubernetes, terraform
 from cloud.rules.engine import evaluate
-from cloud.rules.pack import Pack, load_pack
+from cloud.rules.customer import load_effective_pack
+from cloud.rules.pack import Pack
 
 PIPELINE_VERSION = "1"
 MAX_RESOURCES_IN_REPORT = 5000
@@ -71,7 +72,7 @@ def _secret_findings(found: List[secret_scan.SecretFinding]) -> List[Finding]:
 def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = None, allow_state: bool = False,
              salt: Optional[bytes] = None, engines: Sequence[str] = (), limits: intake.Limits = intake.Limits()) -> Dict[str, Any]:
     started = time.time()
-    pack = pack or load_pack()
+    pack = pack or load_effective_pack()
     salt = salt or os.urandom(16)
     report: Dict[str, Any] = {"pipeline_version": PIPELINE_VERSION, "mode": "static", "rule_pack_version": pack.version,
                               "input": {"filename": os.path.basename(filename.replace("\\", "/")), "size_bytes": len(data),
@@ -136,7 +137,7 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
                 "files_rejected": len(taken.rejected) + taken.rejected_overflow, "files_not_text": len(skipped),
                 "formats": dict(Counter(d.format for d in detections)), "providers": detect.providers_of(detections),
                 "unsupported_formats": dict(unsupported_formats), "modules_not_resolved": len(unresolved),
-                "expansion_truncated": truncated, "effective_exposure": exposure, "external_engines": engine_runs,
+                "expansion_truncated": truncated, "rule_pack_customisations": pack.customisations, "effective_exposure": exposure, "external_engines": engine_runs,
                 "not_assessed": ["live cloud state", "organisation-wide policies", "runtime and image vulnerabilities",
                                  "controls with no rule in this pack"]}
     problems = [p for r in resources for p in validate_resource(r)]

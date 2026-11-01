@@ -46,9 +46,10 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S04/S14 backend API (`/api/v1/cloud/*`: status, scans upload/list/get, findings, export json/csv/sarif), org-scoped store, scanner `/export/{fmt}`. Mounted only when `CLOUD_MODULE_ENABLED` is on (one gated line in `main.py`). Uses a direct upload call instead of a `cloud_scan` job kind (no upload bytes in the job queue). API tests pass locally with fakes; the SQL in `cloud_store.py` and the full backend suite have NOT been run (need PostgreSQL with citext) | 🟡 | `backend/app/api/v1/cloud.py`, `backend/app/core/cloud_store.py`, `backend/tests/test_cloud_api.py` |
 | S14/S24 Findings UI: separate `/cloud` page + nav entry (shows 'not enabled' when the flag is off; existing dashboards untouched). Lint (pre-existing warnings only) and production build pass locally; not exercised against a running backend | 🟡 | `frontend/src/pages/CloudSecurity.tsx`, `frontend/src/api/cloud.api.ts` |
 | S23 audit-log entry on scan creation is done; schedules, webhooks and opt-in asset links are not | 🟡 | `backend/app/api/v1/cloud.py` |
-| S29-S34 | ⬜ not started | - |
+| S34 (customer rule packs) private pack of CUSTOM-* controls over existing properties, severity overrides, justified disables that are always reported in coverage; no code, mappings or extractors; bounded; on-prem packaging not done | 🟡 | `cloud/rules/customer.py` |
+| S29-S33 | ⬜ not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (372 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (391 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)
