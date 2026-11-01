@@ -30,7 +30,8 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S10 Kubernetes parser | ✅ | `cloud/parsers/kubernetes.py` |
 | S11 IR record, findings, validation | ✅ | `cloud/ir.py` |
 | S12 okf-cloud pack + rule engine | ✅ 25 controls, 25 properties, 29 catalog section 11 acceptance cases | `cloud/rules/`, `okf-cloud/knowledge/`, `cloud/tests/test_cat11.py` |
-| S13 - S34 | ⬜ | - |
+| S13 Checkov/Trivy adapters | ✅ parsing, safe runner, engine/version tagging, dedupe (tools are NOT bundled in the image yet: reported as `unavailable`, never as a clean scan) | `cloud/scanners.py` |
+| S14 - S34 | ⬜ | - |
 
 Verification status: `cloud/` has its own test suite with a 100% coverage gate (239 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
@@ -186,7 +187,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
 | CM-090 | Pipeline: detect → safety/secrets → parse → IR → rules → graph → evidence → report | 7 | `cloud/pipeline.py` | S04-S14 | End-to-end test | 🟡 |
-| CM-091 | External scanners (Checkov, Trivy, optionally KICS/OPA) as independent engines | 7.1 | `cloud/engines/*.py`, pinned in scanner image | S13 | Merge/dedupe test; engine+version recorded | ⬜ |
+| CM-091 | External scanners (Checkov, Trivy, optionally KICS/OPA) as independent engines | 7.1 | `cloud/engines/*.py`, pinned in scanner image | S13 | Merge/dedupe test; engine+version recorded | 🟡 |
 | CM-092 | Normalised IR keeping `provider_raw`; no attribute dropped | 7.2 | IR dataclass | S11 | Round-trip test | ✅ |
 | CM-093 | Relationship graph with edge provenance/certainty | 7.3 | `cloud/graph.py` (NetworkX is already used elsewhere in the repo) | S17 | Edge-certainty test | ⬜ |
 | CM-094 | Reuse OKF evaluator semantics without editing `okf/` | 7 | `cloud/rules/engine.py` re-implements the same DSL; parity test imports the real `okf.src.engines.eval_op` (see section 0) | S12 | Parity test over the operator matrix | ✅ |
