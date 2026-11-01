@@ -317,3 +317,58 @@ def test_remaining_edge_cases():
     assert oci["NET.SG.PUBLIC_SSH_V4"] is True                            # options without a port range: all TCP ports
     deny = {"Statement": [{"Effect": "Deny", "Principal": "*", "Action": "s3:*", "Resource": "*"}]}
     assert iam("aws_s3_bucket_policy", "policy", deny)["IAM.PUBLIC_PRINCIPAL"] is False
+
+
+# ---------------------------------------------------------------- hardening from the automated security review
+@pytest.mark.parametrize("cidr,v4,v6,any_", [
+    ("0.0.0.0/0", True, False, True), ("0.0.0.0/1", True, False, True), ("128.0.0.0/2", True, False, True),
+    ("::/0", False, True, True), ("8000::/3", False, True, True),
+    ("10.0.0.0/8", False, False, False), ("0.0.0.0/8", False, False, False), ("fc00::/7", False, False, False),
+    ("203.0.113.0/24", False, False, False), ("8.8.8.8/32", False, False, False), ("2001:db8::/32", False, False, False),
+    ("sg-0123456789", False, False, False), ("pl-1234", False, False, False), ("VirtualNetwork", False, False, False),
+    ("AzureCloud", None, None, None), ("not-a-network", None, None, None), ("", None, None, None),
+])
+def test_sources_are_parsed_as_networks_not_matched_as_text(cidr, v4, v6, any_):
+    assert ex._public(cidr, "v4") is v4 and ex._public(cidr, "v6") is v6 and ex._public(cidr, "any") is any_
+
+
+def test_text_wildcards_and_unknown_sources():
+    for token in ("*", "Any", "internet"):
+        assert ex._public(token, "v4") is True and ex._public(token, "v6") is True
+    assert ex._public(Unknown("x"), "v4") is None and ex._public(Ref("a.b"), "any") is None
+
+
+def test_split_public_ranges_and_unparseable_sources_in_a_real_rule():
+    half = net(AWS_SG % (22, 22, "tcp", '["0.0.0.0/1"]'))
+    assert half["NET.SG.PUBLIC_SSH_V4"] is True                              # a /1 is half the Internet, not a narrow allow-list
+    odd = net(AWS_SG % (22, 22, "tcp", '["AzureCloud"]'))
+    assert odd["NET.SG.PUBLIC_SSH_V4"] is None                               # cannot be understood: UNKNOWN, never "not public"
+    ref = net(AWS_SG % (22, 22, "tcp", '["sg-0123"]'))
+    assert ref["NET.SG.PUBLIC_SSH_V4"] is False
+
+
+def stmt(**kw):
+    return {"Statement": [{"Effect": "Allow", **kw}]}
+
+
+def test_not_action_not_resource_and_malformed_statements_are_never_a_pass():
+    admin = lambda doc: iam("aws_iam_policy", "policy", doc)["IAM.WILDCARD_ADMIN"]
+    assert admin(stmt(NotAction="iam:*", Resource="*")) is None              # "everything except X"
+    assert admin(stmt(Action="*", NotResource="arn:aws:s3:::b")) is None
+    assert admin(stmt(Resource="*")) is None and admin(stmt(Action="*")) is None   # missing Action / Resource: malformed
+    assert admin({"Statement": [{"Action": "*", "Resource": "*"}]}) is None         # missing Effect
+    assert admin({"Statement": [{"Effect": Unknown("x"), "Action": "*", "Resource": "*"}]}) is None
+    assert admin({"Statement": [{"Effect": " allow ", "Action": "*", "Resource": "*"}]}) is True   # normalised, not case-sensitive
+    assert admin({"Statement": [{"Effect": "Deny", "NotAction": "*", "Resource": "*"}]}) is False
+
+
+def test_not_principal_and_every_principal_type_are_checked():
+    pub = lambda doc: iam("aws_s3_bucket_policy", "policy", doc)["IAM.PUBLIC_PRINCIPAL"]
+    assert pub(stmt(NotPrincipal={"AWS": "arn:aws:iam::1:root"}, Action="s3:*", Resource="*")) is True
+    assert pub(stmt(NotPrincipal={"AWS": "arn:x"}, Action="s3:*", Resource="*", Condition={"Bool": {"x": "y"}})) is None
+    assert pub(stmt(Principal={"Federated": "*"}, Action="s3:*", Resource="*")) is True
+    assert pub(stmt(Principal={"CanonicalUser": ["*"]}, Action="s3:*", Resource="*")) is True
+    assert pub(stmt(Principal={"AWS": ["arn:aws:iam::1:root", "*"]}, Action="s3:*", Resource="*")) is True
+    assert pub(stmt(Principal={"Service": "x.amazonaws.com", "AWS": Unknown("v")}, Action="s3:*", Resource="*")) is None
+    assert pub({"Statement": [{"Principal": "*", "Action": "s3:*"}]}) is None            # missing Effect
+    assert pub({"Statement": [{"Effect": Ref("a.b"), "Principal": "*"}]}) is None

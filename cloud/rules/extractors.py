@@ -10,6 +10,7 @@ Two mechanisms:
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import re
 from dataclasses import dataclass
@@ -127,8 +128,6 @@ class Rule:
     hi: Any
 
 
-_PUBLIC_V4 = {"0.0.0.0/0", "*", "internet", "any", "0.0.0.0"}
-_PUBLIC_V6 = {"::/0", "*", "internet", "any", "::"}
 _ALL_PROTO = {"-1", "all", "*", "any", ""}
 _TCP = {"tcp", "6"}
 _DB_PORTS = (1433, 1521, 3306, 5432, 5984, 6379, 9042, 9200, 11211, 27017)
@@ -155,11 +154,28 @@ def _any(states: List[Optional[bool]]) -> Optional[bool]:
     return None if any(s is None for s in states) else False
 
 
+_SAFE_TAGS = {"virtualnetwork", "azureloadbalancer", "gatewaymanager", "azurebastion"}   # non-routable Azure service tags
+
+
 def _public(src: Any, kind: str) -> Optional[bool]:
+    """Is this source "the Internet" for the given address family? Parsed as a network, never matched as text only:
+    a broad range such as 0.0.0.0/1 is public; a narrow public range is a specific allow-list; anything that cannot be
+    understood is UNKNOWN (never "not public")."""
     if isinstance(src, (Unknown, Ref)):
         return None
     s = str(src).strip().lower()
-    return s in (_PUBLIC_V4 if kind == "v4" else _PUBLIC_V6 if kind == "v6" else _PUBLIC_V4 | _PUBLIC_V6)
+    if s in ("*", "any", "internet"):
+        return True
+    if s in _SAFE_TAGS or s.startswith(("sg-", "pl-", "sg_")):
+        return False
+    try:
+        net = ipaddress.ip_network(s, strict=False)
+    except ValueError:
+        return None
+    family = "v6" if net.version == 6 else "v4"
+    if kind != "any" and kind != family:
+        return False
+    return net.prefixlen <= 8 and not net.is_private
 
 
 def _proto_state(proto: Any, want_all: bool) -> Optional[bool]:
@@ -372,27 +388,56 @@ def _star(v: Any, *needles: str) -> Optional[bool]:
     return any(i in needles for i in items)
 
 
+def _effect_allows(s: Dict[str, Any]) -> Optional[bool]:
+    e = s.get("Effect")
+    if isinstance(e, (Unknown, Ref)) or e is None:
+        return None
+    return str(e).strip().lower() == "allow"
+
+
 def _wildcard_admin(doc: Dict[str, Any]) -> Optional[bool]:
-    states = []
+    """Allow + (Action "*" and Resource "*"). NotAction / NotResource on an Allow grant "everything except X", and a
+    missing Action or Resource is malformed: both are UNKNOWN, never a pass."""
+    states: List[Optional[bool]] = []
     for s in _statements(doc):
-        if s.get("Effect") != "Allow":
+        allows = _effect_allows(s)
+        if allows is False:
+            continue
+        if allows is None:
+            states.append(None)
+            continue
+        if "NotAction" in s or "NotResource" in s or "Action" not in s or "Resource" not in s:
+            states.append(None)
             continue
         states.append(_all([_star(s.get("Action"), "*", "*:*"), _star(s.get("Resource"), "*")]))
     return _any(states)
 
 
+def _principal_values(pr: Any) -> List[Any]:
+    """Every principal value regardless of type (AWS, Federated, CanonicalUser, Service) or a bare string."""
+    if isinstance(pr, dict):
+        return [v for vals in pr.values() for v in as_list(vals)]
+    return as_list(pr)
+
+
 def _public_principal(doc: Dict[str, Any]) -> Optional[bool]:
-    states = []
+    states: List[Optional[bool]] = []
     for s in _statements(doc):
-        if s.get("Effect") != "Allow":
+        allows = _effect_allows(s)
+        if allows is False:
             continue
-        pr = s.get("Principal")
-        pr = pr.get("AWS", MISSING) if isinstance(pr, dict) else pr
-        star = _star(pr, "*") if pr is not MISSING and pr is not None else False
-        if star and s.get("Condition"):
-            states.append(None)                  # a Condition may restrict the principal; needs evaluation
-        else:
-            states.append(star)
+        if allows is None:
+            states.append(None)
+            continue
+        if "NotPrincipal" in s:
+            states.append(None if s.get("Condition") else True)       # "everyone except ..." is public to everyone else
+            continue
+        values = _principal_values(s.get("Principal"))
+        if any(isinstance(v, (Unknown, Ref)) for v in values):
+            states.append(None)
+            continue
+        star = "*" in values
+        states.append(None if (star and s.get("Condition")) else star)  # a Condition may restrict the principal
     return _any(states)
 
 
