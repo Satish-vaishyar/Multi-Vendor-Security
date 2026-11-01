@@ -52,7 +52,7 @@ def _tagged(loader: _Loader, suffix: str, node: yaml.Node) -> LDict:
         value = _sequence(loader, node)
     else:
         value = _mapping(loader, node)
-    out = LDict({"Fn::" + suffix: value})
+    out = LDict({(suffix if suffix in ("Ref", "Condition") else "Fn::" + suffix): value})
     out.line = node.start_mark.line + 1
     return out
 

@@ -27,6 +27,8 @@ from cloud.ir import Ref, Resource, Source, Unknown
 MAX_MODULE_DEPTH = 5
 MAX_INSTANCES = 100
 MAX_EXPR_DEPTH = 20
+MAX_TOTAL_RESOURCES = 5000       # across all modules and instances of one scan
+MAX_MODULE_EXPANSIONS = 200
 _OPTS = SerializationOptions(with_meta=False)
 _PARSER = "python-hcl2 " + metadata.version("python-hcl2")
 
@@ -42,6 +44,8 @@ class ParseResult:
     resources: List[Resource] = field(default_factory=list)
     errors: List[Dict[str, str]] = field(default_factory=list)
     unresolved_modules: List[Dict[str, str]] = field(default_factory=list)
+    truncated: bool = False             # a global expansion budget was exhausted; results are partial
+    module_expansions: int = 0
 
 
 def _unquote(s: str) -> str:
@@ -63,6 +67,8 @@ class Scope:
             return Unknown("undefined local", f"local.{name}")
         if name in self._resolving:
             return Unknown("circular local", f"local.{name}")
+        if len(self._resolving) >= MAX_EXPR_DEPTH:
+            return Unknown("locals nested too deeply", f"local.{name}")
         self._resolving.add(name)
         try:
             value = evaluate(self.locals_raw[name], self)
@@ -71,9 +77,11 @@ class Scope:
         self._local_cache[name] = value
         return value
 
-    def child(self, ctx: Dict[str, Any]) -> "Scope":
-        sc = Scope(self.variables, self.locals_raw, self.quoted, {**self.ctx, **ctx})
+    def child(self, ctx: Dict[str, Any], quoted: Optional[bool] = None) -> "Scope":
+        """A scope with extra context that shares the local cache AND the cycle guard with its parent."""
+        sc = Scope(self.variables, self.locals_raw, self.quoted if quoted is None else quoted, {**self.ctx, **ctx})
         sc._local_cache = self._local_cache
+        sc._resolving = self._resolving
         return sc
 
 
@@ -143,7 +151,7 @@ def eval_expr(expr: str, scope: Scope, depth: int = 0) -> Any:
             doc = hcl2.loads("x = " + expr[len("jsonencode("):-1] + "\n", serialization_options=_OPTS)["x"]
         except Exception:                                         # noqa: BLE001 - any parse failure means "unknown"
             return Unknown("jsonencode argument not statically readable", expr)
-        return evaluate(doc, Scope(scope.variables, scope.locals_raw, True, scope.ctx), depth + 1)
+        return evaluate(doc, scope.child({}, quoted=True), depth + 1)
     if _REF.match(expr):
         return Ref(expr)
     return Unknown("expression needs evaluation (function, conditional or loop)", expr)
@@ -371,6 +379,9 @@ def _build_module(files: List[_File], variables: Dict[str, Any], mod_prefix: str
                 rtype, name = labels
                 prov, service = _provider_service(rtype)
                 for suffix, ctx, note in _instances(content, sc):
+                    if len(result.resources) >= MAX_TOTAL_RESOURCES:
+                        _truncate(result, "resource")
+                        return
                     isc = sc.child(ctx)
                     notes: List[str] = [note] if note else []
                     props = _convert_body(content, isc, notes)
@@ -384,6 +395,12 @@ def _build_module(files: List[_File], variables: Dict[str, Any], mod_prefix: str
                         provider_raw=_raw(content)).finalize())
         for labels, content in _sections(f, "module", 1):
             _expand_module(f, labels[0], content, sc, mod_prefix, depth, all_dirs, result, call_dir)
+
+
+def _truncate(result: ParseResult, what: str) -> None:
+    if not result.truncated:
+        result.truncated = True
+        result.errors.append({"file": "", "error": f"{what} expansion limit reached; the scan result is partial"})
 
 
 def _raw(content: Dict[str, Any]) -> Dict[str, Any]:
@@ -404,6 +421,10 @@ def _expand_module(f: _File, name: str, content: Dict[str, Any], sc: Scope, pref
                                           "reason": "remote or non-local module is not fetched (offline scan)"})
         return
     target = posixpath.normpath(posixpath.join(call_dir, source))
+    result.module_expansions += 1
+    if result.module_expansions > MAX_MODULE_EXPANSIONS:
+        _truncate(result, "module")
+        return
     if depth >= MAX_MODULE_DEPTH:
         result.unresolved_modules.append({"module": addr, "source": source, "file": f.path, "reason": "module nesting too deep"})
         return
@@ -451,11 +472,25 @@ def parse_terraform(files: List[Tuple[str, str]]) -> ParseResult:
         if d in called:
             continue
         variables = {k: v for (vd, k), v in tfvars.items() if (vd or ".") == d}
-        _build_module(fl, variables, "", 0, dirs, result, d)
+        try:
+            _build_module(fl, variables, "", 0, dirs, result, d)
+        except RecursionError:
+            result.errors.append({"file": d, "error": "configuration is too deeply nested to evaluate"})
     return result
 
 
 # ---------------------------------------------------------------- plan JSON / state
+def _redact_tree(node: Any) -> Any:
+    """Redact secrets in every string leaf (structure-safe, unlike redacting serialised JSON)."""
+    if isinstance(node, str):
+        return secret_scan.redact(node)
+    if isinstance(node, dict):
+        return {k: _redact_tree(v) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_redact_tree(v) for v in node]
+    return node
+
+
 def _unknown_paths(node: Any, prefix: str = "") -> List[str]:
     out: List[str] = []
     if node is True:
@@ -499,10 +534,11 @@ def _set_path(tree: Dict[str, Any], dotted: str, value: Any) -> None:
 def _plan_resources(module: Dict[str, Any], changes: Dict[str, Any], path: str, out: List[Resource]) -> None:
     for r in module.get("resources", []) or []:
         values = json.loads(json.dumps(r.get("values") or {}))
-        for dotted in _unknown_paths(changes.get(r.get("address"), {})):
-            _set_path(values, dotted, Unknown("value is computed at apply time", dotted))
         for dotted in _unknown_paths(r.get("sensitive_values") or {}):
             _set_path(values, dotted, "[SENSITIVE]")
+        values = _redact_tree(values)
+        for dotted in _unknown_paths(changes.get(r.get("address"), {})):
+            _set_path(values, dotted, Unknown("value is computed at apply time", dotted))
         rtype = r.get("type", "")
         prov, service = _provider_service(rtype)
         out.append(Resource(provider=prov, service=service, resource_type=rtype, logical_name=r.get("name", ""),
@@ -547,7 +583,7 @@ def parse_state(path: str, text: str, allow_state: bool) -> ParseResult:
                 first = next((p.get("value") for p in s if isinstance(p, dict) and p.get("type") == "get_attr"), None)
                 if first in attrs:
                     attrs[first] = "[SENSITIVE]"
-            attrs = json.loads(secret_scan.redact(json.dumps(attrs)))
+            attrs = _redact_tree(attrs)
             rtype = r.get("type", "")
             prov, service = _provider_service(rtype)
             suffix = f"[{idx}]" if len(r.get("instances", [])) > 1 else ""

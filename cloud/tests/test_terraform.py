@@ -453,3 +453,53 @@ resource "t_x" "r" { v = "${var.cidr}" }
                                "b": {"provisioner": [{"remote-exec": {"inline": []}}]}}}}
     r = parse_terraform([("p.tf.json", json.dumps(js))])
     assert {x.logical_name: x.notes for x in r.resources} == {"a": ["provisioner:local-exec"], "b": ["provisioner:remote-exec"]}
+
+
+# ---------------------------------------------------------------- hardening from the automated security review
+def test_global_resource_budget_stops_multiplicative_expansion(monkeypatch):
+    monkeypatch.setattr(tf, "MAX_TOTAL_RESOURCES", 5)
+    r = parse_terraform([("main.tf", 'resource "t_x" "a" { count = 100 }\nresource "t_x" "b" { count = 100 }\n')])
+    assert len(r.resources) == 5 and r.truncated
+    assert [e["error"] for e in r.errors] == ["resource expansion limit reached; the scan result is partial"]
+
+
+def test_module_expansion_budget(monkeypatch):
+    monkeypatch.setattr(tf, "MAX_MODULE_EXPANSIONS", 1)
+    files = [("main.tf", 'module "a" { source = "./m" }\nmodule "b" { source = "./m" }\n'),
+             ("m/main.tf", 'resource "t_x" "r" {}\n')]
+    r = parse_terraform(files)
+    assert r.truncated and [x.address for x in r.resources] == ["module.a.t_x.r"]
+    assert any("module expansion limit" in e["error"] for e in r.errors)
+
+
+def test_recursion_errors_become_scan_errors_not_crashes(monkeypatch):
+    def boom(*a, **k):
+        raise RecursionError()
+    monkeypatch.setattr(tf, "_build_module", boom)
+    r = parse_terraform([("main.tf", 'resource "t_x" "r" {}\n')])
+    assert r.resources == [] and "too deeply nested" in r.errors[0]["error"]
+
+
+def test_locals_cycle_through_jsonencode_terminates():
+    p = props('''
+locals {
+  a = jsonencode({ x = local.b })
+  b = jsonencode({ y = local.a })
+  self = jsonencode({ z = local.self })
+}
+resource "t_x" "r" {
+  v = local.a
+  s = local.self
+}
+''')
+    assert isinstance(p["v"], dict) or isinstance(p["v"], Unknown)
+    assert "circular local" in repr(p["s"]) or "circular" in repr(p["s"]).lower() or isinstance(p["s"], dict)
+
+
+def test_plan_values_are_redacted_leaf_by_leaf_even_for_unterminated_keys():
+    begin = "-----" + "BEGIN PRIVATE KEY" + "-----"
+    plan = {"planned_values": {"root_module": {"resources": [{
+        "address": "t_x.r", "type": "t_x", "name": "r",
+        "values": {"cred": "AK" + "IAQWERTYUIOPASDFGH", "nested": {"pem": begin + "\nMIIE-unterminated"}, "n": 5}}]}}}
+    r = parse_plan("plan.json", json.dumps(plan)).resources[0].properties
+    assert r["cred"] == "[REDACTED]" and r["nested"]["pem"] == "[REDACTED]" and r["n"] == 5
