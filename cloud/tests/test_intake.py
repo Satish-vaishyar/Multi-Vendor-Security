@@ -202,3 +202,53 @@ def test_detect_kind():
     assert intake.detect_kind(b"\xfd7zXZ\x00") == "tar"
     assert intake.detect_kind(b"x" * 257 + b"ustar") == "tar"
     assert intake.detect_kind(b"plain text") == "file"
+
+
+def test_tar_directories_and_links_count_against_the_file_limit(tmp_path):
+    entries = []
+    for i in range(6):
+        d = tarfile.TarInfo(f"d{i}")
+        d.type = tarfile.DIRTYPE
+        entries.append(d)
+    with pytest.raises(IntakeError, match="too many files"):
+        ingest(make_tar({"a.tf": b"x"}, extra=entries), "p.tar", tmp_path / "w", Limits(max_files=4))
+    links = []
+    for i in range(6):
+        link = tarfile.TarInfo(f"l{i}")
+        link.type = tarfile.SYMTYPE
+        link.linkname = "x"
+        links.append(link)
+    with pytest.raises(IntakeError, match="too many files"):
+        ingest(make_tar({}, extra=links), "p.tar", tmp_path / "w2", Limits(max_files=4))
+
+
+def test_zip_directories_count_against_the_file_limit(tmp_path):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        for i in range(6):
+            zf.writestr(f"d{i}/", "")
+    with pytest.raises(IntakeError, match="too many files"):
+        ingest(buf.getvalue(), "p.zip", tmp_path / "w", Limits(max_files=4))
+
+
+def test_declared_tar_sizes_are_accounted_even_for_skipped_members(tmp_path):
+    big = tarfile.TarInfo("huge.zip")             # refused by name, but its declared size still counts
+    big.size = 900
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tf:
+        tf.addfile(big, io.BytesIO(b"z" * 900))
+    with pytest.raises(IntakeError, match="expanded size"):
+        ingest(buf.getvalue(), "p.tar", tmp_path / "w", Limits(max_expanded=500, max_member=1000))
+
+
+def test_rejection_list_is_capped_and_overflow_counted(tmp_path):
+    members = {f"a{i}.pem": b"x" for i in range(10)}
+    r = ingest(make_tar(members), "p.tar", tmp_path / "w", Limits(max_rejected=3))
+    assert len(r.rejected) == 3 and r.rejected_overflow == 7 and r.files == []
+
+
+def test_real_bytes_are_enforced_when_headers_understate_the_size(tmp_path):
+    w = intake._Writer(tmp_path / "w", Limits(max_expanded=100, max_member=1000), False)
+    w.add("a.tf", io.BytesIO(b"x" * 80).read, declared=1)
+    with pytest.raises(IntakeError, match="expanded size"):
+        w.add("b.tf", io.BytesIO(b"x" * 80).read, declared=1)

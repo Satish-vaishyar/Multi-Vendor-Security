@@ -34,6 +34,7 @@ class Limits:
     max_depth: int = 12
     max_path_len: int = 240
     max_ratio: int = 200          # expanded bytes per compressed byte (archives only)
+    max_rejected: int = 500       # report at most this many rejections; the rest are only counted
 
 
 @dataclass
@@ -54,6 +55,7 @@ class IntakeResult:
     kind: str                                   # "file" | "zip" | "tar"
     files: List[Extracted] = field(default_factory=list)
     rejected: List[Rejected] = field(default_factory=list)
+    rejected_overflow: int = 0                  # rejections beyond Limits.max_rejected
     expanded_bytes: int = 0
 
 
@@ -125,38 +127,51 @@ class _Writer:
         self.dest, self.limits, self.allow_state = dest.resolve(), limits, allow_state
         self.result = IntakeResult(kind="file")
         self.count = 0
+        self.declared = 0
+
+    def reject(self, path: str, reason: str) -> None:
+        if len(self.result.rejected) < self.limits.max_rejected:
+            self.result.rejected.append(Rejected(path, reason))
+        else:
+            self.result.rejected_overflow += 1
+
+    def tick(self, declared_size: int) -> None:
+        """Account for EVERY archive member (files, directories, links, devices) before looking at it."""
+        self.count += 1
+        self.declared += declared_size
+        if self.count > self.limits.max_files:
+            raise IntakeError("too many files")
+        if self.declared > self.limits.max_expanded:
+            raise IntakeError("expanded size limit exceeded")
 
     def add(self, name: str, reader, declared: Optional[int] = None) -> None:
         lim = self.limits
-        self.count += 1
-        if self.count > lim.max_files:
-            raise IntakeError("too many files")
         try:
             rel = sanitize_member_path(name, lim)
         except ValueError as e:
             shown = name[:120].encode("ascii", "replace").decode()
-            self.result.rejected.append(Rejected(shown, str(e)))
+            self.reject(shown, str(e))
             return
         why = classify_name(rel, self.allow_state)
         if why:
-            self.result.rejected.append(Rejected(rel, why))
+            self.reject(rel, why)
             return
         if declared is not None and declared > lim.max_member:
-            self.result.rejected.append(Rejected(rel, "member too large"))
+            self.reject(rel, "member too large")
             return
         target = (self.dest / rel).resolve()
         if self.dest not in target.parents:       # pragma: no cover - sanitize_member_path makes this unreachable
             raise IntakeError("path escapes destination")
         data = reader(lim.max_member + 1)
         if len(data) > lim.max_member:
-            self.result.rejected.append(Rejected(rel, "member too large"))
+            self.reject(rel, "member too large")
             return
         self.result.expanded_bytes += len(data)
         if self.result.expanded_bytes > lim.max_expanded:
             raise IntakeError("expanded size limit exceeded")
         problem = _content_problem(data[:4096])
         if problem:
-            self.result.rejected.append(Rejected(rel, problem))
+            self.reject(rel, problem)
             return
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
@@ -175,14 +190,15 @@ def _zip(data: bytes, w: _Writer) -> None:
         if sum(i.file_size for i in infos) > w.limits.max_expanded:
             raise IntakeError("expanded size limit exceeded")
         for info in infos:
+            w.tick(info.file_size)
             if info.is_dir():
                 continue
             kind = stat.S_IFMT(info.external_attr >> 16)         # 0 when the archiver recorded no file type
             if kind not in (0, stat.S_IFREG):
-                w.result.rejected.append(Rejected(info.filename[:120], "link or special file"))
+                w.reject(info.filename[:120], "link or special file")
                 continue
             if info.flag_bits & 0x1:
-                w.result.rejected.append(Rejected(info.filename[:120], "encrypted member"))
+                w.reject(info.filename[:120], "encrypted member")
                 continue
             try:
                 with zf.open(info) as fh:
@@ -199,10 +215,12 @@ def _tar(data: bytes, w: _Writer) -> None:
     with tf:
         try:
             for m in tf:
+                tf.members = []                      # tarfile caches every member it has seen; do not let that grow
+                w.tick(m.size)
                 if m.isdir():
                     continue
                 if not m.isreg():
-                    w.result.rejected.append(Rejected(m.name[:120], "link or special file"))
+                    w.reject(m.name[:120], "link or special file")
                     continue
                 w.add(m.name, cast(IO[bytes], tf.extractfile(m)).read, declared=m.size)
         except (tarfile.TarError, EOFError, OSError) as e:
