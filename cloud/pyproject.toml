@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "pyyaml>=6.0",
+    "python-hcl2>=7.0",
 ]
 
 [dependency-groups]
