@@ -1,5 +1,5 @@
 import {
-  Activity, BrainCircuit, Bug, CalendarClock, ClipboardCheck, FileText, FileUp, KeyRound, LayoutDashboard,
+  Activity, BrainCircuit, Bug, CalendarClock, Cloud, ClipboardCheck, FileText, FileUp, KeyRound, LayoutDashboard,
   ListChecks, Plug, Rocket, Server, Settings as SettingsIcon, ShieldCheck, ShieldQuestion, TriangleAlert, UsersRound, Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -50,6 +50,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/pqc", label: "Post-quantum", desc: "Is your encryption ready for quantum computers?", icon: KeyRound, keywords: "pqc crypto cbom quantum" },
       { to: "/analytics", label: "Security analytics", desc: "Attack paths, risky settings and exposure", icon: Activity, keywords: "risk analytics" },
       { to: "/compliance", label: "Compliance", desc: "Scores against CIS, NIST, STIG and ISO 27001", icon: ShieldCheck, keywords: "cis nist stig iso framework" },
+      { to: "/cloud", label: "Cloud security", desc: "Scan Terraform, CloudFormation, ARM and Kubernetes files", icon: Cloud, keywords: "cloud aws azure gcp terraform kubernetes iac" },
     ],
   },
   {

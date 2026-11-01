@@ -44,7 +44,9 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S16 OCI Resource Manager zip pass/fail with line evidence | ✅ | `cloud/tests/test_oci.py` |
 | S27/S28 (partial) inbound-firewall rules for DigitalOcean, Linode, Hetzner, Scaleway, Alibaba, Tencent, Huawei, OpenStack Terraform resources; attribute names follow provider docs and are NOT yet validated against pinned schemas (CM-142). IBM, Vultr, OVH, UpCloud and non-network controls are not covered | 🟡 | `cloud/rules/extractors.py` (`_FW_SPECS`) |
 | S04/S14 backend API (`/api/v1/cloud/*`: status, scans upload/list/get, findings, export json/csv/sarif), org-scoped store, scanner `/export/{fmt}`. Mounted only when `CLOUD_MODULE_ENABLED` is on (one gated line in `main.py`). Uses a direct upload call instead of a `cloud_scan` job kind (no upload bytes in the job queue). API tests pass locally with fakes; the SQL in `cloud_store.py` and the full backend suite have NOT been run (need PostgreSQL with citext) | 🟡 | `backend/app/api/v1/cloud.py`, `backend/app/core/cloud_store.py`, `backend/tests/test_cloud_api.py` |
-| Findings UI (`/cloud`), S23, S24, S29-S34 | ⬜ not started | - |
+| S14/S24 Findings UI: separate `/cloud` page + nav entry (shows 'not enabled' when the flag is off; existing dashboards untouched). Lint (pre-existing warnings only) and production build pass locally; not exercised against a running backend | 🟡 | `frontend/src/pages/CloudSecurity.tsx`, `frontend/src/api/cloud.api.ts` |
+| S23 audit-log entry on scan creation is done; schedules, webhooks and opt-in asset links are not | 🟡 | `backend/app/api/v1/cloud.py` |
+| S29-S34 | ⬜ not started | - |
 
 Verification status: `cloud/` has its own test suite with a 100% coverage gate (372 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.

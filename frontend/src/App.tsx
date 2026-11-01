@@ -34,6 +34,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Jobs = lazy(() => import("./pages/Jobs"));
 const Schedules = lazy(() => import("./pages/Schedules"));
 const Exceptions = lazy(() => import("./pages/Exceptions"));
+const CloudSecurity = lazy(() => import("./pages/CloudSecurity"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const ChangePassword = lazy(() => import("./pages/ChangePassword"));
 
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/schedules" element={<Schedules />} />
             <Route path="/exceptions" element={<Exceptions />} />
+            <Route path="/cloud" element={<CloudSecurity />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<AdminOnly><Admin /></AdminOnly>} />
             <Route path="/integrations" element={<AdminOnly><Integrations /></AdminOnly>} />
