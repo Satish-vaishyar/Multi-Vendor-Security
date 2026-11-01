@@ -1,0 +1,19 @@
+[project]
+name = "orbit-cloud"
+version = "0.1.0"
+description = "Orbit cloud security assessment module (scanner side). Isolated from the backend; own dependencies."
+requires-python = ">=3.11"
+# Runtime dependencies are added per step (HCL parser, scanners) and kept out of backend/pyproject.toml on purpose.
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".."]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true

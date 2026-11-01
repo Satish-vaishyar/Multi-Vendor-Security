@@ -1,0 +1,3 @@
+# Customer-imported benchmark catalogues may contain licensed text; never commit them.
+knowledge/controls/imported_*.yaml
+knowledge/frameworks/imported_*

@@ -1,0 +1,210 @@
+# RTM - Cloud Provider Security Assessment Module (requirement → implementation → verification)
+
+Source requirements: `CLOUD_PROVIDER_SECURITY_ASSESSMENT_CATALOG.md` (referenced below as **CAT §n**).
+Status of this document: **plan**. Only S01 is implemented so far. Effort figures are estimates for one engineer.
+
+Legend: ⬜ planned · 🟡 in progress · ✅ implemented + tested · ⏸ deferred (needs customer demand / test account)
+
+New locations introduced by the module (nothing existing is renamed or moved):
+`cloud/` (scanner service) · `okf-cloud/` (knowledge pack) · `backend/app/api/v1/cloud.py` (thin API) ·
+`backend/app/db/migrate_017.sql` · `frontend/src/pages/cloud/` · `docker-compose.cloud.yml` · `.github/workflows/cloud.yml`
+
+---
+
+## 1. Step plan (34 steps, 6 phases)
+
+| Step | Phase | Deliverable | Depends on | Exit criterion | Effort |
+|---|---|---|---|---|---|
+| S01 | 0 Foundation | Commit catalog under `docs/`; create `cloud/` and `okf-cloud/` skeletons; `CLOUD_MODULE_ENABLED` flag (default off) | - | Repo builds; flag off = no behaviour change | 1-2 d |
+| S02 | 0 | `migrate_017.sql`: `cloud_scans`, `cloud_resources`, `cloud_findings`, `cloud_exceptions`, RLS by `org_id` | S01 | Migration applies/rolls back; RLS test passes | 2-3 d |
+| S03 | 0 | Scanner container + sandbox profile (no network, read-only FS, non-root, CPU/mem/time limits); `docker-compose.cloud.yml` | S01 | Container starts; egress blocked in test | 3-4 d |
+| S04 | 0 | `cloud.py` API shell, `cloud_scan` job kind, `cloud.yml` CI, stub end-to-end scan | S02,S03 | Stub scan runs; existing suite green at 100% coverage with flag on and off | 2-3 d |
+| S05 | 1 MVP | Safe archive intake (zip/tar/gz): size, count, depth, path-traversal, symlink, bomb limits | S04 | Malicious-archive corpus rejected | 4-5 d |
+| S06 | 1 | Content-based type detection + provider/format detector | S05 | Detection matrix test (every supported format) | 3 d |
+| S07 | 1 | Secret scanner before parsing; masking; redaction in logs/reports | S05 | Planted secrets never appear in any output | 3-4 d |
+| S08 | 1 | Terraform/OpenTofu HCL + JSON + plan-JSON parser (offline, no `init`, no module fetch); state opt-in/redacted | S06 | Parses fixtures; variables/locals/count/for_each/dynamic handled or UNKNOWN | 8-10 d |
+| S09 | 1 | CloudFormation/SAM parser (intrinsics, transforms, nested stacks → UNKNOWN when unresolved) | S06 | Fixture + edge-case tests | 5-6 d |
+| S10 | 1 | Kubernetes/Helm-rendered/Kustomize-output parser | S06 | Fixture + multi-doc YAML tests | 4-5 d |
+| S11 | 1 | Cloud Resource IR (CAT §7.2), provenance (file/line/parser/rule versions), evidence-state model (CAT §1.1) | S08-S10 | IR schema validated; every field traceable | 4-5 d |
+| S12 | 1 | `okf-cloud` v1: properties, schema-path mappings, controls (AWS/Azure/GCP/K8s per CAT §11) + evaluator reusing `okf/src/engines.py` by import | S11 | All CAT §11 cases green; pass+fail fixture per rule | 10-12 d |
+| S13 | 1 | Checkov + Trivy adapters in scanner image; normalise, dedupe, tag engine+version | S12 | Same fixture yields merged, deduped findings | 5-6 d |
+| S14 | 1 | Results API + findings UI (`/cloud`) + coverage statement; MVP release gate | S12,S13 | E2E: upload → findings with file/line evidence | 6-8 d |
+| S15 | 2 | Azure ARM parser + sandboxed Bicep compile (pinned compiler) | S11 | ARM and Bicep fixtures give same normalised findings | 6-7 d |
+| S16 | 2 | OCI (Terraform/Resource Manager zip) parser mapping + rules | S08,S12 | OCI fixtures pass/fail | 4-5 d |
+| S17 | 2 | Relationship graph + effective exposure (CAT §7.3); CFG-002 behaviour | S11 | Unattached rule not reported as effective exposure | 8-10 d |
+| S18 | 2 | Framework mapping/crosswalk + per-framework scoring (CAT §6.3); `verified` flag on mappings | S12 | Unknown never counted as pass; denominators shown | 5-6 d |
+| S19 | 2 | Remediation snippets (un-applied diffs) + LLM explanations through the existing gateway (explain-only) | S12 | Snippets parse/validate; never auto-applied | 5-6 d |
+| S20 | 2 | PDF report + JSON/CSV export (CAT §12 wording rules) | S18,S19 | Report contains every CAT §12 field | 5-6 d |
+| S21 | 2 | Exceptions workflow (owner, justification, expiry, approval) | S02,S14 | Expired exception re-opens finding | 3-4 d |
+| S22 | 2 | Kubernetes deep rules (RBAC, PSS, network policy default-deny, secrets) | S10,S17 | K8S-001..003 + extras green | 5-6 d |
+| S23 | 3 Integration | Schedules, webhooks, audit-log entries via existing registries (no edits to those modules) | S14 | Scheduled scan runs; audit trail complete | 3-4 d |
+| S24 | 3 | Opt-in link to existing assets; separate cloud page; existing dashboards unchanged | S14 | Existing dashboard numbers identical before/after | 3-4 d |
+| S25 | 3 | Scan history and drift between two scans | S14 | Diff test | 3-4 d |
+| S26 | 3 | Per-provider, per-resource-family capability matrix (P0-P6) shown in UI | S12 | Matrix generated from tests, not hand-written | 3 d |
+| S27 | 4 Providers | Alibaba ROS, IBM, Tencent, Huawei adapters + rules | S12,S26 | Per-provider DoD (CAT §10) | 15-20 d |
+| S28 | 4 | DigitalOcean, Linode, Hetzner, Vultr, OVH, Scaleway, UpCloud | S12,S26 | Per-provider DoD | 15-20 d |
+| S29 | 4 | OpenStack Heat, VMware/NSX, Nutanix, Ansible/cloud-init, Pulumi export | S12,S26 | Per-platform DoD | 15-20 d |
+| S30 | 4 | India provider discovery study (CAT §2.4) → adapter backlog | S26 | Written evidence per candidate; no unverified claims | 5-8 d |
+| S31 | 5 Live | Read-only connectors AWS/Azure/GCP with credential vault, customer authorisation | S14 | Works only with read-only role; creds never logged | 15-20 d |
+| S32 | 5 | Live evidence, effective policy resolution, PASS_LIVE/FAIL_LIVE/CONFLICT | S31 | Static-vs-live conflict test | 10-15 d |
+| S33 | 5 | Org-wide inventory + remaining connectors (OCI, others) | S31 | Inventory matches test account | 15-20 d |
+| S34 | 5 | Enterprise: customer rule packs, policy customisation, on-prem packaging | S18 | Private pack loads without code change | 8-10 d |
+
+**Milestones:** usable MVP after **S14** (14 steps) · recommended product release after **S26** (26 steps) ·
+catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 25-37 weeks; MVP alone ≈ 6-8 weeks.
+
+---
+
+## 2. Requirement-to-implementation matrix
+
+### A. Product boundary and evidence model (CAT §1)
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-001 | Support upload-only (static) and connected (live) assessment modes | 1 | `mode` field on scan; static path S04-S14, live path S31-S32 | S04,S31 | API test per mode | ⬜ |
+| CM-002 | Evidence states PASS/FAIL/UNKNOWN_STATIC, N/A, *_LIVE, CONFLICT | 1.1 | Enum in IR + findings table (names already listed in `okf-cloud/okf_manifest.yaml`) | S11 | Schema test | ⬜ |
+| CM-003 | Never convert UNKNOWN to PASS | 1.1, 14 | Evaluator returns UNKNOWN on `None`; property test | S12 | CFG-001 test | ⬜ |
+| CM-004 | Every finding shows source, address, file, line, parser/rule version, timestamp | 1.1 | `source{}` block in IR; stored in `cloud_findings` | S11 | Field-presence test | ⬜ |
+| CM-005 | Never claim uploaded config proves deployed state | 1 | Report wording + banner | S20 | Wording test | ⬜ |
+
+### B. Providers and platforms (CAT §2)
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-010 | AWS | 2.1 | S08/S09 + `okf-cloud/mappings/aws.yaml` | S12 | Fixture pass/fail | ⬜ |
+| CM-011 | Azure | 2.1 | ARM/Bicep + Terraform | S12,S15 | Fixture pass/fail | ⬜ |
+| CM-012 | GCP | 2.1 | Terraform + KRM | S12 | Fixture pass/fail | ⬜ |
+| CM-013 | OCI | 2.1 | Terraform + Resource Manager zip | S16 | Fixture pass/fail | ⬜ |
+| CM-014 | Alibaba Cloud | 2.1 | ROS + Terraform | S27 | Per-provider DoD | ⏸ |
+| CM-015 | IBM Cloud | 2.1 | Terraform | S27 | Per-provider DoD | ⏸ |
+| CM-016 | Tencent Cloud (no unverified CIS claim) | 2.1 | Terraform | S27 | Claims review | ⏸ |
+| CM-017 | Huawei Cloud (no unverified CIS claim) | 2.1 | Terraform | S27 | Claims review | ⏸ |
+| CM-020 | DigitalOcean, Linode, Hetzner, Vultr, OVH, Scaleway, UpCloud (Equinix if requested) | 2.2 | Terraform adapters | S28 | Per-provider DoD | ⏸ |
+| CM-030 | OpenStack, VMware/NSX, Nutanix, Crossplane | 2.3 | Heat/Terraform adapters | S29 | Per-platform DoD | ⏸ |
+| CM-031 | Kubernetes (separate from cloud-account benchmark) | 2.3 | K8s parser + rules | S10,S22 | K8S tests | ⬜ |
+| CM-032 | Pulumi / CDK: scan synthesised output, keep provenance | 2.3 | Export-based parsers | S29 | Export fixture | ⏸ |
+| CM-033 | Ansible / cloud-init as a separate scanner family | 2.3 | Separate parser family | S29 | Fixture | ⏸ |
+| CM-040 | India provider discovery (candidates, not verified integrations) | 2.4 | Study document per candidate | S30 | Evidence recorded | ⏸ |
+| CM-041 | Adapter + capability registry; level per provider and resource family | 2, 10 | Registry generated from tests | S26 | Matrix reflects test results | ⬜ |
+
+### C. Upload formats (CAT §3)
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-050 | Terraform/OpenTofu `.tf .tfvars .tf.json .hcl`; no `apply`, no module fetch | 3.1 | `cloud/parsers/terraform.py` | S08 | Parser tests | ⬜ |
+| CM-051 | Terraform plan JSON; planned vs known vs unknown values | 3.1 | Plan-JSON reader | S08 | Unknown-value test | ⬜ |
+| CM-052 | Terraform state: opt-in only, redacted, not persisted | 3.1 | Guarded flag + redactor | S08 | State not stored test | ⬜ |
+| CM-053 | CloudFormation/SAM/CDK output | 3.1 | `cfn.py` | S09 | Intrinsic-function tests | ⬜ |
+| CM-054 | ARM + Bicep (pinned compiler, sandboxed) | 3.1 | `arm.py`, `bicep.py` | S15 | Equivalence test | ⬜ |
+| CM-055 | GCP Terraform/KRM/Infra Manager; Deployment Manager not a default | 3.1 | Terraform + KRM parser | S08,S12 | Fixture | ⬜ |
+| CM-056 | Alibaba ROS | 3.1 | `ros.py` | S27 | Fixture | ⏸ |
+| CM-057 | OCI Resource Manager zip; reject state | 3.1 | Archive root inspection | S16 | State rejected test | ⬜ |
+| CM-058 | Kubernetes/Helm/Kustomize | 3.1 | `k8s.py` | S10 | Fixture | ⬜ |
+| CM-059 | OpenStack Heat | 3.1 | `heat.py` | S29 | Fixture | ⏸ |
+| CM-060 | Policy files (Rego, Azure Policy, Sentinel) | 3.1 | Policy-quality scanner | S29 | Fixture | ⏸ |
+| CM-061 | Safe archive handling (ZIP/TAR/GZ) | 3.1, 8 | `intake.py` | S05 | Malicious corpus | ⬜ |
+| CM-062 | Do not process credentials, `.terraform/`, provider binaries, provisioners, undecryptable files as config | 3.2 | Deny-list + content sniff | S05,S07 | Rejection tests | ⬜ |
+| CM-063 | Secrets scanner runs before parsers; values masked | 3.2, 5.7 | `secrets.py` | S07 | Leak test | ⬜ |
+
+### D. Security checks (CAT §5)
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-070 | IAM: wildcard admin, public principals, cross-account trust, privilege paths | 5.1 | `okf-cloud/controls/iam.yaml` (+ graph for paths) | S12,S17 | IAM-001..003 | ⬜ |
+| CM-071 | Network: 0.0.0.0/0 and ::/0 to management/DB ports, all-ports, default-allow, effective exposure | 5.2 | `controls/network.yaml` + graph | S12,S17 | NET-001..005, CFG-002 | ⬜ |
+| CM-072 | Storage/data: public access, encryption, TLS, keys, versioning, snapshots | 5.3 | `controls/storage.yaml` | S12 | STO-001..003, KEY-001 | ⬜ |
+| CM-073 | Logging/monitoring: audit trail, retention, tamper protection | 5.4 | `controls/logging.yaml` (static where provable, else UNKNOWN) | S12 | LOG-001, LOG-002 | ⬜ |
+| CM-074 | Compute/workload: IMDS, volume encryption, privileged containers | 5.5 | `controls/compute.yaml`, `k8s.yaml` | S12,S22 | K8S-001..003 | ⬜ |
+| CM-075 | Managed services: DB, K8s, LB, DNS, secrets manager, serverless | 5.6 | `controls/managed.yaml` | S12,S22 | DB-001 + per-family | ⬜ |
+| CM-076 | Secrets/sensitive data in uploads; rotation advice; no secret in LLM context | 5.7 | `secrets.py` + redaction hooks | S07 | SEC-001 | ⬜ |
+| CM-077 | Image/package CVE scanning kept separate from config checks | 5.5 | Out of scope until requested | - | - | ⏸ |
+
+### E. Compliance mapping (CAT §6)
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-080 | Map to CIS, CIS Controls, NIST CSF/800-53, ISO 27001, PCI, SOC 2, HIPAA, GDPR, STIG; pinned versions; no invented IDs | 6.1 | `okf-cloud/crosswalks/*.yaml`, `verified` flag | S18 | Unverified mappings flagged in UI | ⬜ |
+| CM-081 | Rule metadata (id, provider, resource types, severity, mode, logic version, mappings, unknown handling, remediation, references) | 6.2 | Control YAML schema + validator | S12 | Schema validation in CI | ⬜ |
+| CM-082 | Per-framework/edition/scope scoring; separate Passed/Failed/Unknown/N-A/Not-assessed; no single global % | 6.3 | `cloud/scoring.py` | S18 | Denominator test | ⬜ |
+| CM-083 | Exceptions with owner, justification, expiry, approval | 6.3 | `cloud_exceptions` + API/UI | S21 | Expiry test | ⬜ |
+| CM-084 | Licensed benchmark text not redistributed; customer-import path | 6.1 | Reuse `catalogue-import` pattern, separate output dir (git-ignored, see `okf-cloud/.gitignore`) | S18 | Import test | ⬜ |
+
+### F. Architecture (CAT §7)
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-090 | Pipeline: detect → safety/secrets → parse → IR → rules → graph → evidence → report | 7 | `cloud/pipeline.py` | S04-S14 | End-to-end test | ⬜ |
+| CM-091 | External scanners (Checkov, Trivy, optionally KICS/OPA) as independent engines | 7.1 | `cloud/engines/*.py`, pinned in scanner image | S13 | Merge/dedupe test; engine+version recorded | ⬜ |
+| CM-092 | Normalised IR keeping `provider_raw`; no attribute dropped | 7.2 | IR dataclass | S11 | Round-trip test | ⬜ |
+| CM-093 | Relationship graph with edge provenance/certainty | 7.3 | `cloud/graph.py` (NetworkX is already used elsewhere in the repo) | S17 | Edge-certainty test | ⬜ |
+| CM-094 | Reuse OKF evaluator by import, without editing `okf/` | 7 | `okf-cloud/evaluator.py` imports `okf.src.engines` | S12 | Import + UNKNOWN-mapping test | ⬜ |
+
+### G. Upload pipeline and security (CAT §8)
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-100 | Size, file-count, depth, path, time limits | 8.1 | `intake.py` limits | S05 | Limit tests | ⬜ |
+| CM-101 | ZIP-slip, traversal, symlink, bomb, recursion defences | 8.2 | `intake.py` | S05 | Attack corpus | ⬜ |
+| CM-102 | Content-based type detection; reject binaries | 8.3 | `detect.py` | S06 | Spoofed-extension test | ⬜ |
+| CM-103 | Ephemeral unprivileged container, read-only FS, no credentials | 8.4 | Scanner container profile | S03 | Container policy test | ⬜ |
+| CM-104 | No network; no module/remote/URL/git fetch | 8.5 | Network-off + parser refuses remote refs | S03,S08 | Egress test | ⬜ |
+| CM-105 | No provisioners, scripts, hooks or side-effect functions executed | 8.6 | Parsers are static only | S08 | Provisioner fixture inert | ⬜ |
+| CM-106 | No `terraform init` on untrusted input | 8.7 | Never invoked; schema from pinned mirror data | S08 | Static assertion | ⬜ |
+| CM-107 | Filename sanitising and tenant path isolation | 8.8, 8.10 | Per-org storage prefix | S05 | Cross-tenant test | ⬜ |
+| CM-108 | Encryption at rest/in transit; retention and deletion | 8.9 | Reuse `core/crypto` and retention service via import | S02,S23 | Retention test | ⬜ |
+| CM-109 | Secrets redacted from logs, traces, LLM context | 8.11 | Reuse `core/redact` via import | S07 | Log scan test | ⬜ |
+| CM-110 | Report rendering safe from HTML/Markdown injection | 8.12 | Escape on output | S14,S20 | Injection test | ⬜ |
+| CM-111 | Immutable audit record of upload/scan/view/export/delete | 8.13 | Reuse `core/auditlog` | S14,S23 | Audit-entry test | ⬜ |
+| CM-112 | LLM explains only; deterministic rules decide; remediation shown as proposal | 8.1 | Gateway reuse, explain endpoints only | S19 | No-LLM-in-verdict test | ⬜ |
+
+### H. Output, live assessment, definition of done
+
+| Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|---|
+| CM-120 | Report: providers, formats, versions, mode, counts, findings fields, mappings, remediation, unknowns, coverage, exceptions | 12 | `cloud/report.py` | S20 | Field checklist test | ⬜ |
+| CM-121 | Avoid "100% compliant / certified" wording | 12 | Template lint | S20 | Forbidden-phrase test | ⬜ |
+| CM-130 | Read-only connectors with explicit authorisation | 1, 9 | `cloud/connectors/` | S31,S33 | Write attempt denied | ⏸ |
+| CM-131 | Live evidence, effective IAM/policy, drift, CONFLICT state | 1.1, 9 | Drift engine | S32 | Conflict test | ⏸ |
+| CM-132 | History snapshots, ownership, remediation tracking | 9 Wave 5 | History + tracking tables | S25,S34 | Snapshot diff | ⬜ |
+| CM-133 | Customer private rule packs and on-prem deployment | 9 Wave 5 | Rule-pack loader; compose packaging | S34 | Private pack test | ⏸ |
+| CM-140 | Provider DoD: detection, pinned schema, pass+fail fixture per rule, line evidence, edge-case tests, relationships, coverage matrix, no deploy, docs of known false positives | 10 | Checklist enforced by CI per provider | S26-S29 | CI gate | ⬜ |
+| CM-141 | Capability levels P0-P6 per provider and resource family | 10 | Generated matrix | S26 | Matrix test | ⬜ |
+| CM-142 | Fixtures validated against pinned provider schemas (catalog fixtures are unvalidated) | 4, 10 | `terraform validate` / `cfn-lint` / bicep build in sandbox, no credentials | S12 | CI fixture-validation job | ⬜ |
+
+### I. Non-disturbance requirements (added by this plan)
+
+| Req | Requirement | Planned implementation | Step | Verification | Status |
+|---|---|---|---|---|---|
+| CM-150 | With `CLOUD_MODULE_ENABLED=false` the application behaves exactly as today | `cloud/flags.py` (fail-closed, done in S01); conditional router/handler/route registration later | S01,S04 | Flag tests; full existing suite green, flag off and on | 🟡 |
+| CM-151 | No writes to existing tables; cloud data only in `cloud_*` tables | New migration only | S02 | Dashboard/finding counts identical before and after | ⬜ |
+| CM-152 | No change to `backend/pyproject.toml` / `uv.lock` | Dependencies live in `cloud/` image | S03 | `git diff` shows lockfile untouched | ⬜ |
+| CM-153 | Backend coverage gate (`fail_under = 100`) stays intact and unlowered | Thin glue fully tested; engine has its own gate | S04,S14 | CI | ⬜ |
+| CM-154 | `okf/knowledge/*` unchanged; cloud knowledge in `okf-cloud/` | Separate loader root (skeleton done in S01) | S01,S12 | Existing manifest counts (82 controls, 103 properties) unchanged | 🟡 |
+| CM-155 | `docker-compose.yml`, existing Dockerfiles and `ci.yml` unchanged | Override compose file, separate workflow | S03,S04 | `git diff` check | ⬜ |
+| CM-156 | Scanner failure cannot affect audits | Separate container and job kind | S04 | Kill-scanner test | ⬜ |
+| CM-157 | Only these existing files edited: `main.py` (1 conditional line), `job_handlers.py` (1 entry), `App.tsx` + nav (1 route, 1 flag-gated entry) | Review gate in PR template | S04,S14 | Diff review | ⬜ |
+
+---
+
+## 3. Test-case traceability (CAT §11 → rule → step)
+
+| Case | Rule family | Step | Case | Rule family | Step |
+|---|---|---|---|---|---|
+| NET-001 SSH IPv4 | network | S12 | STO-003 weak TLS | storage | S12 |
+| NET-002 SSH IPv6 | network | S12 | KEY-001 CMK required | storage/keys | S12 |
+| NET-003 RDP | network | S12 | LOG-001 org audit log | logging | S12 |
+| NET-004 all ports | network | S12 | LOG-002 trail protection | logging | S12 |
+| NET-005 public DB listener | network/db | S12 | DB-001 public DB | managed | S12 |
+| IAM-001 public principal | iam | S12 | K8S-001 privileged | k8s | S12,S22 |
+| IAM-002 wildcard admin | iam | S12 | K8S-002 root user | k8s | S22 |
+| IAM-003 cross-account trust | iam/graph | S12,S17 | K8S-003 default-deny | k8s | S22 |
+| STO-001 public bucket | storage | S12 | SEC-001 embedded secret | secrets | S07 |
+| STO-002 no encryption | storage | S12 | CFG-001 dynamic hides property | evaluator | S12 |
+|  |  |  | CFG-002 unattached firewall | graph | S17 |
+
+## 4. Coverage check
+
+- Every requirement CM-001..CM-157 maps to at least one step and one verification.
+- Every step S01-S34 delivers at least one requirement.
+- Requirements marked ⏸ depend on customer demand or a live test account and are the only ones that can slip without blocking the MVP (S14) or the recommended release (S26).
+- Open risks to track: Checkov/Trivy licence and version drift; unverified CIS IDs; the catalog's fixtures need schema validation (CM-142); no live test account for S31-S33.

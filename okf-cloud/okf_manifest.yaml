@@ -1,0 +1,8 @@
+okf_cloud_version: "0.1.0"
+status: skeleton
+control_packs: {}
+frameworks: []
+properties_count: 0
+controls_count: 0
+evidence_states: [PASS_STATIC, FAIL_STATIC, UNKNOWN_STATIC, NOT_APPLICABLE, PASS_LIVE, FAIL_LIVE, UNKNOWN_LIVE, CONFLICT]
+source_hierarchy: [official_framework, vendor_docs, expert_rule]
