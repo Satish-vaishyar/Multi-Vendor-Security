@@ -8,14 +8,19 @@ again when a report is built.
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
-from cloud import yamlutil
+from cloud import secret_scan, yamlutil
 from cloud.ir import Resource, Source
 from cloud.parsers.terraform import ParseResult
 
 _PARSER = "cloud.parsers.cloudinit 1"
 _SECRET_KEYS = {"plain_text_passwd", "plain-text-passwd", "passwd", "hashed_passwd", "hashed-passwd", "password", "list"}
+# Only the modules the rules read are retained; every other module is reduced to its name so unassessed content (keys, tokens,
+# files, vendor data) is never copied into the IR or a report.
+_KEEP = ("users", "chpasswd", "ssh_pwauth", "password", "runcmd")
+_SENSITIVE_NESTED = re.compile(r"key|token|secret|private|passw|cred", re.I)
 MASK = "[REDACTED]"
 MAX_DEPTH = 20
 
@@ -24,10 +29,11 @@ def _scrub(v: Any, depth: int = 0) -> Any:
     if depth > MAX_DEPTH:
         return MASK
     if isinstance(v, dict):
-        return {str(k): MASK if str(k) in _SECRET_KEYS and x not in (None, "") else _scrub(x, depth + 1) for k, x in v.items()}
+        return {str(k): MASK if (str(k) in _SECRET_KEYS or (depth > 1 and _SENSITIVE_NESTED.search(str(k)))) and x not in (None, "")
+                else _scrub(x, depth + 1) for k, x in v.items()}
     if isinstance(v, list):
         return [_scrub(x, depth + 1) for x in v]
-    return v
+    return secret_scan.redact(v) if isinstance(v, str) else v        # inline credentials in runcmd and other strings
 
 
 def parse_cloud_init(path: str, text: str) -> ParseResult:
@@ -40,7 +46,8 @@ def parse_cloud_init(path: str, text: str) -> ParseResult:
     if not isinstance(doc, dict):
         result.errors.append({"file": path, "error": "a #cloud-config file must be a mapping"})
         return result
-    props = _scrub({k: v for k, v in doc.items() if k != "write_files"})
+    props = _scrub({k: v for k, v in doc.items() if k in _KEEP})
+    props["modules_present"] = sorted(str(k)[:100] for k in doc if k not in _KEEP and k != "write_files")[:100]
     files = doc.get("write_files")
     props["write_files"] = [{"path": str(f.get("path", ""))[:300], "permissions": str(f.get("permissions", "0644"))}
                             for f in files if isinstance(f, dict)] if isinstance(files, list) else []

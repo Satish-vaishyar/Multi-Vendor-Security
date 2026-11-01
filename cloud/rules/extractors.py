@@ -559,7 +559,7 @@ def _upcloud(res: Resource) -> Optional[List[Rule]]:
         if str(direction).strip().lower() != "in":
             continue
         keys = ("protocol", "source_address_start", "source_address_end", "destination_port_start", "destination_port_end",
-                "source_port_start", "source_port_end", "destination_address_start", "destination_address_end", "icmp_type")
+                "source_port_start", "source_port_end", "destination_address_start", "destination_address_end", "icmp_type", "family")
         if act == "drop":
             if all(_blank(d.get(k, MISSING)) for k in keys):
                 return rules                                          # the catch-all drop: later rules never match

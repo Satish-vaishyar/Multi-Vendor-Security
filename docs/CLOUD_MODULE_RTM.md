@@ -55,7 +55,7 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S20 PDF report: dependency-free text PDF (statement, coverage, not-assessed list, summary, findings with file/line), redacted, bounded; served by the scanner and the backend export route and offered on the Cloud page | ✅ | `cloud/export.py` (`to_pdf`) |
 | S33 org-wide inventory, S31/S32 real connectors, S23 schedules/webhooks/asset links | ⬜ blocked: need a test cloud account / a reviewed design for outbound webhooks and scheduled jobs; not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (472 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (475 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)
@@ -294,3 +294,5 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 - Ansible: unreadable `rules` (templated, non-list, or any non-mapping item) make the ingress Unknown instead of a shorter list.
 - Firewall resources: a block list containing a non-mapping or computed element yields UNKNOWN, never a pass.
 - PDF: each logical line is redacted before wrapping, so a credential cannot be split across lines and escape redaction.
+- cloud-init: only the modules the rules read (users, chpasswd, ssh_pwauth, password, runcmd) are retained; all other modules are reduced to their names, nested key/token/secret-like fields are masked, and runcmd strings are redacted.
+- UpCloud: a drop rule that names an address family is not a catch-all, so a later accept for the other family is still evaluated.

@@ -169,8 +169,8 @@ def test_cloud_init_other_rules(tmp_path, doc, control, expected):
 def test_cloud_init_parser_edges():
     assert cloudinit.parse_cloud_init("u.yaml", "#cloud-config\n{unclosed").errors
     assert cloudinit.parse_cloud_init("u.yaml", "#cloud-config\n- a\n").errors
-    deep = "#cloud-config\na: " + "[" * 30 + "1" + "]" * 30 + "\n"
-    assert cloudinit.parse_cloud_init("u.yaml", deep).resources
+    deep = "#cloud-config\nruncmd: " + "[" * 30 + "1" + "]" * 30 + "\n"
+    assert "[REDACTED]" in json.dumps(cloudinit.parse_cloud_init("u.yaml", deep).resources[0].properties)
     r = cloudinit.parse_cloud_init("", "#cloud-config\npassword: ''\n")
     assert r.resources[0].properties["password"] == "" and isinstance(r.resources[0].properties["write_files"], list)
     assert not isinstance(r.resources[0].properties["write_files"], Unknown)
@@ -185,3 +185,24 @@ def test_upcloud_ipv6_catch_all_is_public_ssh_v6(tmp_path):
 def test_upcloud_computed_source_or_family_is_unknown(tmp_path, attr):
     body = 'server_id = "x"\nfirewall_rule {\n action = "accept"\n direction = "in"\n %s\n}\n' % attr + DROP_ALL
     assert state(run(tmp_path, tf("upcloud_firewall_rules", body)), "upcloud_firewall_rules.r") == "UNKNOWN_STATIC"
+
+
+def test_cloud_init_keeps_only_assessed_modules_and_masks_nested_secrets():
+    text = ("#cloud-config\nssh_pwauth: false\nwrite_files: []\nrh_subscription: {activation-key: AK-123, org: o}\n"
+            "users:\n  - {name: a, ssh_authorized_keys: [ssh-ed25519 AAAA], api_token: tok-1}\n")
+    props = cloudinit.parse_cloud_init("u.yaml", text).resources[0].properties
+    assert "rh_subscription" not in props and props["modules_present"] == ["rh_subscription"]
+    assert props["users"][0]["ssh_authorized_keys"] == "[REDACTED]" and props["users"][0]["api_token"] == "[REDACTED]"
+    assert props["users"][0]["name"] == "a" and "AK-123" not in json.dumps(props)
+
+
+def test_upcloud_ipv6_only_drop_is_not_a_catch_all_for_ipv4(tmp_path):
+    body = ('server_id = "x"\n' + rule(action="drop", direction="in", family="IPv6")
+            + rule(action="accept", direction="in", protocol="tcp", destination_port_start="22", destination_port_end="22", family="IPv4") + DROP_ALL)
+    assert state(run(tmp_path, tf("upcloud_firewall_rules", body)), "upcloud_firewall_rules.r") == "FAIL_STATIC"
+
+
+def test_cloud_init_runcmd_strings_are_redacted():
+    key = "AKIA" + "ABCDEFGHIJKLMNOP"
+    text = f"#cloud-config\nruncmd:\n  - aws configure set aws_access_key_id {key}\n"
+    assert key not in json.dumps(cloudinit.parse_cloud_init("u.yaml", text).resources[0].properties)
