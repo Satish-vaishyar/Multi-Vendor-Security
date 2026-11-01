@@ -31,9 +31,10 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S11 IR record, findings, validation | ✅ | `cloud/ir.py` |
 | S12 okf-cloud pack + rule engine | ✅ 25 controls, 25 properties, 29 catalog section 11 acceptance cases | `cloud/rules/`, `okf-cloud/knowledge/`, `cloud/tests/test_cat11.py` |
 | S13 Checkov/Trivy adapters | ✅ parsing, safe runner, engine/version tagging, dedupe (tools are NOT bundled in the image yet: reported as `unavailable`, never as a clean scan) | `cloud/scanners.py` |
-| S14 - S34 | ⬜ | - |
+| S04/S14 engine side: scan pipeline + `/scan` service endpoint, honest report statement, coverage block | ✅ (`cloud/`); backend glue, DB persistence and UI still ⬜ (need the backend suite / CI) | `cloud/pipeline.py`, `cloud/service.py` |
+| S14 backend API + findings UI, S15 - S34 | ⬜ | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (239 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (303 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)
@@ -49,6 +50,7 @@ Run it with `cd cloud && uv run --frozen pytest -q --cov`.
   into the sandboxed scanner image. The cloud engine implements the same condition DSL and operator semantics
   (`all` / `any` / `{property, operator, value}`; a missing value is UNKNOWN) and a parity test imports the real
   `eval_op` to prove the two agree.
+* **GitHub Actions** are disabled for the whole repository at the owner's request (Settings > Actions); re-enable them when asked.
 * **Security reviews.** Automated security reviews of the commits produced findings that were fixed as `fix(cloud)` commits:
   intake member accounting, secret-scanner fail-open and ReDoS, Terraform recursion and expansion budgets, plan/state
   redaction, YAML alias expansion and depth limits.
