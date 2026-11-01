@@ -52,9 +52,9 @@ _RULES: List[Tuple[str, str, "re.Pattern[str]", int]] = [
     ("SEC-DO", "DigitalOcean token", re.compile(r"\b(dop_v1_[a-f0-9]{64})\b"), 1),
     ("SEC-ALIBABA", "Alibaba access key", re.compile(r"\b(LTAI[A-Za-z0-9]{12,20})\b"), 1),
     ("SEC-TENCENT", "Tencent secret id", re.compile(r"\b(AKID[A-Za-z0-9]{32})\b"), 1),
-    # userinfo ends at the first / ? # of the authority (RFC 3986); a raw '@' or '/'-free password may contain anything else
+    # the authority ends at the first '/'; the password may contain '@', '?' and '#' (RFC says percent-encode, real configs do not)
     ("SEC-URL-CRED", "credential in URL", re.compile(
-        r"[A-Za-z][A-Za-z0-9+.-]{0,30}://[^\s/?#:@]{0,128}:([^\s/?#]{3,512})@[^\s@/?#]{1,255}"), 1),
+        r"[A-Za-z][A-Za-z0-9+.-]{0,30}://[^\s/?#:@]{0,128}:([^\s/]{3,512})@[^\s@/?#]{1,255}"), 1),
     ("SEC-GENERIC", "hard-coded credential", re.compile(
         r"""(?ix)(?<![\w.-])[\w.-]{0,64}(?:password|passwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret)[\w.-]{0,64}
             ["']?[ \t]{0,8}[:=][ \t]{0,8}(?:"([^"\r\n]{8,512})"|'([^'\r\n]{8,512})'|([^\r\n"'#,{}\[\]]{12,512}))"""), -1),
@@ -65,7 +65,7 @@ _PUBLISHED_EXAMPLES = ("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEX
 
 # Whole-value placeholders and genuine reference syntax. Applied to the generic rule only.
 _PLACEHOLDER_WHOLE = re.compile(
-    r"(?i)(?:(?:change|replace)[-_ ]?me.{0,40}|your[-_ ].{1,40}|(?:my|the)[-_ ]?(?:password|secret|token|key)|placeholder|dummy|sample|"
+    r"(?i)(?:\[(?:sensitive|redacted)\]|(?:change|replace)[-_ ]?me.{0,40}|your[-_ ].{1,40}|(?:my|the)[-_ ]?(?:password|secret|token|key)|placeholder|dummy|sample|"
     r"example|redacted|todo|fixme|[x*._-]{4,}|<[^<>]{1,80}>|\{\{[^{}]{1,80}\}\}|\$\{[^{}]{1,200}\})")
 _REFERENCE_WHOLE = re.compile(
     r"^(?:(?:var|local|data|module|each|count)\.[A-Za-z_][\w.\[\]\"*-]*|(?:aws|azurerm|google|oci|alicloud|ibm)_[a-z0-9_]+\.[\w.\[\]*-]+"

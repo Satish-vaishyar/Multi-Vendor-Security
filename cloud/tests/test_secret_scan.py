@@ -127,6 +127,8 @@ def test_url_credentials_with_special_characters_but_not_plain_urls_with_at_sign
     assert kinds('u = "postgres://svc:p@ssw0rd!@db.internal:5432/app"') == {"SEC-URL-CRED"}
     assert kinds("see https://host:8080/path?email=someone@example.org now") == set()
     assert kinds("git@github.com:org/repo.git") == set()
+    assert kinds('u = "mysql://root:pa?ss#word1@db.internal/app"') == {"SEC-URL-CRED"}   # raw ? and # in the password
+    assert s.redact("mysql://root:pa?ss#word1@db.internal/app").count("pa?ss") == 0
 
 
 def test_overlapping_matches_are_merged_for_redaction_and_reported_once():
