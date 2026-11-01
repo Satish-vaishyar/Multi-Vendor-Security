@@ -1,5 +1,5 @@
 # ---- build ----
-FROM node:20-slim AS build
+FROM node:26-slim AS build
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --ignore-scripts
