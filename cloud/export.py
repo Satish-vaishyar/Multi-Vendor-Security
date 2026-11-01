@@ -41,11 +41,20 @@ def _redact(value: Any) -> Any:
     return value if value is None or isinstance(value, (bool, int, float)) else secret_scan.redact(str(value))
 
 
+def _mask(value: Any) -> Any:
+    """Every leaf of a subtree under a credential-looking key, whatever its type (numbers and booleans included)."""
+    if isinstance(value, dict):
+        return {secret_scan.redact(str(k)): _mask(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_mask(v) for v in value]
+    return "[REDACTED]" if value not in (None, "") else value
+
+
 def _redact_entry(key: str, value: Any) -> Any:
     """A value under a credential-looking key is dropped outright (the key is the context the value-only scan lacks); other
     strings are also scanned as `key = "value"` so assignment-shaped secrets are caught."""
-    if isinstance(value, str) and value and _SENSITIVE_KEY.search(key):
-        return "[REDACTED]"
+    if _SENSITIVE_KEY.search(key) and value not in (None, "", [], {}):
+        return _mask(value)
     if isinstance(value, str):
         scanned = secret_scan.redact(f'{key} = "{value}"')
         return secret_scan.redact(value) if scanned == f'{key} = "{value}"' else "[REDACTED]"

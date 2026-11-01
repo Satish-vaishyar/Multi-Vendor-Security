@@ -50,3 +50,10 @@ def test_json_redacts_values_by_key_context():
     assert out["password"] == out["aws_secret_access_key"] == out["private_key_id"] == out["n"]["api_key"] == "[REDACTED]"
     assert out["name"] == "web" and out["n"]["empty"] == "" and out["tags"] == ["a"]
     assert export._redact_entry("note", 'password = "hunter2hunter2"') in ("[REDACTED]", 'password = "hunter2hunter2"')
+
+
+def test_whole_subtree_under_a_credential_key_is_masked():
+    out = json.loads(export.to_json({"secret": {"a": [1, "x", {"b": 2.5, "c": None}], "d": ""}, "tokens": ["t1", 7], "token": 123456,
+                                     "passwords": [], "ok": {"n": 1}}))
+    assert out["secret"] == {"a": ["[REDACTED]", "[REDACTED]", {"b": "[REDACTED]", "c": None}], "d": ""}
+    assert out["tokens"] == ["[REDACTED]", "[REDACTED]"] and out["token"] == "[REDACTED]" and out["passwords"] == [] and out["ok"] == {"n": 1}
