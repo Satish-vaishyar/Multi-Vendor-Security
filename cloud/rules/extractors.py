@@ -372,17 +372,17 @@ def _oci(res: Resource) -> Optional[List[Rule]]:
 # schemas (CM-142), so the capability matrix reports these providers no higher than P3 and every claim is a static one.
 _FW_SPECS: Dict[str, Dict[str, Any]] = {
     "digitalocean_firewall": {"block": "inbound_rule", "src": ("source_addresses",), "proto": "protocol", "ports": ("port_range",)},
-    "linode_firewall": {"block": "inbound", "gate": ("action", ("accept",), True), "src": ("ipv4", "ipv6"), "proto": "protocol", "ports": ("ports",)},
+    "linode_firewall": {"block": "inbound", "default_policy": ("inbound_policy", None), "gate": ("action", ("accept",), True), "src": ("ipv4", "ipv6"), "proto": "protocol", "ports": ("ports",)},
     "hcloud_firewall": {"block": "rule", "gate": ("direction", ("in",), True), "src": ("source_ips",), "proto": "protocol", "ports": ("port",)},
-    "scaleway_instance_security_group": {"block": "inbound_rule", "gate": ("action", ("accept",), True), "src": ("ip_range",),
+    "scaleway_instance_security_group": {"block": "inbound_rule", "default_policy": ("inbound_default_policy", "accept"), "gate": ("action", ("accept",), True), "src": ("ip_range",),
                                          "src_default": "0.0.0.0/0", "proto": "protocol", "ports": ("port",)},
     "alicloud_security_group_rule": {"gate": ("type", ("ingress",), True), "gate2": ("policy", ("accept",), False), "src": ("cidr_ip", "ipv6_cidr_ip"),
                                      "proto": "ip_protocol", "ports": ("port_range",)},
     "tencentcloud_security_group_rule": {"gate": ("type", ("ingress",), True), "gate2": ("policy", ("accept",), True), "src": ("cidr_ip",),
                                          "proto": "ip_protocol", "ports": ("port_range",)},
-    "huaweicloud_networking_secgroup_rule": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "proto": "protocol",
+    "huaweicloud_networking_secgroup_rule": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "any_unless": "remote_group_id", "proto": "protocol",
                                              "minmax": ("port_range_min", "port_range_max")},
-    "openstack_networking_secgroup_rule_v2": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "proto": "protocol",
+    "openstack_networking_secgroup_rule_v2": {"gate": ("direction", ("ingress",), True), "src": ("remote_ip_prefix",), "any_unless": "remote_group_id", "proto": "protocol",
                                               "minmax": ("port_range_min", "port_range_max")},
 }
 
@@ -430,6 +430,13 @@ def _fw_rule(d: Dict[str, Any], spec: Dict[str, Any]) -> Optional[List[Rule]]:
         sources += _items(d.get(attr, MISSING))
     if not sources and "src_default" in spec:
         sources = [spec["src_default"]]
+    if not sources and "any_unless" in spec:
+        group = d.get(spec["any_unless"], MISSING)
+        if isinstance(group, (Unknown, Ref)):
+            return None                                               # the source is a computed security-group reference
+        if group is MISSING:                                          # no prefix and no group: the rule applies to every source
+            v6 = str(d.get("ethertype", "")).lower() == "ipv6"
+            sources = ["::/0" if v6 else "0.0.0.0/0"]
     return _port_rules(sources, d.get(spec["proto"], MISSING), _fw_ports(d, spec))
 
 
@@ -441,6 +448,13 @@ def _generic_firewall(res: Resource) -> Optional[List[Rule]]:
     if isinstance(blocks, (Unknown, Ref)):
         return None
     parts = [_fw_rule(d, spec) for d in as_list(blocks) if isinstance(d, dict)]
+    if "default_policy" in spec:                                      # an ACCEPT default admits everything the rules do not drop
+        attr, omitted = spec["default_policy"]
+        policy = res.properties.get(attr, omitted if omitted is not None else MISSING)
+        if isinstance(policy, (Unknown, Ref)) or policy is MISSING:
+            return None
+        if str(policy).strip().lower() == "accept":
+            parts.append([Rule(["0.0.0.0/0", "::/0"], "all", ALL, ALL)])
     return _flatten(parts)
 
 

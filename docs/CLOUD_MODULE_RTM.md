@@ -43,7 +43,7 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S15 Azure ARM parser (parameters/variables defaults, nested resources, copy/condition noted); Bicep NOT compiled (needs a pinned compiler in the image; reported as unsupported) | ✅ ARM, ⏸ Bicep | `cloud/parsers/arm.py` |
 | S16 OCI Resource Manager zip pass/fail with line evidence | ✅ | `cloud/tests/test_oci.py` |
 | S27/S28 (partial) inbound-firewall rules for DigitalOcean, Linode, Hetzner, Scaleway, Alibaba, Tencent, Huawei, OpenStack Terraform resources; attribute names follow provider docs and are NOT yet validated against pinned schemas (CM-142). IBM, Vultr, OVH, UpCloud and non-network controls are not covered | 🟡 | `cloud/rules/extractors.py` (`_FW_SPECS`) |
-| S14 backend API + findings UI, S16-S24, S27-S34 | ⬜ not started | - |
+| S14 backend API + findings UI, S23, S24, S29-S34 | ⬜ not started | - |
 
 Verification status: `cloud/` has its own test suite with a 100% coverage gate (361 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
