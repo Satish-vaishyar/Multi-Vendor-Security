@@ -8,7 +8,7 @@
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import yaml
 
@@ -72,35 +72,40 @@ MAX_YAML_NODES = 500_000       # expanded nodes across all documents of one file
 MAX_YAML_DEPTH = 100
 
 
-def _expanded_size(node: yaml.Node, memo: dict, depth: int = 0) -> int:
-    """Number of nodes the document would expand to once aliases are resolved (memoised, so cheap to compute)."""
-    if depth > MAX_YAML_DEPTH:
-        raise YamlError("YAML is nested too deeply (or contains a recursive alias)")
+def _expanded_size(node: yaml.Node, memo: dict, depth: int = 0) -> Tuple[int, int]:
+    """(expanded node count, height) of a node with aliases resolved. Memoised per document, and the memo keeps the
+    node alive, so an id() can never be reused by a different node. The depth limit is enforced on cache hits too
+    (a deep subtree reached through an alias still counts at its new depth)."""
     key = id(node)
     if key in memo:
-        return memo[key]
+        _node, size, height = memo[key]
+        if depth + height > MAX_YAML_DEPTH:
+            raise YamlError("YAML is nested too deeply (or contains a recursive alias)")
+        return size, height
+    if depth > MAX_YAML_DEPTH:
+        raise YamlError("YAML is nested too deeply (or contains a recursive alias)")
     if isinstance(node, yaml.ScalarNode):
-        size = 1
-    elif isinstance(node, yaml.SequenceNode):
-        size = 1 + sum(_expanded_size(c, memo, depth + 1) for c in node.value)
+        size, height = 1, 1
     else:
-        size = 1 + sum(_expanded_size(k, memo, depth + 1) + _expanded_size(v, memo, depth + 1) for k, v in node.value)
+        kids = list(node.value) if isinstance(node, yaml.SequenceNode) else [x for kv in node.value for x in kv]
+        sizes = [_expanded_size(c, memo, depth + 1) for c in kids]
+        size = 1 + sum(sz for sz, _ in sizes)
+        height = 1 + max((h for _, h in sizes), default=0)
     if size > MAX_YAML_NODES:
         raise YamlError("YAML expands to too many nodes (alias expansion)")
-    memo[key] = size
-    return size
+    memo[key] = (node, size, height)
+    return size, height
 
 
 def load_all(text: str) -> List[Any]:
     """Parse every document in `text`. Raises YamlError on malformed or abusive input (never executes anything)."""
     docs: List[Any] = []
     loader = _Loader(text)
-    memo: dict = {}
     total = 0
     try:
         while loader.check_node():
             node = loader.get_node()
-            total += _expanded_size(node, memo)
+            total += _expanded_size(node, {})[0]            # fresh memo per document: anchors are per-document
             if total > MAX_YAML_NODES:
                 raise YamlError("YAML expands to too many nodes (alias expansion)")
             doc = loader.construct_document(node)

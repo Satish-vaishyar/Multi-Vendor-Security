@@ -161,3 +161,18 @@ def test_yaml_total_budget_across_documents_and_recursion_guard(monkeypatch):
     monkeypatch.undo()
     small = "base: &b {x: 1}\ncopy: *b\n"
     assert yamlutil.load(small)["copy"] == {"x": 1}      # ordinary anchors still work
+
+
+def test_depth_limit_applies_to_subtrees_reached_through_aliases():
+    # a 60-deep subtree is fine on its own, but aliased under 60 more levels it is 120 deep and must be refused
+    deep = "[" * 60 + "1" + "]" * 60
+    shallow_ok = f"a: &d {deep}\nb: *d\n"
+    assert yamlutil.load(shallow_ok)["b"] is not None
+    nested_alias = f"a: &d {deep}\nb: " + "[" * 60 + "*d" + "]" * 60 + "\n"
+    with pytest.raises(yamlutil.YamlError, match="too deeply"):
+        yamlutil.load(nested_alias)
+
+
+def test_each_document_gets_its_own_memo():
+    docs = yamlutil.load_all("a: &x [1, 2]\nb: *x\n---\na: &x [3]\nb: *x\n")
+    assert docs[0]["b"] == [1, 2] and docs[1]["b"] == [3]
