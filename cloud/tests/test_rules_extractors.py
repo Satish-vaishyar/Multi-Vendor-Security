@@ -372,3 +372,15 @@ def test_not_principal_and_every_principal_type_are_checked():
     assert pub(stmt(Principal={"Service": "x.amazonaws.com", "AWS": Unknown("v")}, Action="s3:*", Resource="*")) is None
     assert pub({"Statement": [{"Principal": "*", "Action": "s3:*"}]}) is None            # missing Effect
     assert pub({"Statement": [{"Effect": Ref("a.b"), "Principal": "*"}]}) is None
+
+
+@pytest.mark.parametrize("cidr,expect", [
+    ("0.0.0.0", True), ("::", True), ("0.0.0.0/0", True), ("::/0", True),
+    ("64.0.0.0/10", None), ("32.0.0.0/9", None), ("2000::/12", None), ("2400::/16", None),
+    ("::ffff:0:0/96", None), ("64:ff9b::/96", None), ("2002::/16", None), ("::/96", None),
+    ("172.16.0.0/12", False), ("192.168.0.0/16", False), ("100.64.0.0/10", False), ("169.254.0.0/16", False),
+    ("127.0.0.0/8", False), ("0.0.0.0/8", False), ("fe80::/10", False), ("::1/128", False), ("fd00::/8", False),
+    ("203.0.113.0/24", False), ("192.0.2.1/32", False), ("2a00:1450::/32", False),
+])
+def test_cidr_classification_is_explicit_and_independent_of_python_is_private(cidr, expect):
+    assert ex._public(cidr, "any") is expect

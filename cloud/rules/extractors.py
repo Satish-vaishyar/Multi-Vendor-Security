@@ -155,16 +155,24 @@ def _any(states: List[Optional[bool]]) -> Optional[bool]:
 
 
 _SAFE_TAGS = {"virtualnetwork", "azureloadbalancer", "gatewaymanager", "azurebastion"}   # non-routable Azure service tags
+# Explicit private / non-global ranges (not delegated to ipaddress.is_private, whose answers changed between Python versions).
+_PRIVATE = [ipaddress.ip_network(n) for n in (
+    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "0.0.0.0/8",
+    "fc00::/7", "fe80::/10", "::1/128")]
+# IPv6 transition / mapped ranges can embed IPv4 space: their reach depends on the translator, so they are UNKNOWN.
+_TRANSITION = [ipaddress.ip_network(n) for n in ("::ffff:0:0/96", "64:ff9b::/96", "64:ff9b:1::/48", "2002::/16", "::/96")]
+_BROAD_PUBLIC = {4: 8, 6: 8}            # prefix <= this: "the Internet" (or a large share of it)
+_AMBIGUOUS = {4: 15, 6: 16}             # prefix <= this (and above _BROAD_PUBLIC): a very large range, needs a human
 
 
 def _public(src: Any, kind: str) -> Optional[bool]:
     """Is this source "the Internet" for the given address family? Parsed as a network, never matched as text only:
-    a broad range such as 0.0.0.0/1 is public; a narrow public range is a specific allow-list; anything that cannot be
-    understood is UNKNOWN (never "not public")."""
+    broad ranges are public (/0 .. /8), very large ones are UNKNOWN, narrow public ranges are allow-lists, private and
+    non-routable ranges are not public, and anything that cannot be understood is UNKNOWN (never "not public")."""
     if isinstance(src, (Unknown, Ref)):
         return None
     s = str(src).strip().lower()
-    if s in ("*", "any", "internet"):
+    if s in ("*", "any", "internet", "0.0.0.0", "::"):
         return True
     if s in _SAFE_TAGS or s.startswith(("sg-", "pl-", "sg_")):
         return False
@@ -175,7 +183,17 @@ def _public(src: Any, kind: str) -> Optional[bool]:
     family = "v6" if net.version == 6 else "v4"
     if kind != "any" and kind != family:
         return False
-    return net.prefixlen <= 8 and not net.is_private
+    if net.prefixlen == 0:
+        return True
+    if any(net.version == t.version and net.subnet_of(t) for t in _PRIVATE):
+        return False
+    if net.version == 6 and any(net.overlaps(t) for t in _TRANSITION):
+        return None
+    if net.prefixlen <= _BROAD_PUBLIC[net.version]:
+        return True
+    if net.prefixlen <= _AMBIGUOUS[net.version]:
+        return None
+    return False
 
 
 def _proto_state(proto: Any, want_all: bool) -> Optional[bool]:
