@@ -48,3 +48,11 @@ def test_dockerfile_runs_as_non_root_without_remote_fetches():
     assert "--frozen" in DOCKERFILE
     runtime = DOCKERFILE.split("AS runtime", 1)[1]
     assert "pip install" not in runtime and "uv " not in runtime   # no package managers in the runtime stage
+
+
+def test_image_is_built_from_the_repo_root_with_only_the_module_files():
+    build = SCANNER["build"]
+    assert build["context"] == "." and build["dockerfile"] == "cloud/Dockerfile"
+    ignore = (ROOT / "cloud" / "Dockerfile.dockerignore").read_text(encoding="utf-8").splitlines()
+    assert ignore[:3] == ["*", "!cloud", "!okf-cloud"]            # everything else (backend/.env, frontend, .git) is excluded
+    assert "COPY okf-cloud /srv/okf-cloud" in DOCKERFILE and "COPY cloud /srv/cloud" in DOCKERFILE

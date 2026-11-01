@@ -1,0 +1,163 @@
+# Resource-type -> canonical-property mappings. `properties:` are declarative attribute paths (first present path wins;
+# `default` is used ONLY where the provider documents a safe/unsafe default for an omitted attribute, otherwise omitted
+# means UNKNOWN). `extractors:` name logic in cloud/rules/extractors.py.
+mappings:
+  # ------------------------------------------------------------------ network rules
+  - id: network-rules
+    resource_types:
+      - aws_security_group
+      - aws_security_group_rule
+      - aws_vpc_security_group_ingress_rule
+      - AWS::EC2::SecurityGroup
+      - AWS::EC2::SecurityGroupIngress
+      - google_compute_firewall
+      - azurerm_network_security_rule
+      - azurerm_network_security_group
+      - Microsoft.Network/networkSecurityGroups
+      - oci_core_security_list
+      - oci_core_network_security_group_security_rule
+    extractors: [network_ingress]
+
+  # ------------------------------------------------------------------ identity
+  - id: aws-iam-policies
+    resource_types:
+      - aws_iam_policy
+      - aws_iam_role_policy
+      - aws_iam_user_policy
+      - aws_iam_group_policy
+      - aws_iam_role
+      - aws_s3_bucket_policy
+      - aws_sqs_queue_policy
+      - aws_sns_topic_policy
+      - aws_kms_key
+      - AWS::IAM::Policy
+      - AWS::IAM::ManagedPolicy
+      - AWS::IAM::Role
+      - AWS::S3::BucketPolicy
+      - AWS::SQS::QueuePolicy
+      - AWS::SNS::TopicPolicy
+      - AWS::KMS::Key
+    extractors: [iam_policies]
+
+  - id: gcp-iam
+    resource_types:
+      - google_project_iam_member
+      - google_project_iam_binding
+      - google_folder_iam_member
+      - google_folder_iam_binding
+      - google_organization_iam_member
+      - google_organization_iam_binding
+      - google_storage_bucket_iam_member
+      - google_storage_bucket_iam_binding
+    extractors: [gcp_iam]
+
+  # ------------------------------------------------------------------ storage
+  - id: aws-s3-public-access
+    resource_types: [aws_s3_bucket_public_access_block, AWS::S3::Bucket]
+    properties:
+      STORAGE.PUBLIC_ACCESS_BLOCKED:
+        all_true:
+          - [block_public_acls, PublicAccessBlockConfiguration.BlockPublicAcls]
+          - [block_public_policy, PublicAccessBlockConfiguration.BlockPublicPolicy]
+          - [ignore_public_acls, PublicAccessBlockConfiguration.IgnorePublicAcls]
+          - [restrict_public_buckets, PublicAccessBlockConfiguration.RestrictPublicBuckets]
+
+  - id: gcp-bucket-public
+    resource_types: [google_storage_bucket_iam_member, google_storage_bucket_iam_binding]
+    properties:
+      STORAGE.PUBLIC_ACCESS_BLOCKED:
+        paths: [member, members]
+        op: no_item_in
+        arg: [allUsers, allAuthenticatedUsers]
+
+  - id: azure-storage-account
+    resource_types: [azurerm_storage_account, Microsoft.Storage/storageAccounts]
+    properties:
+      STORAGE.PUBLIC_ACCESS_BLOCKED:
+        paths: [allow_nested_items_to_be_public, allow_blob_public_access, allowBlobPublicAccess, properties.allowBlobPublicAccess]
+        op: not
+      STORAGE.HTTPS_ONLY:
+        paths: [https_traffic_only_enabled, enable_https_traffic_only, supportsHttpsTrafficOnly, properties.supportsHttpsTrafficOnly]
+        op: truthy
+        default: true          # Azure Storage has required HTTPS by default since 2019
+      STORAGE.MIN_TLS_OK:
+        paths: [min_tls_version, minimumTlsVersion, properties.minimumTlsVersion]
+        op: tls_ok
+
+  - id: oci-bucket
+    resource_types: [oci_objectstorage_bucket]
+    properties:
+      STORAGE.PUBLIC_ACCESS_BLOCKED:
+        paths: [access_type]
+        op: eq
+        arg: NoPublicAccess
+        default: true          # the OCI provider default for access_type is NoPublicAccess
+
+  - id: aws-block-storage
+    resource_types: [aws_ebs_volume, AWS::EC2::Volume]
+    properties:
+      COMPUTE.VOLUME_ENCRYPTED:
+        paths: [encrypted, Encrypted]
+        op: truthy             # omitted stays UNKNOWN: an account-level default encryption may apply
+
+  # ------------------------------------------------------------------ databases
+  - id: aws-rds
+    resource_types: [aws_db_instance, aws_rds_cluster, AWS::RDS::DBInstance, AWS::RDS::DBCluster]
+    properties:
+      DB.STORAGE_ENCRYPTED:
+        paths: [storage_encrypted, StorageEncrypted]
+        op: truthy
+        default: false         # RDS storage is unencrypted unless requested
+      DB.PUBLICLY_ACCESSIBLE:
+        paths: [publicly_accessible, PubliclyAccessible]
+        op: truthy             # CloudFormation omits a safe default (depends on the subnet group), so omitted = UNKNOWN there
+
+  - id: aws-rds-terraform-default
+    resource_types: [aws_db_instance]
+    properties:
+      DB.PUBLICLY_ACCESSIBLE:
+        paths: [publicly_accessible]
+        op: truthy
+        default: false         # the Terraform AWS provider default is false
+
+  - id: azure-sql
+    resource_types: [azurerm_mssql_server, azurerm_postgresql_server, azurerm_mysql_server, azurerm_postgresql_flexible_server]
+    properties:
+      DB.PUBLICLY_ACCESSIBLE:
+        paths: [public_network_access_enabled]
+        op: truthy
+        default: true          # the provider default is public network access enabled
+
+  - id: gcp-sql
+    resource_types: [google_sql_database_instance]
+    extractors: [gcp_sql]
+
+  # ------------------------------------------------------------------ workload and logging
+  - id: aws-imds
+    resource_types: [aws_instance, aws_launch_template, AWS::EC2::LaunchTemplate]
+    properties:
+      COMPUTE.IMDS_V2_REQUIRED:
+        paths: [metadata_options.http_tokens, LaunchTemplateData.MetadataOptions.HttpTokens]
+        op: eq
+        arg: required
+
+  - id: aws-cloudtrail
+    resource_types: [aws_cloudtrail, AWS::CloudTrail::Trail]
+    properties:
+      LOG.TRAIL_MULTI_REGION:
+        paths: [is_multi_region_trail, IsMultiRegionTrail]
+        op: truthy
+        default: false
+      LOG.TRAIL_LOG_VALIDATION:
+        paths: [enable_log_file_validation, EnableLogFileValidation]
+        op: truthy
+        default: false
+
+  # ------------------------------------------------------------------ Kubernetes
+  - id: k8s-workloads
+    resource_types: [Pod, Deployment, StatefulSet, DaemonSet, ReplicaSet, Job, CronJob, ReplicationController]
+    extractors: [k8s_workload]
+
+  - id: k8s-network-policy
+    resource_types: [NetworkPolicy]
+    extractors: [k8s_netpol]

@@ -22,8 +22,8 @@ services:
   cloud-scanner:
     <<: *scanner-hardening
     build:
-      context: ./cloud
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: cloud/Dockerfile
     environment:
       CLOUD_MODULE_ENABLED: "true"
     expose:

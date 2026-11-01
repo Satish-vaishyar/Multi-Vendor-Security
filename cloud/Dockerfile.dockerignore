@@ -1,0 +1,11 @@
+*
+!cloud
+!okf-cloud
+cloud/.venv
+cloud/tests
+cloud/work
+cloud/scan-output
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.coverage

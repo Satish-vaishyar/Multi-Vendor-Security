@@ -29,11 +29,19 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S09 CloudFormation/SAM parser | ✅ | `cloud/parsers/cloudformation.py` |
 | S10 Kubernetes parser | ✅ | `cloud/parsers/kubernetes.py` |
 | S11 IR record, findings, validation | ✅ | `cloud/ir.py` |
-| S12 okf-cloud pack + rule engine | 🟡 in progress | `cloud/rules/`, `okf-cloud/knowledge/` |
+| S12 okf-cloud pack + rule engine | ✅ 25 controls, 25 properties, 29 catalog section 11 acceptance cases | `cloud/rules/`, `okf-cloud/knowledge/`, `cloud/tests/test_cat11.py` |
 | S13 - S34 | ⬜ | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (151 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (239 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
+
+### Coverage notes for S12 (what the first rule pack does and does not claim)
+* Verified by acceptance tests: NET-001..005, IAM-001..003, STO-001..003, DB-001, K8S-001..003, LOG-002, SEC-001, CFG-001.
+* Not yet covered: KEY-001 (needs a customer policy profile), LOG-001 organisation-wide scope (needs live assessment),
+  CFG-002 (needs the relationship graph, S17). Findings for these are never reported as PASS.
+* Framework mappings in the pack are NIST SP 800-53 Rev. 5 control ids marked `verified: false`; CIS ids are intentionally absent
+  and the pack loader rejects unverified CIS entries.
+* Catalog fixtures have not yet been validated against pinned provider schemas (CM-142 remains open).
 
 ### Decisions and deviations recorded during implementation
 * **CM-094 (reuse OKF evaluator by import) changed.** Importing `okf.src.engines` would pull `pydantic` and the okf sources
@@ -107,7 +115,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 |---|---|---|---|---|---|---|
 | CM-001 | Support upload-only (static) and connected (live) assessment modes | 1 | `mode` field on scan; static path S04-S14, live path S31-S32 | S04,S31 | API test per mode | ⬜ |
 | CM-002 | Evidence states PASS/FAIL/UNKNOWN_STATIC, N/A, *_LIVE, CONFLICT | 1.1 | Enum in IR + findings table (names already listed in `okf-cloud/okf_manifest.yaml`) | S11 | Schema test | 🟡 |
-| CM-003 | Never convert UNKNOWN to PASS | 1.1, 14 | Evaluator returns UNKNOWN on `None`; property test | S12 | CFG-001 test | ⬜ |
+| CM-003 | Never convert UNKNOWN to PASS | 1.1, 14 | Evaluator returns UNKNOWN on `None`; property test | S12 | CFG-001 test | ✅ |
 | CM-004 | Every finding shows source, address, file, line, parser/rule version, timestamp | 1.1 | `source{}` block in IR; stored in `cloud_findings` | S11 | Field-presence test | 🟡 |
 | CM-005 | Never claim uploaded config proves deployed state | 1 | Report wording + banner | S20 | Wording test | ⬜ |
 
@@ -115,9 +123,9 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
-| CM-010 | AWS | 2.1 | S08/S09 + `okf-cloud/mappings/aws.yaml` | S12 | Fixture pass/fail | ⬜ |
-| CM-011 | Azure | 2.1 | ARM/Bicep + Terraform | S12,S15 | Fixture pass/fail | ⬜ |
-| CM-012 | GCP | 2.1 | Terraform + KRM | S12 | Fixture pass/fail | ⬜ |
+| CM-010 | AWS | 2.1 | S08/S09 + `okf-cloud/mappings/aws.yaml` | S12 | Fixture pass/fail | 🟡 |
+| CM-011 | Azure | 2.1 | ARM/Bicep + Terraform | S12,S15 | Fixture pass/fail | 🟡 |
+| CM-012 | GCP | 2.1 | Terraform + KRM | S12 | Fixture pass/fail | 🟡 |
 | CM-013 | OCI | 2.1 | Terraform + Resource Manager zip | S16 | Fixture pass/fail | ⬜ |
 | CM-014 | Alibaba Cloud | 2.1 | ROS + Terraform | S27 | Per-provider DoD | ⏸ |
 | CM-015 | IBM Cloud | 2.1 | Terraform | S27 | Per-provider DoD | ⏸ |
@@ -154,12 +162,12 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
-| CM-070 | IAM: wildcard admin, public principals, cross-account trust, privilege paths | 5.1 | `okf-cloud/controls/iam.yaml` (+ graph for paths) | S12,S17 | IAM-001..003 | ⬜ |
-| CM-071 | Network: 0.0.0.0/0 and ::/0 to management/DB ports, all-ports, default-allow, effective exposure | 5.2 | `controls/network.yaml` + graph | S12,S17 | NET-001..005, CFG-002 | ⬜ |
-| CM-072 | Storage/data: public access, encryption, TLS, keys, versioning, snapshots | 5.3 | `controls/storage.yaml` | S12 | STO-001..003, KEY-001 | ⬜ |
-| CM-073 | Logging/monitoring: audit trail, retention, tamper protection | 5.4 | `controls/logging.yaml` (static where provable, else UNKNOWN) | S12 | LOG-001, LOG-002 | ⬜ |
-| CM-074 | Compute/workload: IMDS, volume encryption, privileged containers | 5.5 | `controls/compute.yaml`, `k8s.yaml` | S12,S22 | K8S-001..003 | ⬜ |
-| CM-075 | Managed services: DB, K8s, LB, DNS, secrets manager, serverless | 5.6 | `controls/managed.yaml` | S12,S22 | DB-001 + per-family | ⬜ |
+| CM-070 | IAM: wildcard admin, public principals, cross-account trust, privilege paths | 5.1 | `okf-cloud/controls/iam.yaml` (+ graph for paths) | S12,S17 | IAM-001..003 | 🟡 |
+| CM-071 | Network: 0.0.0.0/0 and ::/0 to management/DB ports, all-ports, default-allow, effective exposure | 5.2 | `controls/network.yaml` + graph | S12,S17 | NET-001..005, CFG-002 | 🟡 |
+| CM-072 | Storage/data: public access, encryption, TLS, keys, versioning, snapshots | 5.3 | `controls/storage.yaml` | S12 | STO-001..003, KEY-001 | 🟡 |
+| CM-073 | Logging/monitoring: audit trail, retention, tamper protection | 5.4 | `controls/logging.yaml` (static where provable, else UNKNOWN) | S12 | LOG-001, LOG-002 | 🟡 |
+| CM-074 | Compute/workload: IMDS, volume encryption, privileged containers | 5.5 | `controls/compute.yaml`, `k8s.yaml` | S12,S22 | K8S-001..003 | 🟡 |
+| CM-075 | Managed services: DB, K8s, LB, DNS, secrets manager, serverless | 5.6 | `controls/managed.yaml` | S12,S22 | DB-001 + per-family | 🟡 |
 | CM-076 | Secrets/sensitive data in uploads; rotation advice; no secret in LLM context | 5.7 | `secrets.py` + redaction hooks | S07 | SEC-001 | 🟡 |
 | CM-077 | Image/package CVE scanning kept separate from config checks | 5.5 | Out of scope until requested | - | - | ⏸ |
 
@@ -168,7 +176,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
 | CM-080 | Map to CIS, CIS Controls, NIST CSF/800-53, ISO 27001, PCI, SOC 2, HIPAA, GDPR, STIG; pinned versions; no invented IDs | 6.1 | `okf-cloud/crosswalks/*.yaml`, `verified` flag | S18 | Unverified mappings flagged in UI | ⬜ |
-| CM-081 | Rule metadata (id, provider, resource types, severity, mode, logic version, mappings, unknown handling, remediation, references) | 6.2 | Control YAML schema + validator | S12 | Schema validation in CI | ⬜ |
+| CM-081 | Rule metadata (id, provider, resource types, severity, mode, logic version, mappings, unknown handling, remediation, references) | 6.2 | Control YAML schema + validator | S12 | Schema validation in CI | ✅ |
 | CM-082 | Per-framework/edition/scope scoring; separate Passed/Failed/Unknown/N-A/Not-assessed; no single global % | 6.3 | `cloud/scoring.py` | S18 | Denominator test | ⬜ |
 | CM-083 | Exceptions with owner, justification, expiry, approval | 6.3 | `cloud_exceptions` + API/UI | S21 | Expiry test | ⬜ |
 | CM-084 | Licensed benchmark text not redistributed; customer-import path | 6.1 | Reuse `catalogue-import` pattern, separate output dir (git-ignored, see `okf-cloud/.gitignore`) | S18 | Import test | 🟡 |
@@ -177,11 +185,11 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
-| CM-090 | Pipeline: detect → safety/secrets → parse → IR → rules → graph → evidence → report | 7 | `cloud/pipeline.py` | S04-S14 | End-to-end test | ⬜ |
+| CM-090 | Pipeline: detect → safety/secrets → parse → IR → rules → graph → evidence → report | 7 | `cloud/pipeline.py` | S04-S14 | End-to-end test | 🟡 |
 | CM-091 | External scanners (Checkov, Trivy, optionally KICS/OPA) as independent engines | 7.1 | `cloud/engines/*.py`, pinned in scanner image | S13 | Merge/dedupe test; engine+version recorded | ⬜ |
 | CM-092 | Normalised IR keeping `provider_raw`; no attribute dropped | 7.2 | IR dataclass | S11 | Round-trip test | ✅ |
 | CM-093 | Relationship graph with edge provenance/certainty | 7.3 | `cloud/graph.py` (NetworkX is already used elsewhere in the repo) | S17 | Edge-certainty test | ⬜ |
-| CM-094 | Reuse OKF evaluator semantics without editing `okf/` | 7 | `cloud/rules/engine.py` re-implements the same DSL; parity test imports the real `okf.src.engines.eval_op` (see section 0) | S12 | Parity test over the operator matrix | ⬜ |
+| CM-094 | Reuse OKF evaluator semantics without editing `okf/` | 7 | `cloud/rules/engine.py` re-implements the same DSL; parity test imports the real `okf.src.engines.eval_op` (see section 0) | S12 | Parity test over the operator matrix | ✅ |
 
 ### G. Upload pipeline and security (CAT §8)
 

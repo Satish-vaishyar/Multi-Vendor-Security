@@ -1,0 +1,32 @@
+# Canonical cloud property vocabulary. Every value is three-valued at evaluation time: true / false / unknown (None).
+properties:
+  # ---- network exposure (Internet-reachable inbound rules; evaluated per rule-bearing resource)
+  - {id: NET.SG.PUBLIC_SSH_V4, type: boolean, category: network_exposure, description: "An inbound rule allows SSH (22) from any IPv4 address"}
+  - {id: NET.SG.PUBLIC_SSH_V6, type: boolean, category: network_exposure, description: "An inbound rule allows SSH (22) from any IPv6 address"}
+  - {id: NET.SG.PUBLIC_RDP, type: boolean, category: network_exposure, description: "An inbound rule allows RDP (3389) from any address"}
+  - {id: NET.SG.PUBLIC_DB, type: boolean, category: network_exposure, description: "An inbound rule allows a common database port from any address"}
+  - {id: NET.SG.PUBLIC_ALL, type: boolean, category: network_exposure, description: "An inbound rule allows all protocols and ports from any address"}
+  # ---- identity and access
+  - {id: IAM.WILDCARD_ADMIN, type: boolean, category: identity, description: "A policy allows all actions on all resources (or a primitive owner/editor role)"}
+  - {id: IAM.PUBLIC_PRINCIPAL, type: boolean, category: identity, description: "A resource policy or IAM binding grants access to everyone / any authenticated user"}
+  - {id: IAM.TRUST_UNRESTRICTED, type: boolean, category: identity, description: "A role trust policy lets any principal assume the role"}
+  # ---- storage and data
+  - {id: STORAGE.PUBLIC_ACCESS_BLOCKED, type: boolean, category: data_protection, description: "Public access to the bucket / container is blocked"}
+  - {id: STORAGE.HTTPS_ONLY, type: boolean, category: data_protection, description: "Only encrypted (HTTPS) transport is accepted"}
+  - {id: STORAGE.MIN_TLS_OK, type: boolean, category: data_protection, description: "Minimum TLS version is 1.2 or higher"}
+  - {id: COMPUTE.VOLUME_ENCRYPTED, type: boolean, category: data_protection, description: "Block volume is encrypted at rest"}
+  - {id: DB.STORAGE_ENCRYPTED, type: boolean, category: data_protection, description: "Managed database storage is encrypted at rest"}
+  - {id: DB.PUBLICLY_ACCESSIBLE, type: boolean, category: network_exposure, description: "Managed database is reachable from the public Internet"}
+  # ---- workload and logging
+  - {id: COMPUTE.IMDS_V2_REQUIRED, type: boolean, category: workload, description: "Instance metadata service requires session tokens (IMDSv2)"}
+  - {id: LOG.TRAIL_MULTI_REGION, type: boolean, category: logging, description: "Audit trail covers all regions"}
+  - {id: LOG.TRAIL_LOG_VALIDATION, type: boolean, category: logging, description: "Audit log file integrity validation is enabled"}
+  # ---- Kubernetes
+  - {id: K8S.POD.HOST_NETWORK, type: boolean, category: workload, description: "Pod shares the host network namespace"}
+  - {id: K8S.POD.HOST_PID, type: boolean, category: workload, description: "Pod shares the host PID namespace"}
+  - {id: K8S.CONTAINER.PRIVILEGED, type: boolean, category: workload, description: "A container runs privileged"}
+  - {id: K8S.CONTAINER.RUN_AS_ROOT, type: boolean, category: workload, description: "A container runs as root (UID 0)"}
+  - {id: K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION, type: boolean, category: workload, description: "A container may gain more privileges than its parent (Kubernetes default is true)"}
+  - {id: K8S.CONTAINER.CAP_ADD_ALL, type: boolean, category: workload, description: "A container adds all Linux capabilities"}
+  - {id: K8S.CONTAINER.IMAGE_UNPINNED, type: boolean, category: supply_chain, description: "A container image uses no tag, the latest tag, or no digest"}
+  - {id: K8S.NETPOL.ALLOW_ALL, type: boolean, category: network_exposure, description: "A NetworkPolicy selects every pod and allows all traffic"}

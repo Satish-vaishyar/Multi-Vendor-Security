@@ -1,0 +1,279 @@
+# Cloud controls (rule pack v1). Conditions use canonical properties only, so one control covers every provider that
+# maps the property. Framework mappings are `verified: false` until checked against the exact current text; CIS Benchmark
+# IDs are deliberately absent (the loader refuses unverified CIS entries; they need the customer's licensed edition).
+controls:
+  - id: CLOUD-NET-001
+    name: Inbound SSH (22) must not be open to any IPv4 address
+    category: network_exposure
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: NET.SG.PUBLIC_SSH_V4, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_source_or_port_is_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Restrict SSH to an approved administrative CIDR, or use a managed access service (bastion, session manager, IAP)."}
+    references: ["https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html"]
+
+  - id: CLOUD-NET-002
+    name: Inbound SSH (22) must not be open to any IPv6 address
+    category: network_exposure
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: NET.SG.PUBLIC_SSH_V6, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_source_or_port_is_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Remove ::/0 from SSH rules; allow only approved administrative ranges."}
+
+  - id: CLOUD-NET-003
+    name: Inbound RDP (3389) must not be open to the Internet
+    category: network_exposure
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: NET.SG.PUBLIC_RDP, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_source_or_port_is_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Restrict RDP to approved administrative ranges or use a gateway service."}
+
+  - id: CLOUD-NET-004
+    name: All protocols and ports must not be open to the Internet
+    category: network_exposure
+    severity: CRITICAL
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: NET.SG.PUBLIC_ALL, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_source_or_port_is_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Replace the any/any inbound rule with least-privilege rules for the required ports and sources."}
+
+  - id: CLOUD-NET-005
+    name: Database ports must not be open to the Internet
+    category: network_exposure
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: NET.SG.PUBLIC_DB, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_source_or_port_is_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Place databases on private networks and allow only application subnets or security groups."}
+
+  - id: CLOUD-IAM-001
+    name: Resource policies must not grant access to everyone
+    category: identity
+    severity: CRITICAL
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: IAM.PUBLIC_PRINCIPAL, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_policy_is_dynamic_or_conditioned
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-3, verified: false}]
+    remediation: {summary: "Replace the wildcard principal with the specific accounts, roles or services that need access."}
+
+  - id: CLOUD-IAM-002
+    name: Policies must not allow all actions on all resources
+    category: identity
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: IAM.WILDCARD_ADMIN, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_policy_is_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Grant least privilege; scope actions and resources to what the workload needs."}
+
+  - id: CLOUD-IAM-003
+    name: Role trust policies must not allow any principal to assume the role
+    category: identity
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: IAM.TRUST_UNRESTRICTED, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_policy_is_dynamic_or_conditioned
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-3, verified: false}]
+    remediation: {summary: "Name the trusted principals explicitly and add conditions such as an external ID."}
+
+  - id: CLOUD-STO-001
+    name: Storage must block public access
+    category: data_protection
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: STORAGE.PUBLIC_ACCESS_BLOCKED, operator: EQUALS, value: true}
+    unknown_handling: unknown_if_attribute_omitted_or_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-3, verified: false}]
+    remediation: {summary: "Enable all public-access-block settings / disable anonymous access on the bucket or container."}
+
+  - id: CLOUD-STO-002
+    name: Block volumes must be encrypted at rest
+    category: data_protection
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: COMPUTE.VOLUME_ENCRYPTED, operator: EQUALS, value: true}
+    unknown_handling: unknown_if_attribute_omitted
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-28, verified: false}]
+    remediation: {summary: "Set encrypted = true (and a KMS key where policy requires customer-managed keys)."}
+
+  - id: CLOUD-STO-003
+    name: Storage must require encrypted transport (HTTPS)
+    category: data_protection
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: STORAGE.HTTPS_ONLY, operator: EQUALS, value: true}
+    unknown_handling: unknown_if_attribute_omitted_without_documented_default
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-8, verified: false}]
+    remediation: {summary: "Enable \"secure transfer required\" / HTTPS-only."}
+
+  - id: CLOUD-STO-004
+    name: Storage minimum TLS version must be 1.2 or higher
+    category: data_protection
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: STORAGE.MIN_TLS_OK, operator: EQUALS, value: true}
+    unknown_handling: unknown_if_attribute_omitted
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-8, verified: false}]
+    remediation: {summary: "Set the minimum TLS version to TLS1_2 or TLS1_3."}
+
+  - id: CLOUD-DB-001
+    name: Managed databases must not be publicly accessible
+    category: network_exposure
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: DB.PUBLICLY_ACCESSIBLE, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_attribute_omitted_without_documented_default
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Disable public access and use private networking or private endpoints."}
+
+  - id: CLOUD-DB-002
+    name: Managed database storage must be encrypted at rest
+    category: data_protection
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: DB.STORAGE_ENCRYPTED, operator: EQUALS, value: true}
+    unknown_handling: unknown_if_attribute_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-28, verified: false}]
+    remediation: {summary: "Enable storage encryption (a new encrypted instance is needed for an existing unencrypted one)."}
+
+  - id: CLOUD-CMP-001
+    name: Instance metadata service must require session tokens (IMDSv2)
+    category: workload
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: COMPUTE.IMDS_V2_REQUIRED, operator: EQUALS, value: true}
+    unknown_handling: unknown_if_attribute_omitted
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-3, verified: false}]
+    remediation: {summary: "Set metadata_options.http_tokens = \"required\"."}
+
+  - id: CLOUD-LOG-001
+    name: Audit trails must cover all regions
+    category: logging
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: LOG.TRAIL_MULTI_REGION, operator: EQUALS, value: true}
+    unknown_handling: organization_wide_coverage_needs_live_assessment
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AU-2, verified: false}]
+    remediation: {summary: "Enable a multi-region trail (and an organization trail where an organization is used)."}
+
+  - id: CLOUD-LOG-002
+    name: Audit log files must have integrity validation enabled
+    category: logging
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: LOG.TRAIL_LOG_VALIDATION, operator: EQUALS, value: true}
+    unknown_handling: unknown_if_attribute_dynamic
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AU-9, verified: false}]
+    remediation: {summary: "Enable log file validation."}
+
+  - id: CLOUD-K8S-001
+    name: Containers must not run privileged
+    category: workload
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.CONTAINER.PRIVILEGED, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Remove securityContext.privileged or set it to false."}
+
+  - id: CLOUD-K8S-002
+    name: Containers must not run as root
+    category: workload
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.CONTAINER.RUN_AS_ROOT, operator: EQUALS, value: false}
+    unknown_handling: unknown_if_user_not_declared
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Set runAsNonRoot true and a non-zero runAsUser."}
+
+  - id: CLOUD-K8S-003
+    name: Containers must not allow privilege escalation
+    category: workload
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.CONTAINER.ALLOW_PRIVILEGE_ESCALATION, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Set securityContext.allowPrivilegeEscalation to false (the Kubernetes default is true)."}
+
+  - id: CLOUD-K8S-004
+    name: Containers must not add all Linux capabilities
+    category: workload
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.CONTAINER.CAP_ADD_ALL, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: AC-6, verified: false}]
+    remediation: {summary: "Drop ALL capabilities and add back only those required."}
+
+  - id: CLOUD-K8S-005
+    name: Pods must not use the host network
+    category: workload
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.POD.HOST_NETWORK, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Remove hostNetwork: true."}
+
+  - id: CLOUD-K8S-006
+    name: Pods must not share the host PID namespace
+    category: workload
+    severity: HIGH
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.POD.HOST_PID, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Remove hostPID: true."}
+
+  - id: CLOUD-K8S-007
+    name: Container images must be pinned (tag other than latest, ideally a digest)
+    category: supply_chain
+    severity: LOW
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.CONTAINER.IMAGE_UNPINNED, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: CM-2, verified: false}]
+    remediation: {summary: "Reference images by immutable digest or a specific version tag."}
+
+  - id: CLOUD-K8S-008
+    name: NetworkPolicies must not allow all traffic to all pods
+    category: network_exposure
+    severity: MEDIUM
+    assessment_mode: static
+    logic_version: "1.0.0"
+    condition: {property: K8S.NETPOL.ALLOW_ALL, operator: EQUALS, value: false}
+    unknown_handling: none
+    frameworks: [{framework: NIST-800-53, version: "Rev. 5", control_id: SC-7, verified: false}]
+    remediation: {summary: "Use a default-deny policy and add explicit allow rules."}
