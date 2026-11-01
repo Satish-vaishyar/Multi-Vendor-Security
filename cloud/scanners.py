@@ -4,9 +4,12 @@ The external engines are independent second opinions; Orbit's own deterministic 
 evidence-state model. Adapters only normalise what the tools report into `Finding` and tag every result with the
 engine name and version, so nothing is presented as an Orbit verdict.
 
-Safety: tools are executed with an argument list (never a shell), a hard timeout, a capped output size, a scrubbed
-environment and the scan directory as the working directory. The scanner container has no network (see
-docker-compose.cloud.yml), so a tool that tries to download policies simply fails and is reported as `failed`.
+Safety (the uploaded files are hostile, including any tool configuration inside them):
+  * tools never run inside the upload: a sanitised COPY is scanned, without tool config, ignore files or Python
+  * the working directory and HOME are a fresh, empty, trusted directory, and an empty config file is passed explicitly
+  * argument list only (never a shell), hard timeout, scrubbed environment, no stdin, stderr discarded
+  * output is read through a bounded stream and the process is killed at the cap, so it is never buffered unbounded
+The scanner container has no network (see docker-compose.cloud.yml), so a tool that tries to download policies fails.
 The binaries are NOT bundled in the image yet: when absent the run is reported as `unavailable`, never as a clean scan.
 """
 from __future__ import annotations
@@ -15,8 +18,11 @@ import json
 import posixpath
 import shutil
 import subprocess
+import tempfile
+import threading
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from cloud.ir import Finding
 
@@ -30,9 +36,13 @@ EQUIVALENTS: Dict[tuple, str] = {("checkov", "CKV_AWS_24"): "CLOUD-NET-001", ("c
 
 # Commands are built in one place. Flags must be re-verified against the pinned tool versions when the engines are bundled.
 COMMANDS: Dict[str, List[str]] = {
-    "checkov": ["checkov", "-d", "{dir}", "--output", "json", "--quiet", "--compact"],
-    "trivy": ["trivy", "config", "--format", "json", "--quiet", "{dir}"],
+    "checkov": ["checkov", "--config-file", "{empty}", "-d", "{dir}", "--output", "json", "--quiet", "--compact"],
+    "trivy": ["trivy", "--config", "{empty}", "config", "--format", "json", "--quiet", "{dir}"],
 }
+# Files an upload could use to reconfigure a tool, or to run code inside it. They are never copied into the scan directory.
+_ALLOWED_SUFFIXES = (".tf", ".tf.json", ".tfvars", ".tfvars.json", ".json", ".yaml", ".yml", ".template", ".hcl")
+_TOOL_CONFIG_NAMES = {".checkov.yaml", ".checkov.yml", ".checkov.baseline", "trivy.yaml", "trivy.yml", ".trivyignore", ".trivyignore.yaml",
+                      ".trivyignore.yml", "checkov.yaml", "checkov.yml", ".terraformignore"}
 VERSION_COMMANDS: Dict[str, List[str]] = {"checkov": ["checkov", "--version"], "trivy": ["trivy", "--version"]}
 
 
@@ -101,37 +111,85 @@ def parse_trivy(text: str, root: str = "", version: str = "") -> List[Finding]:
 PARSERS: Dict[str, Callable[..., List[Finding]]] = {"checkov": parse_checkov, "trivy": parse_trivy}
 
 
-def _scrubbed_env() -> Dict[str, str]:
-    return {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": "/tmp", "LANG": "C.UTF-8", "NO_COLOR": "1",
-            "CHECKOV_RUN_SCA_PACKAGE_SCAN_V2": "false", "TRIVY_NO_PROGRESS": "true"}
+def _scrubbed_env(home: str) -> Dict[str, str]:
+    return {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": home, "LANG": "C.UTF-8", "NO_COLOR": "1", "XDG_CONFIG_HOME": home,
+            "CHECKOV_RUN_SCA_PACKAGE_SCAN_V2": "false", "TRIVY_NO_PROGRESS": "true", "TRIVY_CACHE_DIR": home}
 
 
-def run_engine(name: str, workdir: str, runner: Callable[..., Any] = subprocess.run,
+def prepare_scan_dir(src: str, dst: str) -> int:
+    """Copy only plain IaC files (no tool config, ignore files, Python or anything else) into `dst`. Returns the count."""
+    n = 0
+    for f in sorted(Path(src).rglob("*")):
+        rel = f.relative_to(src)
+        low = f.name.lower()
+        if not f.is_file() or f.is_symlink() or low in _TOOL_CONFIG_NAMES or not low.endswith(_ALLOWED_SUFFIXES):
+            continue
+        out = Path(dst) / rel
+        out.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(f, out)
+        n += 1
+    return n
+
+
+def _run_bounded(cmd: List[str], cwd: str, env: Dict[str, str], popen: Callable[..., Any]) -> Tuple[bytes, Optional[int], bool]:
+    """Run `cmd`, reading at most MAX_OUTPUT_BYTES+1 of stdout. Returns (output, returncode, too_large). Raises TimeoutExpired."""
+    proc = popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, cwd=cwd, env=env, shell=False)
+    fired = threading.Event()
+
+    def _kill() -> None:
+        fired.set()
+        proc.kill()
+
+    timer = threading.Timer(TIMEOUT_SECONDS, _kill)
+    timer.start()
+    try:
+        data = proc.stdout.read(MAX_OUTPUT_BYTES + 1)
+        if len(data) > MAX_OUTPUT_BYTES:
+            proc.kill()
+            proc.wait()
+            return data[:0], None, True
+        proc.wait()
+    finally:
+        timer.cancel()
+    if fired.is_set():
+        raise subprocess.TimeoutExpired(cmd, TIMEOUT_SECONDS)
+    return data, proc.returncode, False
+
+
+def run_engine(name: str, workdir: str, popen: Callable[..., Any] = subprocess.Popen,
                which: Callable[[str], Optional[str]] = shutil.which) -> EngineRun:
-    """Run one engine over an already-extracted, sanitised directory. Never raises."""
+    """Run one engine over a sanitised copy of an already-extracted directory. Never raises."""
     if name not in COMMANDS:
         return EngineRun(name, "failed", error="unknown engine")
     if which(COMMANDS[name][0]) is None:
         return EngineRun(name, "unavailable", error=f"{name} is not installed in this scanner image")
-    kw: Dict[str, Any] = dict(capture_output=True, timeout=TIMEOUT_SECONDS, cwd=workdir, env=_scrubbed_env(), shell=False, check=False)
+    with tempfile.TemporaryDirectory(prefix="engine-") as trusted:
+        scan_dir = str(Path(trusted) / "scan")
+        empty_cfg = str(Path(trusted) / "empty.yaml")
+        Path(empty_cfg).write_text("{}\n", encoding="utf-8")
+        Path(scan_dir).mkdir()
+        prepare_scan_dir(workdir, scan_dir)
+        home = str(Path(trusted) / "home")
+        Path(home).mkdir()
+        env = _scrubbed_env(home)
+        try:
+            ver, _rc, _big = _run_bounded(VERSION_COMMANDS[name], trusted, env, popen)
+            version = (ver.decode("utf-8", "replace").strip().splitlines() or [""])[-1]
+            out, rc, too_large = _run_bounded([a.replace("{dir}", scan_dir).replace("{empty}", empty_cfg) for a in COMMANDS[name]],
+                                              trusted, env, popen)
+        except subprocess.TimeoutExpired:
+            return EngineRun(name, "failed", error="timed out")
+        except OSError as e:
+            return EngineRun(name, "failed", error=f"could not start: {e.__class__.__name__}")
+    if too_large:
+        return EngineRun(name, "failed", version=version, error="output too large")
+    if not out.strip() or rc not in (0, 1):                  # both tools exit 1 when they report findings
+        return EngineRun(name, "failed", version=version, error=f"exit code {rc}")
     try:
-        ver = runner(VERSION_COMMANDS[name], **kw)
-        version = (ver.stdout or b"").decode("utf-8", "replace").strip().splitlines()[-1:] or [""]
-        proc = runner([a.replace("{dir}", workdir) for a in COMMANDS[name]], **kw)
-    except subprocess.TimeoutExpired:
-        return EngineRun(name, "failed", error="timed out")
-    except OSError as e:
-        return EngineRun(name, "failed", error=f"could not start: {e.__class__.__name__}")
-    out = proc.stdout or b""
-    if len(out) > MAX_OUTPUT_BYTES:
-        return EngineRun(name, "failed", version=version[0], error="output too large")
-    if not out.strip() or proc.returncode not in (0, 1):      # both tools exit 1 when they report findings
-        return EngineRun(name, "failed", version=version[0], error=f"exit code {proc.returncode}")
-    try:
-        findings = PARSERS[name](out.decode("utf-8", "replace"), workdir, version[0])
+        findings = PARSERS[name](out.decode("utf-8", "replace"), scan_dir, version)
     except (ValueError, TypeError, AttributeError) as e:
-        return EngineRun(name, "failed", version=version[0], error=f"unreadable output: {e.__class__.__name__}")
-    return EngineRun(name, "ok", version=version[0], findings=findings)
+        return EngineRun(name, "failed", version=version, error=f"unreadable output: {e.__class__.__name__}")
+    return EngineRun(name, "ok", version=version, findings=findings)
 
 
 def merge_findings(own: List[Finding], external: List[Finding]) -> List[Finding]:

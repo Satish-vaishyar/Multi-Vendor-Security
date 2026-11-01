@@ -1,7 +1,10 @@
 """Fixtures below are hand-written to the tools' documented JSON schemas (they are NOT captured from real runs); they
 prove the adapters' parsing, safety and merge behaviour. Re-record real outputs when the engines are bundled."""
+import io
 import json
+import os
 import subprocess
+import time
 
 import pytest
 
@@ -52,49 +55,123 @@ def test_trivy_only_fail_status_becomes_a_finding():
         parse_trivy("{not json")
 
 
-class Proc:
-    def __init__(self, stdout=b"", returncode=0):
-        self.stdout, self.returncode = stdout, returncode
+class FakeProc:
+    def __init__(self, data, rc, delay=0.0):
+        self.rc, self.killed, self.returncode = rc, False, rc
+        self.stdout = _Stream(data, delay)
+
+    def kill(self):
+        self.killed = True
+
+    def wait(self):
+        return self.rc
 
 
-def fake_runner(findings_json, rc=1, version=b"checkov 3.2.1\n"):
-    calls = []
+class _Stream:
+    def __init__(self, data, delay):
+        self.buf, self.delay = io.BytesIO(data), delay
 
-    def run(cmd, **kw):
-        calls.append((cmd, kw))
-        return Proc(version) if "--version" in cmd else Proc(findings_json, rc)
-    run.calls = calls
-    return run
+    def read(self, n):
+        if self.delay:
+            time.sleep(self.delay)
+        return self.buf.read(n)
 
 
-def test_run_engine_success_uses_safe_invocation():
-    runner = fake_runner(json.dumps(CHECKOV).encode())
-    out = run_engine("checkov", "/scan/work", runner=runner, which=lambda n: "/usr/bin/" + n)
+def fake_popen(findings_json, rc=1, version=b"checkov 3.2.1\n", record=None, snoop=None, delay=0.0):
+    record = record if record is not None else []
+
+    def popen(cmd, **kw):
+        record.append((cmd, kw))
+        if snoop:
+            snoop(cmd, kw)
+        is_version = "--version" in cmd
+        return FakeProc(version if is_version else findings_json, 0 if is_version else rc, 0.0 if is_version else delay)
+    return popen
+
+
+def tree(tmp_path):
+    (tmp_path / "sub").mkdir()
+    for name, body in {"main.tf": "x", "sub/a.yaml": "k: v", ".checkov.yaml": "soft-fail: true", "trivy.yaml": "ignore: all",
+                       ".trivyignore": "AVD-1", "evil.py": "import os", "notes.txt": "n", "sub/checkov.yml": "x"}.items():
+        (tmp_path / name).write_text(body, encoding="utf-8")
+    return str(tmp_path)
+
+
+def test_scan_copy_excludes_tool_configuration_ignore_files_and_code(tmp_path):
+    (tmp_path / "src").mkdir()
+    tree(tmp_path / "src")
+    dst = str(tmp_path / "dst")
+    n = scanners.prepare_scan_dir(str(tmp_path / "src"), dst)
+    names = sorted(str(p.relative_to(dst)).replace(chr(92), "/") for p in __import__("pathlib").Path(dst).rglob("*") if p.is_file())
+    assert names == ["main.tf", "sub/a.yaml"] and n == 2
+
+
+def test_run_engine_success_uses_a_trusted_cwd_empty_config_and_sanitised_copy(tmp_path):
+    work = tree(tmp_path)
+    seen = {}
+
+    def snoop(cmd, kw):
+        if "--version" not in cmd:
+            scan_dir = cmd[cmd.index("-d") + 1]
+            seen["files"] = sorted(os.listdir(scan_dir))
+            seen["config"] = open(cmd[cmd.index("--config-file") + 1], encoding="utf-8").read()
+            seen["cwd_files"] = os.listdir(kw["cwd"])
+
+    record = []
+    out = run_engine("checkov", work, popen=fake_popen(json.dumps(CHECKOV).encode(), record=record, snoop=snoop), which=lambda n: "/usr/bin/" + n)
     assert out.status == "ok" and out.version == "checkov 3.2.1" and len(out.findings) == 3
-    cmd, kw = runner.calls[-1]
-    assert cmd[:3] == ["checkov", "-d", "/scan/work"] and kw["shell"] is False and kw["cwd"] == "/scan/work"
-    assert kw["timeout"] == scanners.TIMEOUT_SECONDS and "AWS_SECRET_ACCESS_KEY" not in kw["env"] and kw["env"]["HOME"] == "/tmp"
+    cmd, kw = record[-1]
+    assert kw["shell"] is False and kw["stdin"] == subprocess.DEVNULL and kw["stderr"] == subprocess.DEVNULL
+    assert kw["cwd"] != work and not kw["cwd"].startswith(work) and kw["env"]["HOME"].startswith(kw["cwd"])
+    assert cmd[cmd.index("-d") + 1] != work and "AWS_SECRET_ACCESS_KEY" not in kw["env"]
+    assert seen["files"] == ["main.tf", "sub"] and seen["config"].strip() == "{}"           # no .checkov.yaml, no evil.py
+    assert ".checkov.yaml" not in seen["cwd_files"] and "main.tf" not in seen["cwd_files"]  # cwd is the trusted dir, not the upload
+    trivy = []
+    run_engine("trivy", work, popen=fake_popen(json.dumps(TRIVY).encode(), 0, b"Version: 0.58.0\n", record=trivy), which=lambda n: "x")
+    assert trivy[-1][0][:2] == ["trivy", "--config"]
 
 
-def test_run_engine_never_reports_missing_or_broken_tools_as_clean():
-    assert run_engine("checkov", "/w", which=lambda n: None).status == "unavailable"
-    assert run_engine("nope", "/w").status == "failed"
+def test_run_engine_never_reports_missing_or_broken_tools_as_clean(tmp_path, monkeypatch):
+    w = str(tmp_path)
+    assert run_engine("checkov", w, which=lambda n: None).status == "unavailable"
+    assert run_engine("nope", w).status == "failed"
     which = lambda n: "/x"
-    assert run_engine("checkov", "/w", runner=fake_runner(b"", 0), which=which).error == "exit code 0"
-    assert run_engine("checkov", "/w", runner=fake_runner(b"{}", 2), which=which).error == "exit code 2"
-    assert run_engine("checkov", "/w", runner=fake_runner(b"{not json", 1), which=which).error.startswith("unreadable output")
-    big = b"x" * (scanners.MAX_OUTPUT_BYTES + 1)
-    assert run_engine("checkov", "/w", runner=fake_runner(big, 1), which=which).error == "output too large"
-
-    def timeout(cmd, **kw):
-        raise subprocess.TimeoutExpired(cmd, 1)
+    assert run_engine("checkov", w, popen=fake_popen(b"", 0), which=which).error == "exit code 0"
+    assert run_engine("checkov", w, popen=fake_popen(b"{}", 2), which=which).error == "exit code 2"
+    assert run_engine("checkov", w, popen=fake_popen(b"{not json", 1), which=which).error.startswith("unreadable output")
 
     def oserror(cmd, **kw):
         raise PermissionError("denied")
 
-    assert run_engine("trivy", "/w", runner=timeout, which=which).error == "timed out"
-    assert run_engine("trivy", "/w", runner=oserror, which=which).error == "could not start: PermissionError"
-    assert run_engine("trivy", "/w", runner=fake_runner(json.dumps(TRIVY).encode(), 0, b""), which=which).version == ""
+    assert run_engine("trivy", w, popen=oserror, which=which).error == "could not start: PermissionError"
+    assert run_engine("trivy", w, popen=fake_popen(json.dumps(TRIVY).encode(), 0, b""), which=which).version == ""
+
+
+def test_output_is_capped_while_reading_and_the_process_is_killed(tmp_path, monkeypatch):
+    monkeypatch.setattr(scanners, "MAX_OUTPUT_BYTES", 10)
+    procs = []
+
+    def popen(cmd, **kw):
+        p = FakeProc(b"v1" if "--version" in cmd else b"x" * 1000, 1)
+        procs.append(p)
+        return p
+
+    out = run_engine("checkov", str(tmp_path), popen=popen, which=lambda n: "/x")
+    assert out.error == "output too large" and procs[-1].killed
+    assert len(procs[-1].stdout.buf.getvalue()) == 1000                       # the fake holds 1000; only 11 were ever requested
+
+
+def test_timeout_kills_the_process_and_is_reported(tmp_path, monkeypatch):
+    monkeypatch.setattr(scanners, "TIMEOUT_SECONDS", 0.05)
+    procs = []
+
+    def popen(cmd, **kw):
+        p = FakeProc(b"v1" if "--version" in cmd else b"{}", 1, delay=0 if "--version" in cmd else 0.4)
+        procs.append(p)
+        return p
+
+    out = run_engine("trivy", str(tmp_path), popen=popen, which=lambda n: "/x")
+    assert out.status == "failed" and out.error == "timed out" and procs[-1].killed
 
 
 def orbit_finding(control="CLOUD-NET-001", address="aws_security_group.public_admin", file="main.tf", state="FAIL_STATIC"):
