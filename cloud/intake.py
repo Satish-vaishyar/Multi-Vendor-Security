@@ -136,7 +136,13 @@ class _Writer:
             self.result.rejected_overflow += 1
 
     def tick(self, declared_size: int) -> None:
-        """Account for EVERY archive member (files, directories, links, devices) before looking at it."""
+        """Account for EVERY archive member (files, directories, links, devices) before looking at it.
+
+        Tar layout is defined by the header sizes (the reader seeks by them), so the declared total also bounds how
+        much a skipped member can make us decompress; actual bytes read are separately capped in add().
+        """
+        if declared_size < 0:
+            raise IntakeError("malformed member size")
         self.count += 1
         self.declared += declared_size
         if self.count > self.limits.max_files:

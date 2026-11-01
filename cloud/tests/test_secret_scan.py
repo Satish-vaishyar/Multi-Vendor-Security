@@ -87,3 +87,66 @@ def test_scan_files_and_has_secrets():
     assert [f.path for f in found] == ["a.tf"]
     assert s.has_secrets(found) and s.has_secrets(found, "a.tf") and not s.has_secrets(found, "b.tf")
     assert not s.has_secrets([])
+
+
+# ---- hardening from the automated security review ------------------------------------------------------------
+import time
+
+
+def test_unterminated_private_key_is_redacted_to_the_end():
+    text = f"before = 1\n{BEGIN}\nMIIEowIBAAKCAQEAxyz\nmore-key-material\n"
+    found = s.scan_text("k.pem.txt", text, SALT)
+    assert [f.rule_id for f in found] == ["SEC-PEM"] and found[0].line == 2
+    out = s.redact(text)
+    assert out == "before = 1\n" + s.REDACTED and "key-material" not in out
+
+
+def test_multiple_private_key_blocks_are_each_redacted():
+    block = f"{BEGIN}\nAAAA\n{END}"
+    out = s.redact(f"a\n{block}\nb\n{block}\nc")
+    assert out == f"a\n{s.REDACTED}\nb\n{s.REDACTED}\nc"
+
+
+def test_real_passwords_are_not_suppressed_by_placeholder_words_or_weakness():
+    assert kinds('db_password = "MyExample#Pass99"') == {"SEC-GENERIC"}      # contains the word "example"
+    assert kinds('admin_password = "admin123456"') == {"SEC-GENERIC"}          # weak but real
+    assert kinds('token = "correct horse battery staple"') == {"SEC-GENERIC"}  # spaces inside a quoted value
+    assert kinds("password: this is a long unquoted passphrase") == {"SEC-GENERIC"}
+    assert kinds("the AKIA key: " + AWS_ID) == {"SEC-AWS-KEY-ID"}               # token rules ignore placeholder heuristics
+
+
+def test_placeholders_are_only_skipped_when_the_whole_value_is_one():
+    for ok in ['password = "<your-password>"', 'password = "REPLACE_ME_BEFORE_USE"', 'secret = "{{ vault_secret }}"',
+               'token = "xxxxxxxxxxxx"', 'password = "${var.db_password}"', 'password = "var.db_password"',
+               'token = "module.kms.key_arn"', 'secret = "aws_secretsmanager_secret.db.arn"',
+               'password: !Ref DbPassword', 'password = "dummy"', 'secret = "arn:aws:secretsmanager:us-east-1:123:secret:x"']:
+        assert kinds(ok) == set(), ok
+
+
+def test_url_credentials_with_special_characters_but_not_plain_urls_with_at_signs():
+    assert kinds('u = "postgres://svc:p@ssw0rd!@db.internal:5432/app"') == {"SEC-URL-CRED"}
+    assert kinds("see https://host:8080/path?email=someone@example.org now") == set()
+    assert kinds("git@github.com:org/repo.git") == set()
+
+
+def test_overlapping_matches_are_merged_for_redaction_and_reported_once():
+    text = f"url = postgres://svc:pw-{AWS_ID}-x@db.internal/app\n"
+    found = s.scan_text("a.tf", text, SALT)
+    assert len(found) == 1 and found[0].rule_id == "SEC-URL-CRED"
+    out = s.redact(text)
+    assert AWS_ID not in out and out.count(s.REDACTED) == 1 and out.endswith("@db.internal/app\n")
+
+
+def test_published_vendor_examples_are_not_reported_but_look_alikes_are():
+    assert kinds("k = AKIAIOSFODNN7EXAMPLE") == set()
+    assert kinds("k = AKIAIOSFODNN7EXAMPLF") == {"SEC-AWS-KEY-ID"}
+
+
+def test_pathological_inputs_do_not_cause_catastrophic_backtracking():
+    cases = ["a" * 300_000, "password" * 40_000, ("-----BEGIN PRIVATE KEY-----\n" * 4000),
+             ("x" * 100 + "_token ") * 5000, "://" + "a:" * 100_000, ("password=" + "A" * 600 + "\n") * 500]
+    for text in cases:
+        t0 = time.perf_counter()
+        s.scan_text("x", text, SALT)
+        s.redact(text)
+        assert time.perf_counter() - t0 < 5.0, text[:30]

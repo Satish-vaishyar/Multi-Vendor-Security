@@ -252,3 +252,9 @@ def test_real_bytes_are_enforced_when_headers_understate_the_size(tmp_path):
     w.add("a.tf", io.BytesIO(b"x" * 80).read, declared=1)
     with pytest.raises(IntakeError, match="expanded size"):
         w.add("b.tf", io.BytesIO(b"x" * 80).read, declared=1)
+
+
+def test_negative_declared_sizes_are_rejected(tmp_path):
+    w = intake._Writer(tmp_path / "w", Limits(), False)
+    with pytest.raises(IntakeError, match="malformed member size"):
+        w.tick(-5)
