@@ -1,0 +1,55 @@
+# Cloud assessment module overlay. Opt-in:   docker compose -f docker-compose.yml -f docker-compose.cloud.yml up --build
+# The base docker-compose.yml is not modified; without this file the module does not exist at runtime.
+#
+# Isolation model for the scanner (it parses untrusted customer files):
+#   * attached ONLY to an `internal` network: no route to the internet or to the database
+#   * no published ports, no env_file, no volumes, no docker socket, no credentials
+#   * non-root, read-only root filesystem, all capabilities dropped, no privilege escalation
+#   * hard CPU / memory / process limits
+x-scanner-hardening: &scanner-hardening
+  user: "10001:10001"
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 128
+  mem_limit: 1g
+  cpus: 1.0
+  restart: unless-stopped
+
+services:
+  cloud-scanner:
+    <<: *scanner-hardening
+    build:
+      context: ./cloud
+      dockerfile: Dockerfile
+    environment:
+      CLOUD_MODULE_ENABLED: "true"
+    expose:
+      - "8100"
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid,nodev
+    networks:
+      - cloud_scan
+
+  # Enable the module in the existing services and let them reach the scanner (and only them).
+  backend:
+    environment:
+      CLOUD_MODULE_ENABLED: "true"
+      CLOUD_SCANNER_URL: "http://cloud-scanner:8100"
+    networks:
+      - default
+      - cloud_scan
+
+  worker:
+    environment:
+      CLOUD_MODULE_ENABLED: "true"
+      CLOUD_SCANNER_URL: "http://cloud-scanner:8100"
+    networks:
+      - default
+      - cloud_scan
+
+networks:
+  cloud_scan:
+    internal: true
