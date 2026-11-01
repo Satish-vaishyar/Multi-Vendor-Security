@@ -32,9 +32,13 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S12 okf-cloud pack + rule engine | ✅ 25 controls, 25 properties, 29 catalog section 11 acceptance cases | `cloud/rules/`, `okf-cloud/knowledge/`, `cloud/tests/test_cat11.py` |
 | S13 Checkov/Trivy adapters | ✅ parsing, safe runner, engine/version tagging, dedupe (tools are NOT bundled in the image yet: reported as `unavailable`, never as a clean scan) | `cloud/scanners.py` |
 | S04/S14 engine side: scan pipeline + `/scan` service endpoint, honest report statement, coverage block | ✅ (`cloud/`); backend glue, DB persistence and UI still ⬜ (need the backend suite / CI) | `cloud/pipeline.py`, `cloud/service.py` |
-| S14 backend API + findings UI, S15 - S34 | ⬜ | - |
+| S18 per-framework scoring | ✅ | `cloud/scoring.py` |
+| S21 exceptions (expiry, separation of duties) | ✅ engine side; DB/API/UI ⬜ | `cloud/exceptions.py` |
+| S25 scan-to-scan drift | ✅ engine side | `cloud/drift.py` |
+| S26 capability matrix generated from the pack | ✅ | `cloud/capability.py` |
+| S14 backend API + findings UI, S15-S17, S19, S20, S22-S24, S27-S34 | ⬜ not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (303 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (317 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)
