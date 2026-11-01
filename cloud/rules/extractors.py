@@ -387,6 +387,11 @@ _FW_SPECS: Dict[str, Dict[str, Any]] = {
 }
 
 
+def _blank(v: Any) -> bool:
+    """Omitted, null or an empty string: the attribute is effectively not set."""
+    return v is MISSING or v is None or (isinstance(v, str) and not v.strip())
+
+
 def _gate(d: Dict[str, Any], gate: Any) -> Optional[bool]:
     """True = rule applies (an allow/inbound rule), False = it does not, None = cannot tell (value computed, or a required one omitted)."""
     attr, allowed, required = gate
@@ -431,12 +436,14 @@ def _fw_rule(d: Dict[str, Any], spec: Dict[str, Any]) -> Optional[List[Rule]]:
     if not sources and "src_default" in spec:
         sources = [spec["src_default"]]
     if not sources and "any_unless" in spec:
-        group = d.get(spec["any_unless"], MISSING)
-        if isinstance(group, (Unknown, Ref)):
-            return None                                               # the source is a computed security-group reference
-        if group is MISSING:                                          # no prefix and no group: the rule applies to every source
-            v6 = str(d.get("ethertype", "")).lower() == "ipv6"
-            sources = ["::/0" if v6 else "0.0.0.0/0"]
+        group, ethertype = d.get(spec["any_unless"], MISSING), d.get("ethertype", MISSING)
+        if any(isinstance(v, (Unknown, Ref)) for v in (group, ethertype)):
+            return None                                               # a computed security-group reference or address family
+        if not _blank(group):
+            return []                                                 # the source is another security group, not an address range
+        if not _blank(ethertype) and str(ethertype).strip().lower() not in ("ipv4", "ipv6"):
+            return None
+        sources = ["::/0" if str(ethertype).strip().lower() == "ipv6" else "0.0.0.0/0"]     # no prefix and no group: every source
     return _port_rules(sources, d.get(spec["proto"], MISSING), _fw_ports(d, spec))
 
 
@@ -450,10 +457,13 @@ def _generic_firewall(res: Resource) -> Optional[List[Rule]]:
     parts = [_fw_rule(d, spec) for d in as_list(blocks) if isinstance(d, dict)]
     if "default_policy" in spec:                                      # an ACCEPT default admits everything the rules do not drop
         attr, omitted = spec["default_policy"]
-        policy = res.properties.get(attr, omitted if omitted is not None else MISSING)
-        if isinstance(policy, (Unknown, Ref)) or policy is MISSING:
+        policy = res.properties.get(attr, MISSING)
+        if isinstance(policy, (Unknown, Ref)):
             return None
-        if str(policy).strip().lower() == "accept":
+        policy = omitted if _blank(policy) else str(policy).strip().lower()
+        if policy not in ("accept", "drop"):
+            return None                                               # omitted with no documented default, or an unrecognised value
+        if policy == "accept":
             parts.append([Rule(["0.0.0.0/0", "::/0"], "all", ALL, ALL)])
     return _flatten(parts)
 

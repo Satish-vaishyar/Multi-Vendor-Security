@@ -43,9 +43,10 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S15 Azure ARM parser (parameters/variables defaults, nested resources, copy/condition noted); Bicep NOT compiled (needs a pinned compiler in the image; reported as unsupported) | ✅ ARM, ⏸ Bicep | `cloud/parsers/arm.py` |
 | S16 OCI Resource Manager zip pass/fail with line evidence | ✅ | `cloud/tests/test_oci.py` |
 | S27/S28 (partial) inbound-firewall rules for DigitalOcean, Linode, Hetzner, Scaleway, Alibaba, Tencent, Huawei, OpenStack Terraform resources; attribute names follow provider docs and are NOT yet validated against pinned schemas (CM-142). IBM, Vultr, OVH, UpCloud and non-network controls are not covered | 🟡 | `cloud/rules/extractors.py` (`_FW_SPECS`) |
-| S14 backend API + findings UI, S23, S24, S29-S34 | ⬜ not started | - |
+| S04/S14 backend API (`/api/v1/cloud/*`: status, scans upload/list/get, findings, export json/csv/sarif), org-scoped store, scanner `/export/{fmt}`. Mounted only when `CLOUD_MODULE_ENABLED` is on (one gated line in `main.py`). Uses a direct upload call instead of a `cloud_scan` job kind (no upload bytes in the job queue). API tests pass locally with fakes; the SQL in `cloud_store.py` and the full backend suite have NOT been run (need PostgreSQL with citext) | 🟡 | `backend/app/api/v1/cloud.py`, `backend/app/core/cloud_store.py`, `backend/tests/test_cloud_api.py` |
+| Findings UI (`/cloud`), S23, S24, S29-S34 | ⬜ not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (361 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (372 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)

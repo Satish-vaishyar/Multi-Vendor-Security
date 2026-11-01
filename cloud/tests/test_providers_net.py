@@ -70,3 +70,15 @@ def test_fw_edge_helpers():
     assert ex._gate({"a": Unknown("x")}, ("a", ("x",), False)) is None
     assert ex._gate({}, ("a", ("x",), False)) is True
     assert ex._fw_ports({"port_range_max": 22}, {"minmax": ("port_range_min", "port_range_max")}) == ["22-22"]
+
+
+def test_null_blank_and_computed_attributes_are_not_treated_as_restrictions():
+    def os_rule(extra):
+        return ssh('resource "openstack_networking_secgroup_rule_v2" "r" {\n  direction = "ingress"\n  protocol = "tcp"\n  port_range_min = 22\n  port_range_max = 22\n%s\n}' % extra)[SSH]
+    assert os_rule('  remote_group_id = null') is True and os_rule('  remote_group_id = ""') is True
+    assert os_rule('  ethertype = var.e') is None and os_rule('  ethertype = "bogus"') is None
+    assert os_rule('  ethertype = "IPv4"') is True and os_rule('  ethertype = "ipv6"') is False
+    assert ssh('resource "linode_firewall" "f" {\n  inbound_policy = null\n}')[SSH] is None
+    assert ssh('resource "linode_firewall" "f" {\n  inbound_policy = "bogus"\n}')[SSH] is None
+    assert ssh('resource "scaleway_instance_security_group" "f" {\n  inbound_default_policy = null\n}')[SSH] is True
+    assert ssh('resource "scaleway_instance_security_group" "f" {\n  inbound_default_policy = "DROP"\n}')[SSH] is False

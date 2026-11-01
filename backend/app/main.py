@@ -5,6 +5,7 @@ Nothing in the frontend imports backend code directly.
 """
 from __future__ import annotations
 import logging
+import os
 import re
 import time
 import uuid
@@ -172,6 +173,9 @@ for r in (assets.router, configurations.router, audits.router,
           findings.router, training.router, remediation.router, reports.router,
           misc.dashboard_router, misc.okf_router, misc.detect_router, admin.router, jobs_api.router, history_api.router, history_api.sched_router, integrations_api.router, exceptions_api.router, collection_api.router, fix_verification_api.router):
     app.include_router(r, dependencies=authed)
+if os.environ.get("CLOUD_MODULE_ENABLED", "").strip().lower() in ("1", "true", "yes", "on"):
+    from app.api.v1 import cloud as cloud_api      # optional module (docs/CLOUD_MODULE_RTM.md); off unless explicitly enabled
+    app.include_router(cloud_api.router, dependencies=authed)
 app.include_router(auth.router)
 app.include_router(sso_api.router)
 
