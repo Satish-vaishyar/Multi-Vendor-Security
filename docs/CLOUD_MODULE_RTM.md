@@ -54,7 +54,7 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S20 PDF report: dependency-free text PDF (statement, coverage, not-assessed list, summary, findings with file/line), redacted, bounded; served by the scanner and the backend export route and offered on the Cloud page | ✅ | `cloud/export.py` (`to_pdf`) |
 | S33 org-wide inventory, S31/S32 real connectors, S23 schedules/webhooks/asset links | ⬜ blocked: need a test cloud account / a reviewed design for outbound webhooks and scheduled jobs; not started | - |
 
-Verification status: `cloud/` has its own test suite with a 100% coverage gate (406 tests at the time of writing).
+Verification status: `cloud/` has its own test suite with a 100% coverage gate (408 tests at the time of writing).
 Run it with `cd cloud && uv run --frozen pytest -q --cov`.
 
 ### Coverage notes for S12 (what the first rule pack does and does not claim)
@@ -287,3 +287,9 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 ### Dependabot review (2026-11-01)
 - Merged: node 26-slim (#7), nginx-unprivileged 1.31-alpine (#8) - frontend images only; Docker could not be built locally, so unverified by build.
 - Closed: python 3.15-slim (#1) - hdbscan publishes wheels up to cp314 only, so the backend image would need a source build. Revisit when cp315 wheels exist.
+
+### Security-review fixes (2026-11-01)
+- Backend: `POST /cloud/scans` now requires the AUDITOR role server-side (test: VIEWER gets 403).
+- Ansible: unreadable `rules` (templated, non-list, or any non-mapping item) make the ingress Unknown instead of a shorter list.
+- Firewall resources: a block list containing a non-mapping or computed element yields UNKNOWN, never a pass.
+- PDF: each logical line is redacted before wrapping, so a credential cannot be split across lines and escape redaction.

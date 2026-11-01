@@ -458,7 +458,9 @@ def _generic_firewall(res: Resource) -> Optional[List[Rule]]:
     blocks = res.properties.get(spec["block"], [])
     if isinstance(blocks, (Unknown, Ref)):
         return None
-    parts = [_fw_rule(d, spec) for d in as_list(blocks) if isinstance(d, dict)]
+    if not all(isinstance(d, dict) for d in as_list(blocks)):
+        return None                                                   # a computed or malformed element could be any rule: UNKNOWN
+    parts = [_fw_rule(d, spec) for d in as_list(blocks)]
     if "default_policy" in spec:                                      # an ACCEPT default admits everything the rules do not drop
         attr, omitted = spec["default_policy"]
         policy = res.properties.get(attr, MISSING)

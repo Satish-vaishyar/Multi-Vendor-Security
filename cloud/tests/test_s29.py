@@ -76,7 +76,6 @@ PLAY = """- hosts: localhost
           - {proto: tcp, ports: [22, '8000-8010'], cidr_ip: 0.0.0.0/0}
           - {proto: tcp, from_port: 443, to_port: 443, cidr_ip: ["10.0.0.0/8"], cidr_ipv6: "::/0"}
           - {proto: tcp, cidr_ip: 10.0.0.0/8}
-          - not-a-rule
     - name: gone
       ec2_group: {name: old, state: absent}
     - name: templated
@@ -107,6 +106,10 @@ def test_ansible_values_and_limits():
     web = next(x for x in r.resources if x.logical_name == "web")
     assert [(i["from_port"], i["to_port"]) for i in web.properties["ingress"][:3]] == [(22, 22), ("8000", "8010"), (443, 443)]
     assert isinstance(next(x for x in r.resources if x.logical_name != "web" and x.properties["ingress"] and isinstance(x.properties["ingress"][0]["cidr_blocks"][0], Unknown)).properties["ingress"][0]["cidr_blocks"][0], Unknown)
+    for rules in ("'{{ rules }}'", "[not-a-rule]", "{a: 1}"):
+        r2 = ansible.parse_ansible("s.yml", "- tasks:\n    - ec2_group: {name: g, rules: %s}\n" % rules)
+        assert isinstance(r2.resources[0].properties["ingress"], Unknown)
+    assert ansible.parse_ansible("s.yml", "- tasks:\n    - ec2_group: {name: g}\n").resources[0].properties["ingress"] == []
     assert ansible.parse_ansible("s.yml", "{unclosed").errors
     assert ansible.parse_ansible("s.yml", "a: 1\n").resources == []
     deep = "- tasks:\n" + "".join("  " * (i + 1) + "- block:\n" for i in range(ansible.MAX_DEPTH + 3)) + "  " * (ansible.MAX_DEPTH + 4) + "- ec2_group: {name: x}\n"
@@ -156,3 +159,10 @@ def test_ovh_ip_firewall_rule(tmp_path, rule, state):
     tf = 'resource "ovh_ip_firewall_rule" "r" {\n  ip = "1.2.3.4/32"\n  ip_on_firewall = "1.2.3.4"\n' + body + "}\n"
     rep = pipeline.run_scan(tf.encode(), "main.tf", tmp_path, salt=b"s")
     assert dict(states(rep, "CLOUD-NET-001")).get("ovh_ip_firewall_rule.r") == state
+
+
+@pytest.mark.parametrize("block", ["[{ protocol: tcp }, var.extra]", "[ { protocol = \"tcp\", remote_ip_prefix = \"10.0.0.0/8\" }, \"x\" ]"])
+def test_firewall_block_with_a_non_mapping_element_is_unknown(tmp_path, block):
+    tf = 'resource "hcloud_firewall" "f" {\n  rule = %s\n}\n' % block
+    rep = pipeline.run_scan(tf.encode(), "main.tf", tmp_path, salt=b"s")
+    assert dict(states(rep, "CLOUD-NET-001")).get("hcloud_firewall.f") == "UNKNOWN_STATIC"

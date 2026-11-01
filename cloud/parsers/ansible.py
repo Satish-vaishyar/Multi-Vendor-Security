@@ -36,11 +36,15 @@ def _tasks(items: Any, depth: int = 0) -> Iterator[Dict[str, Any]]:
                 yield from _tasks(t.get(key), depth + 1)
 
 
-def _ingress(rules: Any) -> List[Dict[str, Any]]:
+def _ingress(rules: Any) -> Any:
+    """The Terraform-shaped ingress list, or Unknown when the rules cannot be read in full (a Jinja string, a non-list, or any
+    item that is not a mapping): never a shorter list, which would read as a pass."""
+    if rules is None:
+        return []
+    if not isinstance(rules, list) or not all(isinstance(r, dict) for r in rules):
+        return Unknown("rules are templated or not a list of mappings")
     out: List[Dict[str, Any]] = []
-    for r in rules if isinstance(rules, list) else []:
-        if not isinstance(r, dict):
-            continue
+    for r in rules:
         ports = _list(r.get("ports")) or [None]
         for p in ports:
             if p is None:

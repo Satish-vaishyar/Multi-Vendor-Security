@@ -38,5 +38,5 @@ webhooks, opt-in asset links, on-prem packaging.
 ## Develop
 ```bash
 cd cloud
-uv run --frozen pytest -q --cov --cov-report=term-missing     # 100% coverage gate (406 tests)
+uv run --frozen pytest -q --cov --cov-report=term-missing     # 100% coverage gate (408 tests)
 ```

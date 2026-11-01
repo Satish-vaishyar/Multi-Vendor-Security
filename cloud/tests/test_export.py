@@ -77,4 +77,6 @@ def test_pdf_is_wellformed_redacted_and_paginated():
     for n, off in enumerate(offs, 1):
         assert pdf[int(off):].startswith(b"%d 0 obj" % n)
     assert pdf.count(b"/Type /Page ") > 2 and PDF_LINES_PER_PAGE > 0
+    straddle = {"statement": "x" * 90 + " " + secret + " tail"}      # the secret crosses the wrap column
+    assert b"ABCDEFGH" not in to_pdf(straddle) and b"IJKLMNOP" not in to_pdf(straddle)
     assert to_pdf({}).startswith(b"%PDF")          # an empty report still yields one page

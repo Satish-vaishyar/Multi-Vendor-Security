@@ -144,7 +144,8 @@ def _report_lines(report: Dict[str, Any]) -> List[str]:
 
 
 def to_pdf(report: Dict[str, Any]) -> bytes:
-    wrapped = [w for line in _report_lines(report) for w in _wrap(line)]
+    # redact the WHOLE logical line before wrapping: wrapping first could split a credential across two lines
+    wrapped = [w for line in _report_lines(report) for w in _wrap(secret_scan.redact(line))]
     pages = [wrapped[i:i + PDF_LINES_PER_PAGE] for i in range(0, len(wrapped), PDF_LINES_PER_PAGE)] or [[]]
     objs: List[bytes] = [b"<< /Type /Catalog /Pages 2 0 R >>", b"", b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"]
     kids = []
