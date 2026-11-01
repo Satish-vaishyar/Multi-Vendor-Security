@@ -1,10 +1,12 @@
-# Frontend - Security Compliance Auditor UI (SIH 26155)
+# Frontend - Orbit Multi-Vendor Security UI (SIH 26155)
 
-React 19 + Vite + Tailwind + React Query + Zustand app in this folder.
-It talks **only** to the FastAPI backend (`../backend/`, 56 routes under `/api/v1`).
+React 19 + Vite + Tailwind + React Query + Zustand app in this folder
+(30 page components, 40 routes).
+It talks **only** to the FastAPI backend (`../backend/`, 103 routes under `/api/v1`).
 The frontend never touches network devices, the database, the LLM, or ML models
-directly - everything goes through the REST API. Uploads are analyzed locally and
-remediation Apply is always a dry run (`device_touched: false`).
+directly - everything goes through the REST API. Uploads are analyzed locally,
+live collection (when used) is read-only, and remediation Apply is always a dry
+run (`device_touched: false`).
 
 Full user walkthrough (login → upload → audit → results → remediation):
 see [`../FRONTEND_GUIDE.md`](../FRONTEND_GUIDE.md).
@@ -58,13 +60,14 @@ After editing env files, restart `npm run dev`. For Docker/single-domain hosting
 frontend/
   src/
     api/        # axios client + endpoint wrappers (token handling, base URL from env)
-    pages/      # Login, Dashboard, Upload, ConfigurationDetails, AuditProgress,
-                # AuditResults, Compliance, Vulnerabilities, PQC, Analytics,
-                # Findings, Remediation, Training, Assets, Reports, Settings
-    components/ # shared UI (layout, sidebar, cards, tables, dialogs)
-    store/      # zustand auth/session state
+    pages/      # GetStarted, Dashboard, QuickAudit, Assets, Configurations, Audits,
+                # Compliance, Vulnerabilities, PQC, Analytics, Findings, Remediation,
+                # Reports, Exceptions, Jobs, Schedules, Integrations, Training,
+                # Admin, Settings, Login, SSO (+ detail pages)
+    components/ # shared UI (layout, sidebar, command palette, cards, tables, dialogs)
+    stores/     # zustand auth/session + UI state
     hooks/      # react-query data hooks
-  public/       # static assets
+  public/       # static assets (self-hosted fonts, sample configs, theme bootstrap)
   tests/        # playwright e2e (see playwright.config.ts)
 ```
 
@@ -77,6 +80,10 @@ frontend/
 | Audits | `POST /api/v1/audits`, `GET /api/v1/audits/{id}`, `GET /results` |
 | Findings / Compliance / Vulns / PQC / Analytics | `GET /api/v1/findings…`, engine endpoints (see `../backend/docs/API_REFERENCE.md`) |
 | Remediation | approve + dry-run apply endpoints (`device_touched: false` always) |
+| Risk acceptance | `GET/POST /api/v1/exceptions` (justification + expiry) |
+| Jobs / Schedules | `GET /api/v1/jobs…`, `GET/POST /api/v1/schedules…` |
+| Integrations | `GET/POST /api/v1/integrations/webhooks…` (admin only) |
+| Administration | `GET/POST /api/v1/admin/users`, `PATCH …/users/{id}`, `GET /api/v1/admin/audit-log` |
 | Training | unknown-token queue: suggest mapping → approve |
 | Reports | generate + download PDF audit report |
 
