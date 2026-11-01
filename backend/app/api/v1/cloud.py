@@ -63,7 +63,7 @@ def status():
 
 
 @router.post("/scans", status_code=201)
-async def create_scan(file: UploadFile = File(...), user=Depends(sec.require_user)):
+async def create_scan(file: UploadFile = File(...), user=Depends(sec.require_role("AUDITOR"))):
     _guard()
     data = await file.read(MAX_UPLOAD + 1)
     if not data:

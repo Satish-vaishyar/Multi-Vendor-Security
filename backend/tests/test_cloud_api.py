@@ -133,3 +133,12 @@ def test_scanner_url_default_and_flag_values(monkeypatch):
     for v, want in (("TRUE", True), (" yes ", True), ("2", False), ("", False), ("disabled", False)):
         monkeypatch.setenv("CLOUD_MODULE_ENABLED", v)
         assert cloud.enabled() is want
+
+
+def test_viewer_cannot_upload(monkeypatch):
+    monkeypatch.setattr(cloud, "_scanner_post", lambda *a, **k: pytest.fail("scanner must not be called"))
+    app.dependency_overrides[sec.require_user] = lambda: {"email": "v@example.com", "role": "VIEWER"}
+    try:
+        assert client.post("/api/v1/cloud/scans", files={"file": ("a.tf", b"x")}).status_code == 403
+    finally:
+        app.dependency_overrides[sec.require_user] = lambda: {"email": "auditor@example.com", "role": "AUDITOR"}
