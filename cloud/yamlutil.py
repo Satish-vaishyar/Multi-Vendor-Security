@@ -3,6 +3,8 @@
 * Uses SafeLoader only: no arbitrary object construction.
 * Unknown tags (CloudFormation !Ref / !Sub / !GetAtt ...) are kept as {"Fn::<Tag>": value} instead of failing.
 * Mappings and sequences remember the 1-based line they start on, and each mapping key remembers its own line.
+* Resource caps: the EXPANDED node count (aliases counted every time they are used, so "billion laughs" documents are
+  refused before anything is built) and the nesting depth are bounded; recursive aliases are refused.
 """
 from __future__ import annotations
 
@@ -66,12 +68,51 @@ class YamlError(ValueError):
     pass
 
 
+MAX_YAML_NODES = 500_000       # expanded nodes across all documents of one file
+MAX_YAML_DEPTH = 100
+
+
+def _expanded_size(node: yaml.Node, memo: dict, depth: int = 0) -> int:
+    """Number of nodes the document would expand to once aliases are resolved (memoised, so cheap to compute)."""
+    if depth > MAX_YAML_DEPTH:
+        raise YamlError("YAML is nested too deeply (or contains a recursive alias)")
+    key = id(node)
+    if key in memo:
+        return memo[key]
+    if isinstance(node, yaml.ScalarNode):
+        size = 1
+    elif isinstance(node, yaml.SequenceNode):
+        size = 1 + sum(_expanded_size(c, memo, depth + 1) for c in node.value)
+    else:
+        size = 1 + sum(_expanded_size(k, memo, depth + 1) + _expanded_size(v, memo, depth + 1) for k, v in node.value)
+    if size > MAX_YAML_NODES:
+        raise YamlError("YAML expands to too many nodes (alias expansion)")
+    memo[key] = size
+    return size
+
+
 def load_all(text: str) -> List[Any]:
-    """Parse every document in `text`. Raises YamlError on malformed input (never executes anything)."""
+    """Parse every document in `text`. Raises YamlError on malformed or abusive input (never executes anything)."""
+    docs: List[Any] = []
+    loader = _Loader(text)
+    memo: dict = {}
+    total = 0
     try:
-        return [d for d in yaml.load_all(text, Loader=_Loader) if d is not None]
+        while loader.check_node():
+            node = loader.get_node()
+            total += _expanded_size(node, memo)
+            if total > MAX_YAML_NODES:
+                raise YamlError("YAML expands to too many nodes (alias expansion)")
+            doc = loader.construct_document(node)
+            if doc is not None:
+                docs.append(doc)
     except yaml.YAMLError as e:
         raise YamlError(str(e).splitlines()[0] if str(e) else "invalid YAML")
+    except RecursionError:
+        raise YamlError("YAML is nested too deeply")
+    finally:
+        loader.dispose()
+    return docs
 
 
 def load(text: str) -> Any:

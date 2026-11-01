@@ -126,3 +126,38 @@ def test_yaml_loader_rejects_python_objects_and_bad_input():
         yamlutil.load("a: [unclosed")
     assert yamlutil.load("") is None
     assert len(yamlutil.load_all("a: 1\n---\n---\nb: 2\n")) == 2
+
+
+def test_yaml_alias_bombs_and_deep_nesting_are_refused_cheaply():
+    import time
+    lines = ["a: &a [x,x,x,x,x,x,x,x,x]"]
+    prev = "a"
+    for i in range(b := 12):
+        name = chr(ord("b") + i)
+        lines.append(f"{name}: &{name} [*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev},*{prev}]")
+        prev = name
+    t0 = time.perf_counter()
+    with pytest.raises(yamlutil.YamlError, match="too many nodes"):
+        yamlutil.load("\n".join(lines) + "\n")
+    assert time.perf_counter() - t0 < 5 and b == 12
+    with pytest.raises(yamlutil.YamlError, match="too deeply"):
+        yamlutil.load("[" * 150 + "]" * 150)
+    with pytest.raises(yamlutil.YamlError, match="too deeply"):
+        yamlutil.load("&a [*a]")                        # recursive alias
+    docs = "\n---\n".join(["x: [" + ",".join(["1"] * 400) + "]"] * 30)
+    assert len(yamlutil.load_all(docs)) == 30           # many ordinary documents are fine
+
+
+def test_yaml_total_budget_across_documents_and_recursion_guard(monkeypatch):
+    monkeypatch.setattr(yamlutil, "MAX_YAML_NODES", 100)
+    with pytest.raises(yamlutil.YamlError, match="too many nodes"):
+        yamlutil.load_all("\n---\n".join(["k: [" + ",".join(["1"] * 30) + "]"] * 5))
+    monkeypatch.undo()
+    def boom(*a, **k):
+        raise RecursionError()
+    monkeypatch.setattr(yamlutil, "_expanded_size", boom)
+    with pytest.raises(yamlutil.YamlError, match="nested too deeply"):
+        yamlutil.load("a: 1")
+    monkeypatch.undo()
+    small = "base: &b {x: 1}\ncopy: *b\n"
+    assert yamlutil.load(small)["copy"] == {"x": 1}      # ordinary anchors still work
