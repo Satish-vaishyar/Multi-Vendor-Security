@@ -45,3 +45,12 @@ Source: https://docs.cloud-init.io/en/latest/reference/modules.html (Set Passwor
 * **Nutanix Flow (`nutanix_network_security_rule`)**: only a third-party (Pulumi) page was found, for the older resource; the Terraform
   argument reference was not retrieved. Not implemented; no claim is made.
 * **IBM / Vultr / UpCloud pinned schemas**: attribute names come from the pages above, not from released provider schemas.
+
+## Re-checked 2026-11-02 (still not implemented, now with reasons from the official docs)
+* **VMware NSX-T `nsxt_policy_security_policy`** (provider repo `docs/resources/policy_security_policy.md`): `rule.action` ALLOW/DROP/REJECT/
+  JUMP_TO_APPLICATION (default ALLOW), `direction` IN/OUT/IN_OUT, `ip_version`, `source_groups`/`destination_groups` (empty set means "Any").
+  `services` are **service object paths**, and no default is documented for an empty `services`. A port such as SSH therefore cannot be
+  derived from the file alone, so every port-based control would be UNKNOWN. No rule is shipped rather than a rule that can never decide.
+* **Nutanix `nutanix_network_security_rule`** (provider repo docs): the argument reference documents only the categories and the
+  `*_rule_inbound/outbound_allow_list` names. `ip_subnet`, `ip_subnet_prefix_length` and `protocol` appear only in an example; ports and
+  `allow_ipv6_traffic` are not documented on the page. Not enough to state semantics. Not implemented.
