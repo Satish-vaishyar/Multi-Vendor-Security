@@ -12,6 +12,7 @@ import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 
 from app.core import auditlog
+from app.core import cloud_ext as ext
 from app.core import cloud_store as store
 from app.core import config as cfg
 from app.core import security as sec
@@ -62,15 +63,9 @@ def status():
     return cfg.ok({"enabled": True, "scanner": scanner})
 
 
-@router.post("/scans", status_code=201)
-async def create_scan(file: UploadFile = File(...), user=Depends(sec.require_role("AUDITOR"))):
-    _guard()
-    data = await file.read(MAX_UPLOAD + 1)
-    if not data:
-        raise HTTPException(400, "empty upload")
-    if len(data) > MAX_UPLOAD:
-        raise HTTPException(413, "upload too large")
-    name = re.sub(r"[^\w.\- ]", "_", os.path.basename((file.filename or "upload").replace("\\", "/")))[:200] or "upload"
+def run_scan(data: bytes, name: str, who: str, actor: dict) -> tuple:
+    """Forward bytes to the sandboxed scanner, store the report, audit it and notify linked webhooks. Shared by the upload route and
+    the recurring-scan runner. Returns (scan_id, report). Raises HTTPException (the runner treats that as a failed run)."""
     r = _scanner_post("/scan", data, {"X-Filename": name, "Content-Type": "application/octet-stream"}, 120)
     if r.status_code != 200:
         raise HTTPException(502 if r.status_code >= 500 else 400, "the scanner refused the upload")
@@ -79,14 +74,45 @@ async def create_scan(file: UploadFile = File(...), user=Depends(sec.require_rol
     except ValueError:
         raise HTTPException(502, "invalid scanner response")
     scan_id = "CSCAN-" + uuid.uuid4().hex[:16]
-    who = str(user.get("email") or user.get("id") or "unknown")
     try:
         store.save_report(scan_id, report, who)
     except PermissionError:
         raise HTTPException(409, "scan id conflict")
-    auditlog.record("cloud.scan.created", actor=user, detail={"scan_id": scan_id, "file": name, "status": report.get("status")})
+    auditlog.record("cloud.scan.created", actor=actor, detail={"scan_id": scan_id, "file": name, "status": report.get("status")})
+    ext.emit("cloud.scan.completed" if report.get("status") == "COMPLETED" else "cloud.scan.failed",
+             {"scan_id": scan_id, "file": name, "status": report.get("status"), "summary": report.get("summary")})
+    return scan_id, report
+
+
+def _has_secret(report: dict) -> bool:
+    return any(f.get("control_id") == "CLOUD-SEC-001" for f in report.get("findings") or [])
+
+
+@router.post("/scans", status_code=201)
+async def create_scan(file: UploadFile = File(...), retain: bool = Query(False), user=Depends(sec.require_role("AUDITOR"))):
+    _guard()
+    data = await file.read(MAX_UPLOAD + 1)
+    if not data:
+        raise HTTPException(400, "empty upload")
+    if len(data) > MAX_UPLOAD:
+        raise HTTPException(413, "upload too large")
+    name = re.sub(r"[^\w.\- ]", "_", os.path.basename((file.filename or "upload").replace("\\", "/")))[:200] or "upload"
+    who = str(user.get("email") or user.get("id") or "unknown")
+    scan_id, report = run_scan(data, name, who, user)
+    kept = None
+    if retain:                       # explicit opt-in; never for a file in which a secret was found
+        if report.get("status") != "COMPLETED":
+            kept = {"kept": False, "reason": "the scan did not complete"}
+        elif _has_secret(report):
+            kept = {"kept": False, "reason": "the file contains a hard-coded secret, so it is not kept"}
+        else:
+            try:
+                ext.retain_source(scan_id, name, data, who)
+                kept = {"kept": True}
+            except ext.ExtError as e:
+                kept = {"kept": False, "reason": str(e)}
     return cfg.ok({"scan_id": scan_id, "status": report.get("status"), "summary": report.get("summary"),
-                   "statement": report.get("statement"), "coverage": report.get("coverage")})
+                   "statement": report.get("statement"), "coverage": report.get("coverage"), "retention": kept})
 
 
 @router.get("/scans")
@@ -126,3 +152,7 @@ def export(scan_id: str, format: str = Query("json")):
         raise HTTPException(502, "export failed")
     return Response(r.content, media_type=_FORMATS[format],
                     headers={"Content-Disposition": f'attachment; filename="{scan_id}.{format}"', "X-Content-Type-Options": "nosniff"})
+
+
+from app.api.v1 import cloud_ext as _routes   # noqa: E402 - recurring scans, webhook links, asset links (same flag, same router)
+router.include_router(_routes.router)

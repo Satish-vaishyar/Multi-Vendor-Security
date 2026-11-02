@@ -27,8 +27,16 @@ step's status and what is not done). Plan, traceability and the live progress lo
 
 ## Not implemented (see the RTM for the reason)
 Real AWS/Azure/GCP connectors and org-wide inventory (need a test cloud account), Bicep compile, bundled Checkov/Trivy,
-pinned provider schemas (CM-142), VMware/NSX and Nutanix (researched, see `../docs/CLOUD_PROVIDER_SOURCES.md`), schedules and
-webhooks, opt-in asset links, on-prem packaging.
+pinned provider schemas (CM-142), VMware/NSX and Nutanix (researched, see `../docs/CLOUD_PROVIDER_SOURCES.md`), on-prem packaging.
+
+## Optional extras (RTM S23, backend side)
+All opt-in and additive (`backend/app/db/migrate_018.sql`, new tables only):
+* **Kept file + recurring scans**: tick "keep this file" at upload (encrypted, 90 days, refused when a secret is found). A separate
+  `cloud-scheduler` service (`docker-compose.cloud.yml`, `python -m app.cloud_scheduler`) re-scans it in the sandboxed scanner.
+  Interval 1 hour to 1 year, at most 20 kept files and 20 recurring scans per organisation.
+* **Notifications**: an ADMIN links an existing JSON-format webhook (Integrations) to `cloud.scan.completed` / `cloud.scan.failed`;
+  payload is scan id, file name and counts only. Delivery, signing and SSRF checks are the existing webhook machinery.
+* **Asset links**: an AUDITOR associates a scan with an existing asset; the asset is only referenced, never modified.
 
 ## Isolation rules (RTM CM-150..157)
 * Off by default; additive: the backend mounts the router only when the flag is on, one gated line in `backend/app/main.py`.

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cloudStatus, downloadCloudScan, getCloudScan, listCloudFindings, listCloudScans, uploadCloudScan } from "../api/cloud.api";
 import { toMessage } from "../api/client";
 import { Badge, Card, Empty, ErrorState, Loader, Notice, PageHeader, btnGhost, btnPrimary, inputCls } from "../components/common";
+import CloudExtras from "../components/CloudExtras";
 import { useAuth } from "../stores/auth";
 import { hasRole } from "../utils/roles";
 
@@ -19,6 +20,8 @@ export default function CloudSecurity() {
   const [severity, setSeverity] = useState("");
   const [page, setPage] = useState(1);
   const [err, setErr] = useState("");
+  const [retain, setRetain] = useState(false);
+  const [kept, setKept] = useState("");
   const enabled = status.isSuccess;
   const scans = useQuery({ queryKey: ["cloud", "scans"], queryFn: listCloudScans, enabled });
   const scan = useQuery({ queryKey: ["cloud", "scan", selected], queryFn: () => getCloudScan(selected), enabled: enabled && !!selected });
@@ -28,8 +31,8 @@ export default function CloudSecurity() {
     enabled: enabled && !!selected,
   });
   const upload = useMutation({
-    mutationFn: (f: File) => uploadCloudScan(f),
-    onSuccess: (r) => { setErr(""); setSelected(r.scan_id); setPage(1); void qc.invalidateQueries({ queryKey: ["cloud", "scans"] }); },
+    mutationFn: (f: File) => uploadCloudScan(f, retain),
+    onSuccess: (r) => { setErr(""); setKept(r.retention && !r.retention.kept ? `The file was scanned but not kept: ${r.retention.reason ?? "not kept"}.` : ""); setSelected(r.scan_id); setPage(1); void qc.invalidateQueries({ queryKey: ["cloud", "scans"] }); },
     onError: (e) => setErr(toMessage(e)),
   });
 
@@ -62,7 +65,12 @@ export default function CloudSecurity() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); e.target.value = ""; }}
             className={inputCls}
           />
+          <label className="mt-2 flex items-center gap-2 text-xs text-ink2">
+            <input type="checkbox" checked={retain} onChange={(e) => setRetain(e.target.checked)} />
+            Keep this file (encrypted, 90 days) so it can be scanned again on a schedule. Off by default; never kept if it contains a secret.
+          </label>
           {upload.isPending && <Loader label="Scanning…" rows={1} />}
+          {kept && <Notice kind="info">{kept}</Notice>}
           {err && <Notice kind="error">{err}</Notice>}
         </Card>
       )}
@@ -141,6 +149,7 @@ export default function CloudSecurity() {
           </div>
         </Card>
       )}
+      {selected && <CloudExtras scanId={selected} canChange={canScan} isAdmin={hasRole(user?.role, "ADMIN")} />}
     </div>
   );
 }

@@ -50,6 +50,34 @@ services:
       - default
       - cloud_scan
 
+  # Recurring cloud scans (RTM S23). Same backend image, separate process: the existing worker and its schedules are untouched.
+  # Idle unless CLOUD_MODULE_ENABLED is on; only needs the database (backend/.env) and the scanner.
+  cloud-scheduler:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-m", "app.cloud_scheduler"]
+    env_file:
+      - ./backend/.env
+    environment:
+      ENV: production
+      REQUIRE_AUTH: "true"
+      CLOUD_MODULE_ENABLED: "true"
+      CLOUD_SCANNER_URL: "http://cloud-scanner:8100"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    restart: unless-stopped
+    healthcheck:
+      disable: true                   # the image HEALTHCHECK probes the HTTP API, which this process does not serve
+    tmpfs:
+      - /tmp
+    networks:
+      - default
+      - cloud_scan
+
 networks:
   cloud_scan:
     internal: true
