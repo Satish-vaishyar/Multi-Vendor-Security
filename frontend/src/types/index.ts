@@ -26,13 +26,14 @@ export interface User {
   must_change_password?: boolean;
   mfa_enabled?: boolean;
   mfa_enrollment_required?: boolean;
+  mfa_blocked?: boolean;
 }
 
 export interface LoginResponse {
   access_token: string;
   token_type: string;
   expires_in: number;
-  user: { id: string; name: string; email: string; role: string; org_id?: string; must_change_password?: boolean };
+  user: { id: string; name: string; email: string; role: string; org_id?: string; must_change_password?: boolean; mfa_blocked?: boolean };
 }
 
 export interface Asset {

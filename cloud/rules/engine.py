@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from cloud.ir import Finding, Resource
 from cloud.rules import extractors
-from cloud.rules.pack import Control, Pack
+from cloud.rules.pack import Pack
 
 STATE = {True: "PASS_STATIC", False: "FAIL_STATIC", None: "UNKNOWN_STATIC"}
 

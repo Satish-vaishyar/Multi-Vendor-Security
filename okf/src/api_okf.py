@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from .control_kb import ControlKB, FrameworkRegistry, Crosswalk
 from .property_registry import PropertyRegistry
 from .engines import ComplianceEngine
-from .knowledge_extras import MappingRegistry, RemediationKB, RiskEngine, nest_flat_ir
+from .knowledge_extras import MappingRegistry, RemediationKB, RiskEngine
 from .learning_engine import LearningEngine
 
 router = APIRouter(prefix="/api/v1/okf", tags=["okf"])

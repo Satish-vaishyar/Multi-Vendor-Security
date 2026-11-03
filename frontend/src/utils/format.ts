@@ -41,10 +41,6 @@ export function statusColor(s?: string): string {
   }
 }
 
-export function shortId(id?: string): string {
-  return String(id ?? "—");
-}
-
 /** Read chart palette + surface tokens from the live theme. */
 export function chartVars(): { charts: string[]; sev: string[]; surface: string; border: string; ink: string; muted: string } {
   const cs = getComputedStyle(document.documentElement);
@@ -57,4 +53,10 @@ export function chartVars(): { charts: string[]; sev: string[]; surface: string;
     ink: g("--text-primary"),
     muted: g("--text-muted"),
   };
+}
+
+/** Only http(s) links from the knowledge base are rendered as anchors (never javascript:/data:). */
+export function safeUrl(u: unknown): string | undefined {
+  const s = String(u ?? "").trim();
+  return /^https?:\/\//i.test(s) ? s : undefined;
 }

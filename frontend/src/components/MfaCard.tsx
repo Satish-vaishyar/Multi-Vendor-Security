@@ -35,7 +35,7 @@ export default function MfaCard() {
   const enabled = st.data?.enabled;
   return (
     <Card title="Two-factor authentication" sub={enabled ? `Enabled · ${st.data?.recovery_codes_left ?? 0} recovery codes left` : "Protect your account with an authenticator app (TOTP)."}>
-      {user?.role === "ADMIN" && !enabled && <p className="mb-2 rounded-lg border border-warn/30 bg-warnbg p-2 text-xs text-warn">Administrators should enable two-factor authentication.</p>}
+      {user?.role === "ADMIN" && !enabled && <p className="mb-2 rounded-lg border border-warn/30 bg-warnbg p-2 text-xs text-warn">Administrators must enable two-factor authentication before using the rest of the app.</p>}
       {codes.length > 0 && (
         <div className="mb-3 rounded-lg border border-warn/30 bg-warnbg p-3 text-xs text-warn">
           <b>Recovery codes - save them now, they are shown only once.</b>

@@ -58,8 +58,7 @@ def _audit(asset, cfg_id):
 def test_meta_routes():
     assert client.get("/").status_code == 200
     assert client.get("/health").json()["status"] == "healthy"
-    ui = client.get("/ui")
-    assert ui.status_code == 200 and "Sentinel" in ui.text
+    assert client.get("/ui").status_code == 404      # the legacy dev UI was removed; the React app in frontend/ is the UI
 
 
 def test_auth_failures():

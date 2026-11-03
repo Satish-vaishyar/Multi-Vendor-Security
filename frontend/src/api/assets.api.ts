@@ -27,11 +27,6 @@ export async function getAsset(id: string): Promise<Asset> {
   return unwrap<Asset>(r.data);
 }
 
-export async function createAsset(body: Record<string, unknown>): Promise<Asset> {
-  const r = await api.post("/assets", body);
-  return unwrap<Asset>(r.data);
-}
-
 /** Create with the backend message kept — tells "created" apart from "reused existing". */
 export async function createAssetFull(body: Record<string, unknown>): Promise<{ data: Asset; message: string; reused: boolean }> {
   const r = await api.post("/assets", body);

@@ -311,7 +311,6 @@ class PanOS:
             return
         f.put("SNMP.ENABLED", True, snmp[1])
         comm = [(t[-1], n) for t, n in self.paths if self._contains(t, ("snmp-community-string",)) is not None]
-        v3 = self.first("access-setting", "version", "v3") or self.first("snmp-setting", "v3")
         users = [(t, n) for t, n in self.paths if self._contains(t, ("v3", "users")) is not None]
         if comm:
             pub = next((c for c in comm if c[0].lower() in ("public", "private")), None)
@@ -369,7 +368,6 @@ class PanOS:
         f = self.f
         weak = None
         for t, n in self.paths:
-            joined = " ".join(t)
             if (self._contains(t, ("ike-crypto-profiles",)) is not None or self._contains(t, ("ipsec-crypto-profiles",)) is not None) \
                     and WEAK_CRYPTO.search(t[-1]):
                 weak = (n, f"weak algorithm '{t[-1]}' in a crypto profile")

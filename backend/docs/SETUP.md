@@ -57,7 +57,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 # --reload  (add for development auto-reload)
 ```
 
-If port 8000 is taken: `--port 8001` (and point the `/ui` base-URL box at it).
+If port 8000 is taken: `--port 8001` (and point the web app's API proxy at it).
 
 ## 5. Verify
 
@@ -67,7 +67,7 @@ uv run pytest -q --cov     # 93% statement coverage over app/ (floor 88% enforce
 ```
 
 Then in a browser: `http://127.0.0.1:8000/health` → `{"success":true,"status":"healthy"}`,
-`/ui` for the console, `/docs` for interactive OpenAPI.
+`/docs` for interactive OpenAPI.
 
 ## 6. Troubleshooting
 

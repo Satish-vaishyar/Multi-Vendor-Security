@@ -1,10 +1,8 @@
 """M4 LLM Parser: pretrained LLM only, structured JSON, low-temp. Reuses okf llm_gateway if present."""
 from __future__ import annotations
-import json, re
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from src.common import CANONICAL_PROPERTIES
 
 SYS = ("Convert network config lines to JSON mappings. "
        "Only output: [{\"property\": <one of canonical>, \"value\": ..., \"confidence\": 0-1, \"evidence\": <line>}]. "

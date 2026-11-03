@@ -2,7 +2,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-import joblib, numpy as np
+import joblib
 from sklearn.neighbors import NearestNeighbors
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))

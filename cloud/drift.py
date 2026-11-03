@@ -1,7 +1,7 @@
 """Scan-to-scan drift (RTM S25; CM-132). Pure comparison of two scan reports produced by cloud.pipeline.run_scan."""
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 def _key(f: Dict[str, Any]) -> str:

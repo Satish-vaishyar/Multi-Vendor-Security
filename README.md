@@ -259,7 +259,7 @@ Endpoints: `GET /vulnerabilities/{audit}`, `GET .../{finding}`,
                                   v
 +---------------------------------------------------------------------+
 | BACKEND: FastAPI modular monolith, 106 routes (103 under /api/v1).   |
-| OpenAPI at /docs. HTML console at /ui (API-only).                   |
+| OpenAPI at /docs (development only).                              |
 |                                                                     |
 | Ingest (validation, 5 MB, SHA-256, single + bulk upload)            |
 |   |                                                                 |
@@ -303,7 +303,7 @@ Endpoints: `GET /vulnerabilities/{audit}`, `GET .../{finding}`,
 +---------------------------------+ +---------------------------------+
 ```
 
-Request flow (what `/ui` and the React app call):
+Request flow (what the React app calls):
 
 ```
 POST /configurations/upload → CFG-... → POST /audits → AUD-...
@@ -321,7 +321,7 @@ Orbit-Multi-Vendor-Security/
 ├── .github/workflows/ci.yml          # backend tests+coverage, frontend lint/build,
 │                                     # dependency audit, secret scan, image scan/SBOM
 ├── docker-compose.yml                # prod: backend :8000 + frontend :8080, Supabase DB
-├── backend/                          # runnable FastAPI API + /ui console (START HERE)
+├── backend/                          # runnable FastAPI API (START HERE)
 │   ├── README.md  docs/              # SETUP, USER_GUIDE, API_REFERENCE,
 │   │                                 # IMPLEMENTATION, RTM_PS, TRM_ARCH,
 │   │                                 # BUILD_STATUS, ARCHITECTURE
@@ -344,7 +344,6 @@ Orbit-Multi-Vendor-Security/
 │   │   │                             # job_handlers, report_packs, fix_lab, events
 │   │   └── db/                       # schema.sql, migrations 001-016, RLS scripts
 │   ├── tests/                        # 506 pytest cases (flows, security review, tenancy, SSO, collection, ...)
-│   └── frontend/index.html           # API-only test console served at /ui
 ├── frontend/                         # runnable React UI (30 page components, 40 routes)
 │   ├── src/
 │   │   ├── api/                      # axios client + endpoint wrappers
@@ -424,7 +423,7 @@ copy .env.example .env   # defaults work offline; add LLM/NVD keys later
 uv sync
 uv run pytest -q
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
-# console: http://127.0.0.1:8000/ui   API docs: http://127.0.0.1:8000/docs
+# API docs: http://127.0.0.1:8000/docs
 
 # Terminal 2 - frontend
 cd frontend

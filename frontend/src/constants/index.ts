@@ -15,7 +15,6 @@ export const REPORT_SECTIONS = [
   "REMEDIATION",
   "EVIDENCE",
 ];
-export const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
 
 /** Plain-language explanations shown by <Hint term="..."/> next to jargon. */
 export const GLOSSARY: Record<string, string> = {

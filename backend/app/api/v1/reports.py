@@ -395,9 +395,6 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
                             alignment=TA_LEFT, spaceBefore=3, spaceAfter=6)
     st_toc = ParagraphStyle("RToc", parent=ss["Normal"], fontName="Helvetica",
                             fontSize=9, leading=13, textColor=colors.HexColor(INK))
-    st_cover_meta = ParagraphStyle("RCov", parent=ss["Normal"], fontName="Helvetica",
-                                   fontSize=8.5, leading=12, textColor=colors.HexColor(MUTED),
-                                   alignment=TA_CENTER)
     st_right = ParagraphStyle("RRight", parent=st_cell, alignment=TA_RIGHT)
     st_pill = ParagraphStyle("Pill", parent=ss["Normal"], fontName="Helvetica-Bold",
                              fontSize=7, leading=9, textColor=colors.white,
@@ -664,7 +661,6 @@ def _build_pdf(audit: dict, *, report_id: str, sections: List[str]) -> bytes:
                  Paragraph("<b>Compliance</b>", st_cell_h),
                  Paragraph("", st_cell_h),
                  Paragraph("<b>Passed / failed / total</b>", st_cell_h)]]
-        peak = max([1] + [_num((v or {}).get("compliance_score", 0)) for v in by_fw.values()])
         for fw, v in by_fw.items():
             v = v or {}
             sc = _num(v.get("compliance_score", 0))

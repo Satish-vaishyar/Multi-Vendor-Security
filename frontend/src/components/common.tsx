@@ -224,11 +224,6 @@ export function Hint({ term, text, label }: { term?: string; text?: string; labe
   );
 }
 
-/** Term followed by its Hint: <Term>CVE</Term> */
-export function Term({ children, term }: { children: ReactNode; term: string }) {
-  return <span className="inline-flex items-center gap-0.5">{children}<Hint term={term} /></span>;
-}
-
 /* ---------- Form + button styles ---------- */
 
 export const inputCls =

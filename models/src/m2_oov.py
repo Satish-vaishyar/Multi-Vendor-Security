@@ -9,7 +9,7 @@ Hybrid (models.md §4: embedding + OOV classifier + threshold):
 from __future__ import annotations
 import csv, re, time
 from pathlib import Path
-import joblib, numpy as np
+import joblib
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
 import sys

@@ -25,11 +25,6 @@ export async function bulkUpload(files: File[], asset_id: string) {
   return unwrap(r.data);
 }
 
-export async function parseConfiguration(id: string) {
-  const r = await api.post(`/configurations/${id}/parse`);
-  return unwrap(r.data);
-}
-
 export async function getConfiguration(id: string): Promise<ConfigurationMeta> {
   const r = await api.get(`/configurations/${id}`);
   return unwrap<ConfigurationMeta>(r.data);

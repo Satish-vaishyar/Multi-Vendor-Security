@@ -20,7 +20,7 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Deque, Dict, List, Optional
 
 import jwt
@@ -36,7 +36,7 @@ log = logging.getLogger("sih26155")
 _bearer = HTTPBearer(auto_error=False)
 
 _USER_COLS = ("id, email, name, password_hash, role, org_id, failed_attempts, locked_until, "
-              "token_version, must_change_password, disabled, mfa_enabled")
+              "token_version, must_change_password, disabled, mfa_enabled, auth_provider")
 _USER_KEYS = [c.strip() for c in _USER_COLS.split(",")]
 
 
@@ -119,12 +119,20 @@ def _user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     return _row_to_user(r) if r else None
 
 
+def mfa_blocked(u: Dict[str, Any]) -> bool:
+    """True while an MFA-required account (password login) has not enrolled yet and enforcement is on."""
+    return bool(cfg.MFA_ENFORCE and cfg.REQUIRE_AUTH and not u.get("mfa_enabled")
+                and str(u.get("role", "")).upper() in cfg.MFA_REQUIRED_ROLES
+                and u.get("auth_provider", "local") != "oidc")
+
+
 def public_user(u: Dict[str, Any]) -> Dict[str, Any]:
     return {"id": u["id"], "name": u["name"], "email": u["email"], "role": u["role"],
             "org_id": u.get("org_id") or cfg.DEFAULT_ORG_ID,
             "must_change_password": bool(u.get("must_change_password")),
             "mfa_enabled": bool(u.get("mfa_enabled")),
-            "mfa_enrollment_required": (not u.get("mfa_enabled")) and str(u.get("role", "")).upper() in cfg.MFA_REQUIRED_ROLES}
+            "mfa_enrollment_required": (not u.get("mfa_enabled")) and str(u.get("role", "")).upper() in cfg.MFA_REQUIRED_ROLES,
+            "mfa_blocked": mfa_blocked(u)}
 
 
 def create_user(email: str, name: str, password: str, role: str = rbac.VIEWER,
@@ -405,6 +413,8 @@ def enforce_permissions(request: Request, user: Dict[str, Any] = Depends(require
         # Temporary / default credentials: the account can do NOTHING but change its password (the /auth routes, which
         # are not behind this dependency, stay reachable). Previously the flag was only a hint to the web client.
         raise HTTPException(status_code=403, detail="Password change required before using the API")
+    if mfa_blocked(user):
+        raise HTTPException(status_code=403, detail="Two-factor enrolment required before using the API")
     needed = rbac.required_role(request.method, request.url.path)
     if not rbac.has_role(user.get("role", ""), needed):
         raise HTTPException(status_code=403, detail=f"Requires role {needed} or higher")

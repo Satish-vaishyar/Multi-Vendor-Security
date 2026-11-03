@@ -1,6 +1,5 @@
 """M6 Risk Scoring: deterministic formula first, XGBoost later (models.md §15-16)."""
 from __future__ import annotations
-import csv
 from pathlib import Path
 import joblib
 import sys

@@ -81,7 +81,7 @@ Status: **fixed** (code + test), **accepted** (conscious trade-off, documented),
 | A-05 | Low | CSP keeps `style-src 'unsafe-inline'` (runtime-injected component styles); `script-src` is strictly `'self'` | accepted |
 | A-06 | Low | Base images and CI actions are pinned by tag, not by digest/commit SHA (digests cannot be resolved offline) | open - pin before first release (Dependabot/pinact) |
 | A-07 | Low | Frontend renders reference URLs from the knowledge base as `href` without a scheme check (`FindingDetails`, `Remediation`); CSP blocks `javascript:` execution and the data is KB-sourced, not tenant-supplied | accepted |
-| A-08 | Med | JWTs are HS256 with one shared secret and live 60 min (server-side revocation exists); no refresh-token rotation, no SSO, MFA is not enforced for ADMIN | open (product decision) |
+| A-08 | Med | JWTs are HS256 with one shared secret and live 60 min (server-side revocation exists); no refresh-token rotation, no SSO, MFA enrolment is now enforced for `MFA_REQUIRED_ROLES` (default ADMIN) in production (`MFA_ENFORCE`); no refresh-token rotation | partly fixed |
 | A-09 | Low | The shared CVE knowledge base is global: any tenant ADMIN can trigger a (bounded, NVD-only) sync that rewrites it for everyone | accepted; restrict to a platform operator when you have one |
 | A-10 | Info | Local `backend/.env` and `okf/.env` contain live-looking Supabase/LLM credentials. They are git-ignored, absent from history, and now excluded from image builds, but they exist on this workstation - rotate them if the machine or a backup is ever shared | open (operator) |
 

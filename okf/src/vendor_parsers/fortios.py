@@ -332,7 +332,7 @@ class FortiOS:
         f.put("SNMP.ENABLED", True, (comms or users or [sysinfo])[0].line_no)
         if comms:
             pub = next((c for c in comms if (c.get("name") or "").lower() in ("public", "private")), None)
-            open_c = [c for c in comms if not self.entries(f"system snmp community/hosts") or
+            open_c = [c for c in comms if not self.entries("system snmp community/hosts") or
                       not any((h.name or "").startswith(f"{c.name}/") for h in self.entries("system snmp community/hosts"))]
             f.put("SNMP.COMMUNITY_PUBLIC", bool(pub), (pub or comms[0]).lines.get("name", comms[0].line_no),
                   targets=[{"name": c.name or ""} for c in comms if (c.get("name") or "").lower() in ("public", "private")])

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { markMilestone } from "../utils/progress";
+import { safeUrl } from "../utils/format";
 import { useAuth } from "../stores/auth";
 import { hasRole } from "../utils/roles";
 import type { Dispatch, SetStateAction } from "react";
@@ -359,7 +360,7 @@ function FindingFix({
           <ul className="space-y-1">
             {((p as unknown as { references?: unknown[] }).references ?? []).slice(0, 5).map((u, i) => (
               <li key={i} className="truncate font-mono text-[11px]">
-                <a href={String(u)} target="_blank" rel="noreferrer" className="text-primary hover:underline">{String(u)}</a>
+                <a href={safeUrl(u)} target="_blank" rel="noreferrer" className="text-primary hover:underline">{String(u)}</a>
               </li>
             ))}
           </ul>

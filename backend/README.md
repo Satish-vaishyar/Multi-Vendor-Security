@@ -33,7 +33,7 @@ Orbit-Multi-Vendor-Security/
 ## How the pieces fit
 
 ```
-Browser (/ui) ──HTTP /api/v1 only──▶ backend/ ──┬──▶ okf/    (knowledge: 103 properties,
+Browser (React app) ──HTTP /api/v1 only──▶ backend/ ──┬──▶ okf/    (knowledge: 103 properties,
                                                             82 controls, CVE engine, LLM gateway)
                                                 └──▶ models/ (M1 detect, M2 OOV, M3 mapping, M5 validate,
                                                             M6 risk, M7 fleet, M8 dedup; artifacts/*.pkl)
@@ -59,13 +59,12 @@ Then open:
 
 | URL | What |
 |---|---|
-| http://127.0.0.1:8000/ui | Test console (6 tabs: Dashboard, Upload & Audit, Findings, Training, PQC/CBOM, Reports) |
 | http://127.0.0.1:8000/docs | Interactive OpenAPI docs (try every endpoint in the browser) |
 | http://127.0.0.1:8000/health | Health check → `{"success":true,"status":"healthy"}` |
 
 Demo login: `admin@example.com` / `admin123` (change in `.env`).
 
-## 60-second demo (in the /ui console)
+## 60-second demo (in the web app, `frontend/`)
 
 1. **Upload & Audit** → *Create demo asset* → paste the insecure Cisco sample
    (pre-loaded) → *Upload* (detects `CISCO / IOS-XE / 17.9.2`) → tick frameworks → *Run audit*.

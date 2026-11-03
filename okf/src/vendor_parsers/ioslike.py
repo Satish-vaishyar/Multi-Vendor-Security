@@ -9,7 +9,7 @@ Documented defaults are recorded with basis="default" (see base.py) so reports c
 from __future__ import annotations
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from .base import IOS_ONLY, ROUTING_AUTH, SWITCH_ONLY, Facts, ParseResult, community_ref, run_extractors
 
@@ -426,7 +426,6 @@ class IosLike:
 
     def _aaa(self) -> None:
         f = self.f
-        newm = self.first(r"^aaa new-model$")
         no_newm = self.negated(r"aaa new-model$")
         authn = self.top(r"^aaa authentication\b")
         authz = self.top(r"^aaa authorization\b")
@@ -544,7 +543,6 @@ class IosLike:
         f = self.f
         off = self.negated(r"logging on$")
         buf = self.first(r"^logging buffered") or self.first(r"^logging (file|console|monitor|logfile|level)\b")
-        hosts = self.top(r"^logging\s+(host\s+\S+|\d+\.\d+\.\d+\.\d+|\S+\.\S+)") if True else []
         hosts = [b for b in self.top(r"^logging\b") if re.match(r"^logging\s+(host\s+\S+|server\s+\S+|\d{1,3}(\.\d{1,3}){3}|[a-z0-9-]+\.[a-z0-9.-]+)", b.header, re.I)
                  and not re.match(r"^logging\s+(buffered|console|monitor|trap|source|facility|origin|format|rate)", b.header, re.I)]
         on = self.first(r"^logging on$")

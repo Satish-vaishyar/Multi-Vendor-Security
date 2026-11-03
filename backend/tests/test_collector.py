@@ -371,7 +371,7 @@ def test_real_ssh_bad_password_and_output_cap(ssh_device, monkeypatch):
 
 
 def test_real_ssh_unreachable_and_bad_key_material(ssh_device):
-    with pytest.raises(OSError):
+    with pytest.raises(collector.CollectError):
         collector.scan_host_key("127.0.0.1", 1)                                    # nothing listens on port 1
     t = collector.ParamikoTransport("127.0.0.1", ssh_device["port"], 5.0)
     try:

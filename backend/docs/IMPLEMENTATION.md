@@ -42,7 +42,7 @@ version-range + correlator + CBOM + NVD sync + blast-radius (exposed via audit +
 ## 5. Frontend contract (api.md §34)
 
 `frontend/index.html` uses **only** `fetch()` against `/api/v1/*`. It never imports
-backend code, never calls NVD/LLM/PostgreSQL/ML directly. Served at `/ui`.
+backend code, never calls NVD/LLM/PostgreSQL/ML directly.
 
 ## 6. Data flow diagrams
 
@@ -56,7 +56,7 @@ canonical IR → (same downstream).
 `uv run pytest -q` (506 tests, 93% coverage): auth+dashboard · full audit flow (upload→parse→
 canonical→audit→results→evidence→engine reads→findings→training→remediation
 dry-run→PDF, asserts insecure<secure ordering) · secure-vs-insecure scoring ·
-OKF browser + M1 detection. Plus manual `/ui` walkthrough recorded in test output.
+OKF browser + M1 detection.
 
 ## 8. Credentials
 

@@ -1,6 +1,5 @@
 """M1 Vendor Detector: rules + TF-IDF classifier (models.md §3). No DNN initially."""
 from __future__ import annotations
-import json, re
 from pathlib import Path
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer

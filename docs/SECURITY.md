@@ -70,8 +70,8 @@ After retraining, regenerate the manifest through code review: `python models/sc
   asks for a code; a wrong code counts toward the account lockout; each time-step is accepted once (replay guard);
   10 single-use recovery codes are stored only as SHA-256 hashes; the secret is encrypted at rest. Enabling/disabling
   signs out all other sessions. Disabling needs password + a valid code; an admin can reset a user who lost both
-  (`POST /api/v1/admin/users/{id}/mfa-reset`). Roles in `MFA_REQUIRED_ROLES` (default `ADMIN`) are shown an
-  enrolment prompt; hard enforcement is intentionally not automatic so nobody is locked out on upgrade.
+  (`POST /api/v1/admin/users/{id}/mfa-reset`). Roles in `MFA_REQUIRED_ROLES` (default `ADMIN`) must enrol: with `MFA_ENFORCE=true` (the production default) such an account can only reach `/auth/*`
+  until it has enrolled; SSO users are exempt (the identity provider owns their second factor). Set `MFA_ENFORCE=false` to only prompt.
 
 ## 8. Single sign-on (OpenID Connect)
 Works with any OIDC provider (Entra ID, Okta, Keycloak, Google Workspace). Authorization-code flow with PKCE (S256),

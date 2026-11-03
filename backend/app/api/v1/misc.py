@@ -6,7 +6,7 @@ from typing import Optional
 
 from app.core import config as cfg
 from app.core import persist as db
-from app.parsers import vendor_detector, canonical as canon
+from app.parsers import vendor_detector
 from app.services.integration import okf_layer
 
 dashboard_router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])

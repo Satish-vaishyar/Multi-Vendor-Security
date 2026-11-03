@@ -82,6 +82,9 @@ CVE_AUTO_SYNC_HOURS = float(os.getenv("CVE_AUTO_SYNC_HOURS", "0"))  # >0: each w
 CVE_AUTO_SYNC_DAYS = int(os.getenv("CVE_AUTO_SYNC_DAYS", "7"))      # NVD lastModified window per refresh
 EXCEPTION_MAX_DAYS = int(os.getenv("EXCEPTION_MAX_DAYS", "180"))          # longest allowed risk acceptance
 MFA_REQUIRED_ROLES = {r.strip().upper() for r in os.getenv("MFA_REQUIRED_ROLES", "ADMIN").split(",") if r.strip()}  # roles told to enrol MFA
+# Enforce (not just prompt) MFA enrolment for MFA_REQUIRED_ROLES: until enrolled such an account can only reach /auth/*.
+# On by default in production; SSO users are exempt (the identity provider owns their second factor).
+MFA_ENFORCE = os.getenv("MFA_ENFORCE", "true" if ENV == "production" else "false").lower() in ("1", "true", "yes")
 SESSION_COOKIE = os.getenv("SESSION_COOKIE", "qirova_session")      # httpOnly session token (web client opts in via X-Auth-Mode: cookie)
 CSRF_COOKIE = os.getenv("CSRF_COOKIE", "qirova_csrf")                # readable double-submit CSRF token
 SCHEDULE_MIN_MINUTES = int(os.getenv("SCHEDULE_MIN_MINUTES", "15"))        # shortest allowed recurring-audit interval
@@ -193,6 +196,12 @@ def production_warnings() -> list[str]:
         warns.append("WEBHOOK_ALLOW_PRIVATE=true: tenant admins can aim webhooks at your internal (RFC1918) network")
     if ENV == "production" and RATE_LIMIT_EXPENSIVE_PER_MIN <= 0:
         warns.append("RATE_LIMIT_EXPENSIVE_PER_MIN=0: expensive endpoints (audit/report/upload/AI) are not rate limited")
+    if ENV == "production" and os.getenv("RLS_ENABLED", "false").lower() not in ("1", "true", "yes"):
+        warns.append("RLS_ENABLED is off: tenant isolation is enforced by the application only; enable Postgres row-level "
+                     "security (python -m app.cli rls-enable) as defence in depth")
+    if ENV == "production" and COLLECT_ALLOW_PRIVATE and not COLLECT_ALLOWED_CIDRS:
+        warns.append("COLLECT_ALLOWED_CIDRS is empty: tenant admins can aim SSH collection at any private address; "
+                     "list the device ranges")
     if ENV == "production" and len(METRICS_TOKEN) < 16:
         warns.append("METRICS_TOKEN is not set (>= 16 chars): GET /metrics is refused (503) until it is configured")
     return warns

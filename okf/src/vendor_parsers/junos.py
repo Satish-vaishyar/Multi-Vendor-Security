@@ -7,7 +7,7 @@ what the device actually does.
 from __future__ import annotations
 import re
 import shlex
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from .base import IOS_ONLY, ROUTING_AUTH, SWITCH_ONLY, Facts, ParseResult, community_ref, run_extractors
 
@@ -253,8 +253,7 @@ class Junos:
             f.put("SNMP.COMMUNITY_PUBLIC", False, self._line(anchor))
             f.put("SNMP.READWRITE", False, self._line(anchor))
         if v3:
-            priv = [t for t, _ in self.find("snmp", "v3", "usm", "*", "*", "*", "privacy-*")] if False else \
-                [(t, n) for t, n in self.paths if t[:2] == ("snmp", "v3") and any(x.startswith("privacy-") and x != "privacy-none" for x in t)]
+            priv = [(t, n) for t, n in self.paths if t[:2] == ("snmp", "v3") and any(x.startswith("privacy-") and x != "privacy-none" for x in t)]
             none = [(t, n) for t, n in self.paths if t[:2] == ("snmp", "v3") and "privacy-none" in t]
             f.put("SNMP.V3_PRIV", bool(priv) and not none, (priv or none or [(None, v3[1])])[0][1])
             if not comms:
@@ -471,7 +470,6 @@ class Junos:
         if not (self.has("ethernet-switching-options") or self.has("vlans") or self.has("switch-options")
                 or any("ethernet-switching" in t for t, _ in self.paths)):
             return
-        sa = self.first("ethernet-switching-options", "secure-access-port")
         dhcp = [p for p in self.paths if p[0][:2] == ("ethernet-switching-options", "secure-access-port") and
                 any(x in p[0] for x in ("examine-dhcp", "dhcp-trusted"))]
         f.put("DHCP.SNOOPING", True, dhcp[0][1]) if dhcp else f.default(

@@ -231,7 +231,7 @@ def m2_score_batch(commands: list) -> list:
         from src.artifact_guard import load_verified
         from src.common import ARTIFACTS
         from src import embed
-        from src.m2_oov import tokens, novelty
+        from src.m2_oov import novelty
         d = load_verified(ARTIFACTS / "m2_clf.pkl")
         meta = json.loads((ARTIFACTS / "m2_meta.json").read_text()) \
             if (ARTIFACTS / "m2_meta.json").exists() else {"threshold": 0.5, "k": 1.0}

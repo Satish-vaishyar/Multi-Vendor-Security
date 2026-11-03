@@ -10,11 +10,6 @@ export async function getVulnDetail(auditId: string, findingId: string) {
   return unwrap(r.data);
 }
 
-export async function browseCves(params: Record<string, string | number> = {}) {
-  const r = await api.get("/vulnerabilities/cves", { params });
-  return unwrap(r.data);
-}
-
 export async function syncCves(body: Record<string, unknown> = {}) {
   const r = await api.post("/vulnerabilities/sync", body, { timeout: SLOW_TIMEOUT });
   return unwrap(r.data);
@@ -25,12 +20,3 @@ export async function kbStatus() {
   return unwrap<{ records: number; seed_records: number; nvd_records: number; real_world: boolean }>(r.data);
 }
 
-export async function syncStatus(jobId: string) {
-  const r = await api.get(`/vulnerabilities/sync/${jobId}`);
-  return unwrap(r.data);
-}
-
-export async function blastRadius(body: Record<string, unknown>) {
-  const r = await api.post("/vulnerabilities/blast-radius", body);
-  return unwrap(r.data);
-}

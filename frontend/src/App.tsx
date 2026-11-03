@@ -51,6 +51,10 @@ function Guard({ children }: { children: React.ReactNode }) {
   if (user?.must_change_password && loc.pathname !== "/change-password") {
     return <Navigate to="/change-password" replace />;
   }
+  // Administrators must enrol two-factor authentication before anything else (the API refuses them until then).
+  if (user?.mfa_blocked && loc.pathname !== "/settings") {
+    return <Navigate to="/settings" replace />;
+  }
   return <>{children}</>;
 }
 

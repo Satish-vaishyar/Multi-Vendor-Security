@@ -45,19 +45,6 @@ export async function getAuditResults(id: string): Promise<AuditResults> {
   return unwrap<AuditResults>(r.data);
 }
 
-/** Lightweight brief (no findings/canonical_ir payload) for pickers. */
-export async function getAuditSummary(id: string) {
-  const r = await api.get(`/audits/${id}/summary`);
-  return unwrap<{
-    audit_id: string; status: string; progress?: number;
-    summary?: { compliance_score?: number; critical?: number; high?: number; medium?: number; low?: number; security_risk?: number; pqc_readiness?: number };
-    frameworks?: Record<string, { score?: number }>;
-    cve?: Record<string, number>;
-    engines?: Record<string, number>;
-    engine_sev?: Record<string, Record<string, number>>;
-  }>(r.data);
-}
-
 export async function getAuditEvidence(id: string): Promise<{ items: EvidenceItem[] }> {
   const r = await api.get(`/audits/${id}/evidence`);
   return unwrap<{ items: EvidenceItem[] }>(r.data);

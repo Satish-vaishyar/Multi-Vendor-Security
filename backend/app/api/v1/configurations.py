@@ -2,7 +2,7 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 import re
-from typing import List, Optional
+from typing import List
 
 from app.core import config as cfg
 from app.core import persist as db

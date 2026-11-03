@@ -112,7 +112,10 @@ class ParamikoTransport:
     def __init__(self, address: str, port: int, timeout: float):
         import paramiko
         self._p = paramiko
-        sock = socket.create_connection((address, port), timeout=timeout)
+        try:
+            sock = socket.create_connection((address, port), timeout=timeout)
+        except OSError:
+            raise CollectError("could not connect to the device")
         self._t = paramiko.Transport(sock)
         self._t.banner_timeout = timeout
         try:

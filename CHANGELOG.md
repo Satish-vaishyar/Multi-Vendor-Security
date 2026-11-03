@@ -4,6 +4,23 @@ All notable changes to Orbit - Multi-Vendor Security are recorded here.
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and semantic versioning for the documented API surface.
 
+## [Unreleased] - 2026-11-03 (cleanup and security pass)
+
+### Security
+
+- Cloud module: scan uploads, kept-file re-runs and exports now count against the per-org / per-user expensive-endpoint limiter.
+- Live collection: an unreachable device is a clean operator error (no unhandled socket error that doubled as a port-scan oracle).
+- Production start-up now warns when `RLS_ENABLED` is off and when `COLLECT_ALLOWED_CIDRS` is empty.
+- Frontend: knowledge-base reference links render only for `http(s)` URLs.
+- MFA enrolment is enforced for admins (`MFA_ENFORCE`, default on in production): until enrolled the account can only reach `/auth/*`; SSO users are exempt.
+- CORS allows `PUT` (collection targets, cloud webhook links) for split-origin deployments.
+
+### Removed
+
+- Legacy dev-only `/ui` console (`backend/frontend/`), superseded by the React app in `frontend/`.
+- Unused imports and variables across backend, cloud, okf and models; dead branches in the IOS/Junos/PAN-OS parsers.
+- Unused frontend files (`src/App.css`, `src/api/okf.api.ts`) and dead API wrappers / helpers.
+
 ## [Unreleased] - 2026-11-03
 
 ### Fixed

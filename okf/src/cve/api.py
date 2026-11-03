@@ -2,7 +2,7 @@
 from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from .kb import VulnKB
 from .inventory import extract
 from .correlator import correlate, to_findings

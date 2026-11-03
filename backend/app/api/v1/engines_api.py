@@ -8,7 +8,6 @@ from app.core import config as cfg
 from app.core import persist as db
 from app.core import store
 from app.services.integration import okf_layer, cve_layer
-from app.engines import security as sec_eng
 
 compliance_router = APIRouter(prefix="/api/v1/compliance", tags=["compliance"])
 vuln_router = APIRouter(prefix="/api/v1/vulnerabilities", tags=["vulnerabilities"])

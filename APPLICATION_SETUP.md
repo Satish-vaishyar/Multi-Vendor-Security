@@ -36,7 +36,7 @@ and `models/` via `OKF_DIR=../okf`, `MODELS_DIR=../models`):
 
 ```
 Orbit-Multi-Vendor-Security\
-  backend/    # runnable FastAPI API + /ui test console (START HERE for running)
+  backend/    # runnable FastAPI API (START HERE for running)
   frontend/   # runnable React UI
   okf/        # knowledge layer (library used by backend; optionally standalone)
   models/     # ML training/eval + committed trained artifacts (library used by backend)
@@ -75,7 +75,6 @@ Verify:
 |---|---|
 | http://127.0.0.1:8000/health | `{"success":true,"status":"healthy"}` |
 | http://127.0.0.1:8000/docs | interactive OpenAPI (try every endpoint) |
-| http://127.0.0.1:8000/ui | HTML test console (6 tabs; API-only, talks to `/api/v1`) |
 
 Demo login: `admin@example.com` / `admin123` (override via `ADMIN_EMAIL` /
 `ADMIN_PASSWORD` in `backend/.env`).
@@ -220,7 +219,6 @@ calls outside the backend.
 | `ModuleNotFoundError` in backend | stale `.venv` - delete `backend/.venv/`, re-run `uv sync --group dev` |
 | `sklearn InconsistentVersionWarning` | harmless (artifacts trained on 1.9.0); M1 still classifies correctly |
 | `InsecureKeyLengthWarning` (JWT) | dev `JWT_SECRET` too short - set a long random value |
-| `/ui` shows `{"detail":"Not Found"}` | uvicorn started from wrong directory - `cwd` must be `backend/` |
 | LLM features say `offline` | no `FEATHERLESS_API_KEY` - expected without key |
 | Frontend `Network Error` on login | backend down or `VITE_API_BASE_URL` mismatch - check `/docs` loads, restart `npm run dev` |
 | Audit stuck QUEUED/RUNNING | audits run in-process - keep backend terminal alive, retry |

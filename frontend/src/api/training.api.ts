@@ -21,7 +21,3 @@ export async function rejectMapping(trainingId: string, reason: string) {
   return unwrap(r.data);
 }
 
-export async function trainingJob(jobId: string) {
-  const r = await api.get(`/training/jobs/${jobId}`);
-  return unwrap(r.data);
-}

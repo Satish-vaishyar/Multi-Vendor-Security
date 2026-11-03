@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { markMilestone } from "../utils/progress";
+import { safeUrl } from "../utils/format";
 import { useQuery } from "@tanstack/react-query";
 import { getFinding } from "../api/findings.api";
 import { getRemediation } from "../api/remediation.api";
@@ -253,7 +254,7 @@ export default function FindingDetails() {
                       <ul className="space-y-1.5">
                         {refs.map((u) => (
                           <li key={u} className="break-all rounded-lg bg-surface2 px-3 py-2 font-mono text-xs">
-                            <a href={u} target="_blank" rel="noreferrer" className="text-primary hover:underline">{u}</a>
+                            <a href={safeUrl(u)} target="_blank" rel="noreferrer" className="text-primary hover:underline">{u}</a>
                           </li>
                         ))}
                       </ul>
@@ -356,7 +357,7 @@ export default function FindingDetails() {
                     <ul className="space-y-1.5">
                       {refs.map((u) => (
                         <li key={u} className="break-all rounded-lg bg-surface2 px-3 py-2 font-mono text-xs">
-                          <a href={u} target="_blank" rel="noreferrer" className="text-primary hover:underline">{u}</a>
+                          <a href={safeUrl(u)} target="_blank" rel="noreferrer" className="text-primary hover:underline">{u}</a>
                         </li>
                       ))}
                     </ul>

@@ -9,14 +9,12 @@ import os
 import re
 import time
 import uuid
-from pathlib import Path
 import psycopg
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1 import admin, auth, collection as collection_api, fix_verification as fix_verification_api, sso as sso_api, exceptions as exceptions_api, history as history_api, integrations as integrations_api, jobs as jobs_api, assets, configurations, audits, findings, training, remediation, reports, misc
@@ -84,7 +82,7 @@ app.add_middleware(limits.BodyLimitMiddleware)
 # CORS: wildcard is never combined with credentials (browsers reject it).
 _wildcard = "*" in cfg.CORS_ORIGINS
 app.add_middleware(CORSMiddleware, allow_origins=["*"] if _wildcard else cfg.CORS_ORIGINS,
-                   allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+                   allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
                    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-CSRF-Token", "X-Auth-Mode"],
                    expose_headers=["X-Request-ID"], allow_credentials=not _wildcard)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=cfg.TRUSTED_HOSTS)
@@ -179,13 +177,10 @@ if os.environ.get("CLOUD_MODULE_ENABLED", "").strip().lower() in ("1", "true", "
 app.include_router(auth.router)
 app.include_router(sso_api.router)
 
-FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
-
-
 @app.get("/", tags=["meta"])
 def root():
     return {"success": True, "service": "SIH-26155 auditor backend", "version": "1.0.0",
-            "base": "/api/v1", "docs": "/docs", "ui": "/ui",
+            "base": "/api/v1", "docs": "/docs",
             "groups": ["auth", "assets", "configurations", "audits", "compliance",
                        "vulnerabilities", "pqc", "analytics", "findings", "training",
                        "remediation", "reports", "dashboard", "okf", "detection"]}
@@ -226,10 +221,3 @@ def readyz():
         return JSONResponse({"success": False, "status": "not_ready", "env": cfg.ENV, "db": db},
                             status_code=503)
     return {"success": True, "status": "ready", "env": cfg.ENV, "db": db}
-
-
-if cfg.ENABLE_DOCS and FRONTEND_DIR.exists():  # pragma: no cover - dev-only legacy UI
-    @app.get("/ui", tags=["meta"], include_in_schema=False)
-    def ui():
-        return FileResponse(str(FRONTEND_DIR / "index.html"))
-    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")

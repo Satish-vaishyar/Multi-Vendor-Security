@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from cloud import secret_scan
 from cloud.ir import Resource, Source, Unknown

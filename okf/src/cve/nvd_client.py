@@ -6,7 +6,6 @@ env raises rate limit. Small-page fetches for SIH demo; offline-safe.
 """
 from __future__ import annotations
 import os
-import re
 from typing import Any, Dict, List, Optional
 
 BASE = "https://services.nvd.nist.gov/rest/json"

@@ -116,6 +116,9 @@ _EXPENSIVE: List[Tuple[str, Pattern[str], int]] = [(m, re.compile(p), c) for m, 
     ("POST", r"^/api/v1/analytics/fleet$", 2),
     ("POST", r"^/api/v1/schedules/[^/]+/run$", 1),
     ("POST", r"^/api/v1/detection/vendor$", 1),
+    ("POST", r"^/api/v1/cloud/scans$", 2),
+    ("POST", r"^/api/v1/cloud/schedules/[^/]+/run$", 2),
+    ("GET",  r"^/api/v1/cloud/scans/[^/]+/export$", 2),
 ]]
 
 _lock = threading.Lock()

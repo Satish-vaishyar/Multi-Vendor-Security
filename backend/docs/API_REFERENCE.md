@@ -3,7 +3,7 @@
 Base URL `http://127.0.0.1:8000`, API root **`/api/v1`**.
 Live list verified from the running app's OpenAPI schema:
 **106 paths / 122 operations** - 103 paths under `/api/v1`, plus `GET /`,
-`GET /health`, `GET /readyz` (`/metrics` and `/ui` are
+`GET /health`, `GET /readyz` (`/metrics` is
 `include_in_schema=False`), plus the auto-generated `/docs`, `/redoc`,
 `/openapi.json`.
 
@@ -20,7 +20,6 @@ Auth: `Authorization: Bearer <token>` from `POST /auth/login`
 | GET | `/` | service info + API group list |
 | GET | `/health` | `{"success":true,"status":"healthy"}` |
 | GET | `/readyz` | readiness + DB status (`{"status":"ready","db":{…}}`) |
-| GET | `/ui` | HTML test console (API-only, excluded from OpenAPI schema) |
 | GET | `/docs`, `/redoc`, `/openapi.json` | Swagger / ReDoc / raw spec |
 
 ## Auth (§4)
@@ -146,7 +145,7 @@ curl -s localhost:8000/api/v1/configurations/CFG-…/canonical-ir | python -m js
 | GET | `/api/v1/okf/crosswalk/{control_id}` - cross-framework mappings (CIS↔NIST↔STIG↔ISO) |
 | POST | `/api/v1/detection/vendor` - `{"configuration_id"}` or `{"config_text"}` → `{vendor,platform,version,confidence,method}` |
 
-## Frontend flow (what `/ui` calls, `api.md` §34)
+## Frontend flow (what the web app calls, `api.md` §34)
 
 ```
 POST /configurations/upload → CFG-… → POST /audits → AUD-… →
@@ -156,5 +155,5 @@ GET /audits/{id}/evidence → POST /reports → GET /reports/{id}/download
 
 The frontend never calls NVD, the LLM, PostgreSQL, ML models or OKF directly.
 To regenerate this list: start the server and open `/openapi.json`
-(`paths` count = 59; `60` route decorators in code, `/ui` excluded from schema)
+(`paths` count = 59; `60` route decorators in code)
 or `/docs`. Count check: `Select-String -Path backend/app/api/v1/*.py,backend/app/main.py -Pattern '@(router|app|.*_router)\.(get|post|put|patch|delete)'`.
