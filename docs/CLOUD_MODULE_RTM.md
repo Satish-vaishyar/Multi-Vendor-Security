@@ -29,7 +29,7 @@ fixes are separate `fix(cloud)` commits). There are no long-lived feature branch
 | S09 CloudFormation/SAM parser | ✅ | `cloud/parsers/cloudformation.py` |
 | S10 Kubernetes parser | ✅ | `cloud/parsers/kubernetes.py` |
 | S11 IR record, findings, validation | ✅ | `cloud/ir.py` |
-| S12 okf-cloud pack + rule engine | ✅ 25 controls, 25 properties, 29 catalog section 11 acceptance cases | `cloud/rules/`, `okf-cloud/knowledge/`, `cloud/tests/test_cat11.py` |
+| S12 okf-cloud pack + rule engine | ✅ 35 controls, 35 properties, 29 catalog section 11 acceptance cases | `cloud/rules/`, `okf-cloud/knowledge/`, `cloud/tests/test_cat11.py` |
 | S13 Checkov/Trivy adapters | ✅ parsing, safe runner, engine/version tagging, dedupe (tools are NOT bundled in the image yet: reported as `unavailable`, never as a clean scan) | `cloud/scanners.py` |
 | S04/S14 engine side: scan pipeline + `/scan` service endpoint, honest report statement, coverage block | ✅ (`cloud/`); backend glue, DB persistence and UI still ⬜ (need the backend suite / CI) | `cloud/pipeline.py`, `cloud/service.py` |
 | S18 per-framework scoring | ✅ | `cloud/scoring.py` |
@@ -183,7 +183,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | CM-050 | Terraform/OpenTofu `.tf .tfvars .tf.json .hcl`; no `apply`, no module fetch | 3.1 | `cloud/parsers/terraform.py` | S08 | Parser tests | ✅ |
 | CM-051 | Terraform plan JSON; planned vs known vs unknown values | 3.1 | Plan-JSON reader | S08 | Unknown-value test | ✅ |
 | CM-052 | Terraform state: opt-in only, redacted, not persisted | 3.1 | Guarded flag + redactor | S08 | State not stored test | ✅ |
-| CM-053 | CloudFormation/SAM/CDK output | 3.1 | `cfn.py` | S09 | Intrinsic-function tests | ✅ |
+| CM-053 | CloudFormation/SAM/CDK output | 3.1 | `cloud/parsers/cloudformation.py` | S09 | Intrinsic-function tests | ✅ |
 | CM-054 | ARM + Bicep (pinned compiler, sandboxed) | 3.1 | `arm.py`, `bicep.py` | S15 | Equivalence test | ⬜ |
 | CM-055 | GCP Terraform/KRM/Infra Manager; Deployment Manager not a default | 3.1 | Terraform + KRM parser | S08,S12 | Fixture | ⬜ |
 | CM-056 | Alibaba ROS | 3.1 | `ros.py` | S27 | Fixture | ⏸ |
@@ -193,7 +193,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | CM-060 | Policy files (Rego, Azure Policy, Sentinel) | 3.1 | Policy-quality scanner | S29 | Fixture | ⏸ |
 | CM-061 | Safe archive handling (ZIP/TAR/GZ) | 3.1, 8 | `intake.py` | S05 | Malicious corpus | ✅ |
 | CM-062 | Do not process credentials, `.terraform/`, provider binaries, provisioners, undecryptable files as config | 3.2 | Deny-list + content sniff | S05,S07 | Rejection tests | ✅ |
-| CM-063 | Secrets scanner runs before parsers; values masked | 3.2, 5.7 | `secrets.py` | S07 | Leak test | ✅ |
+| CM-063 | Secrets scanner runs before parsers; values masked | 3.2, 5.7 | `cloud/secret_scan.py` | S07 | Leak test | ✅ |
 
 ### D. Security checks (CAT §5)
 
@@ -205,7 +205,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | CM-073 | Logging/monitoring: audit trail, retention, tamper protection | 5.4 | `controls/logging.yaml` (static where provable, else UNKNOWN) | S12 | LOG-001, LOG-002 | 🟡 |
 | CM-074 | Compute/workload: IMDS, volume encryption, privileged containers | 5.5 | `controls/compute.yaml`, `k8s.yaml` | S12,S22 | K8S-001..003 | 🟡 |
 | CM-075 | Managed services: DB, K8s, LB, DNS, secrets manager, serverless | 5.6 | `controls/managed.yaml` | S12,S22 | DB-001 + per-family | 🟡 |
-| CM-076 | Secrets/sensitive data in uploads; rotation advice; no secret in LLM context | 5.7 | `secrets.py` + redaction hooks | S07 | SEC-001 | 🟡 |
+| CM-076 | Secrets/sensitive data in uploads; rotation advice; no secret in LLM context | 5.7 | `cloud/secret_scan.py` + redaction hooks | S07 | SEC-001 | 🟡 |
 | CM-077 | Image/package CVE scanning kept separate from config checks | 5.5 | Out of scope until requested | - | - | ⏸ |
 
 ### E. Compliance mapping (CAT §6)
@@ -223,7 +223,7 @@ catalog-complete after **S34** (34 steps). Estimated total (one engineer): ≈ 2
 | Req | Requirement | CAT § | Planned implementation | Step | Verification | Status |
 |---|---|---|---|---|---|---|
 | CM-090 | Pipeline: detect → safety/secrets → parse → IR → rules → graph → evidence → report | 7 | `cloud/pipeline.py` | S04-S14 | End-to-end test | 🟡 |
-| CM-091 | External scanners (Checkov, Trivy, optionally KICS/OPA) as independent engines | 7.1 | `cloud/engines/*.py`, pinned in scanner image | S13 | Merge/dedupe test; engine+version recorded | 🟡 |
+| CM-091 | External scanners (Checkov, Trivy, optionally KICS/OPA) as independent engines | 7.1 | `cloud/scanners.py` (Checkov and Trivy only; KICS/OPA not implemented; `engines=` not yet passed by `cloud/service.py`; tools not bundled) | S13 | Merge/dedupe test; engine+version recorded | 🟡 |
 | CM-092 | Normalised IR keeping `provider_raw`; no attribute dropped | 7.2 | IR dataclass | S11 | Round-trip test | ✅ |
 | CM-093 | Relationship graph with edge provenance/certainty | 7.3 | `cloud/graph.py` (NetworkX is already used elsewhere in the repo) | S17 | Edge-certainty test | ⬜ |
 | CM-094 | Reuse OKF evaluator semantics without editing `okf/` | 7 | `cloud/rules/engine.py` re-implements the same DSL; parity test imports the real `okf.src.engines.eval_op` (see section 0) | S12 | Parity test over the operator matrix | ✅ |

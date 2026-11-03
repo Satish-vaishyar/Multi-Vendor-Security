@@ -752,10 +752,44 @@ def k8s_workload(res: Resource) -> Dict[str, Optional[bool]]:
             "K8S.CONTAINER.IMAGE_UNPINNED": _flag(unpinned)}
 
 
+def _netpol_rule_allows_all(rule: Any) -> bool:
+    """True when one ingress/egress rule lets every peer reach every pod, with no port limit.
+
+    An empty rule (``- {}``) allows everything.  A rule that names only empty selectors
+    (``namespaceSelector: {}`` / ``podSelector: {}``) selects every namespace / every pod,
+    which is the same thing written differently.  A rule that restricts ``ports`` is not
+    "all traffic" and is deliberately left to the port-level controls.
+    """
+    if not isinstance(rule, dict):
+        return False
+    if not rule:
+        return True
+    if rule.get("ports"):
+        return False                              # a port restriction means this is not "all traffic"
+    peers: List[Any] = []
+    for side in ("from", "to"):
+        if side not in rule:
+            continue
+        value = rule.get(side)
+        if not isinstance(value, list) or not value:
+            return True                           # an empty peer list selects every peer
+        peers.extend(value)
+    if not peers:
+        return True                               # no peer restriction at all
+    for peer in peers:
+        if not isinstance(peer, dict) or not peer:
+            return True                           # an empty peer block selects every peer
+        if "namespaceSelector" in peer and peer["namespaceSelector"] in ({}, None):
+            return True
+        if "podSelector" in peer and peer["podSelector"] in ({}, None):
+            return True
+    return False
+
+
 def k8s_netpol(res: Resource) -> Dict[str, Optional[bool]]:
     spec = res.properties.get("spec") if isinstance(res.properties.get("spec"), dict) else {}
     selects_all = spec.get("podSelector") in ({}, None)
-    open_rule = any(r == {} for key in ("ingress", "egress") for r in (spec.get(key) or []))
+    open_rule = any(_netpol_rule_allows_all(r) for key in ("ingress", "egress") for r in (spec.get(key) or []))
     return {"K8S.NETPOL.ALLOW_ALL": bool(selects_all and open_rule)}
 
 
@@ -786,6 +820,14 @@ def _cmd(item: Any) -> str:
     return " ".join(map(str, item)) if isinstance(item, list) else str(item)
 
 
+_CRYPT_HASH = re.compile(r"^\$[0-9a-z]{1,4}\$[^\s$]*\$?\S*$", re.I)
+
+
+def _clear_passwd(v: Any) -> bool:
+    """cloud-init ``users[].passwd`` is documented as a password HASH; a value that is not in crypt ($id$salt$hash) form is clear text."""
+    return not _blank(v) and not (isinstance(v, str) and (v == "[HASHED]" or _CRYPT_HASH.match(v.strip())))
+
+
 def cloud_init(res: Resource) -> Dict[str, Optional[bool]]:
     p = res.properties
     pw = p.get("ssh_pwauth", MISSING)
@@ -794,6 +836,7 @@ def cloud_init(res: Resource) -> Dict[str, Optional[bool]]:
     users = [u for u in as_list(p.get("users", [])) if isinstance(u, dict)]
     chpasswd = p.get("chpasswd") if isinstance(p.get("chpasswd"), dict) else {}
     plain = (any(not _blank(u.get(k, MISSING)) for u in users for k in ("plain_text_passwd", "plain-text-passwd"))
+             or any(_clear_passwd(u.get("passwd", MISSING)) for u in users)
              or any(isinstance(c, dict) and str(c.get("type", "hash")).strip().lower() == "text" for c in as_list(chpasswd.get("users", [])))
              or not _blank(chpasswd.get("list", MISSING)) or not _blank(p.get("password", MISSING)))
     nopasswd = any("nopasswd" in _cmd(u.get("sudo", "")).lower() for u in users)

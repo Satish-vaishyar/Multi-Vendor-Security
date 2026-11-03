@@ -1,8 +1,14 @@
 okf_cloud_version: "0.1.0"
-status: skeleton
-control_packs: {}
-frameworks: []
-properties_count: 0
-controls_count: 0
-evidence_states: [PASS_STATIC, FAIL_STATIC, UNKNOWN_STATIC, NOT_APPLICABLE, PASS_LIVE, FAIL_LIVE, UNKNOWN_LIVE, CONFLICT]
+status: populated
+control_packs:
+  core: {controls: 35, mappings: 19, properties: 35}
+frameworks:
+  - {id: NIST-800-53, mappings_verified: false}
+properties_count: 35
+controls_count: 35
+mappings_count: 19
+# Evidence states the static scanner can emit today. The *_LIVE states and CONFLICT are reserved for connected mode
+# (cloud/live.py is a stub: no cloud client, nothing calls reconcile()), so they are listed separately on purpose.
+evidence_states: [PASS_STATIC, FAIL_STATIC, UNKNOWN_STATIC, NOT_APPLICABLE]
+reserved_evidence_states: [PASS_LIVE, FAIL_LIVE, UNKNOWN_LIVE, CONFLICT]
 source_hierarchy: [official_framework, vendor_docs, expert_rule]

@@ -4,6 +4,23 @@ All notable changes to Orbit - Multi-Vendor Security are recorded here.
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and semantic versioning for the documented API surface.
 
+## [Unreleased] - 2026-11-03
+
+### Fixed
+
+- Cloud: allow-all NetworkPolicy written with `namespaceSelector: {}` (CLOUD-K8S-008) and clear-text cloud-init
+  `users[].passwd` (CLOUD-INIT-002) are now detected; hashed passwords and port-scoped policies stay clean.
+- Cloud secret scan: no more false `CLOUD-SEC-001` on `http_tokens`, token-setting keys (`*_token_ttl`, `*_audience`)
+  and crypt hashes.
+- Cloud: platforms recognised without rules (VMware, Nutanix) are reported under `coverage.not_assessed`.
+- okf-cloud manifest/README and the cloud RTM corrected; `okf` gateway tests no longer need a real API key.
+- Frontend: `npm audit` clean, Playwright dependency and `test:e2e` script added.
+
+### Added
+
+- CI job running the cloud test-suite (100 % coverage gate); `cloud/fixtures/` regression corpus.
+- `docs/ORBIT_VERIFICATION_FIXES.md`.
+
 ## [Unreleased] - 2026-11-01
 
 ### Changed

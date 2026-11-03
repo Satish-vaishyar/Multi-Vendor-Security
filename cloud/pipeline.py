@@ -69,6 +69,16 @@ def _secret_findings(found: List[secret_scan.SecretFinding]) -> List[Finding]:
             for f in found]
 
 
+# Platforms the detector recognises but for which the rule pack ships no rules (docs/CLOUD_MODULE_RTM.md): a clean scan of
+# them must never be read as coverage.
+UNRULED_PLATFORMS = ("vmware", "nutanix")
+
+
+def _unruled_platforms(detections: List[detect.Detection]) -> List[str]:
+    found = detect.providers_of(detections)
+    return [f"{p}: recognised, but this rule pack has no {p} rules" for p in UNRULED_PLATFORMS if p in found]
+
+
 def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = None, allow_state: bool = False,
              salt: Optional[bytes] = None, engines: Sequence[str] = (), limits: intake.Limits = intake.Limits()) -> Dict[str, Any]:
     started = time.time()
@@ -147,7 +157,7 @@ def run_scan(data: bytes, filename: str, workdir: Path, pack: Optional[Pack] = N
                 "unsupported_formats": dict(unsupported_formats), "modules_not_resolved": len(unresolved),
                 "expansion_truncated": truncated, "rule_pack_customisations": pack.customisations, "effective_exposure": exposure, "external_engines": engine_runs,
                 "not_assessed": ["live cloud state", "organisation-wide policies", "runtime and image vulnerabilities",
-                                 "controls with no rule in this pack"]}
+                                 "controls with no rule in this pack"] + _unruled_platforms(detections)}
     problems = [p for r in resources for p in validate_resource(r)]
     return {**report, "status": "COMPLETED", "duration_ms": int((time.time() - started) * 1000),
             "files": [{"path": f.path, "size": f.size, "sha256": f.sha256,

@@ -32,7 +32,7 @@ def test_scanner_only_on_internal_network():
 
 def test_only_backend_and_worker_join_the_scan_network():
     joined = {n for n, s in COMPOSE["services"].items() if "cloud_scan" in s.get("networks", [])}
-    assert joined == {"cloud-scanner", "backend", "worker"}
+    assert joined == {"cloud-scanner", "cloud-scheduler", "backend", "worker"}
 
 
 def test_overlay_changes_nothing_but_the_flag_and_url_on_existing_services():

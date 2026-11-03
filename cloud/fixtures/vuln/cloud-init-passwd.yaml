@@ -1,0 +1,10 @@
+#cloud-config
+users:
+  - name: deploy
+    lock_passwd: false
+    passwd: "Sup3rS3cret!Pass"
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    shell: /bin/bash
+ssh_pwauth: true
+runcmd:
+  - curl -fsSL https://example.invalid/install.sh | bash

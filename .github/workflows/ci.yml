@@ -70,6 +70,26 @@ jobs:
       - run: npm run build
         working-directory: frontend
 
+  cloud:
+    name: Cloud module tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # full checkout on purpose: the cloud tests also read okf-cloud/ and docker-compose.cloud.yml
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: cloud/uv.lock
+      - name: Install locked dependencies
+        working-directory: cloud
+        run: uv sync --frozen
+      - name: Tests + coverage gate (fail_under in pyproject.toml)
+        working-directory: cloud
+        run: uv run pytest -q --cov --cov-report=term-missing
+
   supply-chain:
     name: Dependency audit + secret scan
     runs-on: ubuntu-latest

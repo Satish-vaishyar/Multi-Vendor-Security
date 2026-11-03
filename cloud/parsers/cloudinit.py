@@ -22,6 +22,7 @@ _SECRET_KEYS = {"plain_text_passwd", "plain-text-passwd", "passwd", "hashed_pass
 _KEEP = ("users", "chpasswd", "ssh_pwauth", "password", "runcmd")
 _SENSITIVE_NESTED = re.compile(r"key|token|secret|private|passw|cred", re.I)
 MASK = "[REDACTED]"
+HASHED = "[HASHED]"          # users[].passwd holding a crypt hash: hidden from the report, but not clear text
 MAX_DEPTH = 20
 
 
@@ -29,7 +30,8 @@ def _scrub(v: Any, depth: int = 0) -> Any:
     if depth > MAX_DEPTH:
         return MASK
     if isinstance(v, dict):
-        return {str(k): MASK if (str(k) in _SECRET_KEYS or (depth > 1 and _SENSITIVE_NESTED.search(str(k)))) and x not in (None, "")
+        return {str(k): HASHED if (str(k) == "passwd" and isinstance(x, str) and secret_scan._CRYPT_HASH.fullmatch(x.strip()))
+                else MASK if (str(k) in _SECRET_KEYS or (depth > 1 and _SENSITIVE_NESTED.search(str(k)))) and x not in (None, "")
                 else _scrub(x, depth + 1) for k, x in v.items()}
     if isinstance(v, list):
         return [_scrub(x, depth + 1) for x in v]

@@ -4,7 +4,9 @@ Cloud counterpart of `../okf/` (properties, mappings, controls, crosswalks, reme
 purpose: the network OKF loader reads every `*.yaml` under `okf/knowledge/*`, so cloud content placed there would be
 evaluated against router configs and change existing audit scores. Nothing in `okf/` is edited.
 
-Status: **S01 skeleton, empty.** Content arrives in S12 (`docs/CLOUD_MODULE_RTM.md`).
+Status: **populated (S12).** 35 properties, 19 mappings and 35 controls (see `okf_manifest.yaml`). The only framework
+declared is NIST-800-53 and every mapping is `verified: false`; no CIS IDs are shipped. Live evidence states are
+reserved: the static scanner never emits them (`docs/CLOUD_MODULE_RTM.md`).
 
 ## Rules carried over from the network OKF
 * Deterministic rules decide pass/fail; an LLM never does.

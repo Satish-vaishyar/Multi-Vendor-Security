@@ -63,6 +63,17 @@ _RULES: List[Tuple[str, str, "re.Pattern[str]", int]] = [
 # Vendor-published example values (documented as fake): the only things the token rules skip.
 _PUBLISHED_EXAMPLES = ("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
 
+# Keys whose name proves the value is a configuration setting and not a credential.
+# "http_tokens" is the AWS IMDSv2 setting ("required" / "optional"); reporting it as a
+# hard-coded secret is a false positive on every correctly hardened Terraform file.
+_GENERIC_KEY_ALLOW = frozenset(("http_tokens", "token_type"))
+# "<anything>token<...>_audience / _ttl / ..." names a token SETTING (audience, lifetime, type ...), not the token itself.
+_GENERIC_KEY_SUFFIXES = tuple(f"{sep}{w}" for sep in ("_", "-") for w in (
+    "audience", "ttl", "lifetime", "expiry", "expiration", "type", "endpoint", "url", "header", "algorithm", "format"))
+_GENERIC_KEY_RE = re.compile(
+    r"""(?ix)^([\w.-]{0,64}(?:password|passwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret)[\w.-]{0,64})"""
+)
+
 # Whole-value placeholders and genuine reference syntax. Applied to the generic rule only.
 _PLACEHOLDER_WHOLE = re.compile(
     r"(?i)(?:\[(?:sensitive|redacted)\]|(?:change|replace)[-_ ]?me.{0,40}|your[-_ ].{1,40}|(?:my|the)[-_ ]?(?:password|secret|token|key)|placeholder|dummy|sample|"
@@ -70,6 +81,9 @@ _PLACEHOLDER_WHOLE = re.compile(
 _REFERENCE_WHOLE = re.compile(
     r"^(?:(?:var|local|data|module|each|count)\.[A-Za-z_][\w.\[\]\"*-]*|(?:aws|azurerm|google|oci|alicloud|ibm)_[a-z0-9_]+\.[\w.\[\]*-]+"
     r"|arn:aws[\w-]*:[\w:/.*-]+|!Ref\s.*|!Sub\s.*|!GetAtt\s.*)$")
+
+
+_CRYPT_HASH = re.compile(r"\$(?:1|2[abxy]?|5|6|y|7)\$[^\s$]*\$?[./A-Za-z0-9$=,-]{16,}")
 
 
 def _entropy(value: str) -> float:
@@ -81,10 +95,21 @@ def _generic_skip(value: str, quoted: bool) -> bool:
     v = value.strip()
     if _PLACEHOLDER_WHOLE.fullmatch(v) or _REFERENCE_WHOLE.match(v):
         return True
+    if _CRYPT_HASH.fullmatch(v):
+        return True                       # a crypt(3) hash ($6$salt$hash) is the stored form of a password, not a clear-text secret
     if quoted:
         return False                      # a quoted literal next to a "password"/"token" key is reported, however weak
     # unquoted YAML-style values: ignore low-entropy words and plain identifiers
     return _entropy(v) < 3.0 or re.fullmatch(r"[a-z_.-]+", v) is not None
+
+
+def _generic_key_allowed(match_text: str) -> bool:
+    """True when the matched key is a known non-secret configuration name (e.g. ``http_tokens``)."""
+    m = _GENERIC_KEY_RE.match(match_text)
+    if not m:
+        return False
+    key = m.group(1).lower()
+    return key in _GENERIC_KEY_ALLOW or key.endswith(_GENERIC_KEY_SUFFIXES)
 
 
 def _pem_spans(text: str) -> List[Tuple[str, str, int, int, str]]:
@@ -110,6 +135,8 @@ def _raw_spans(text: str) -> List[Tuple[str, str, int, int, str]]:
             value = m.group(idx)
             if rule_id == "SEC-GENERIC":
                 if _generic_skip(value, quoted=idx != 3):
+                    continue
+                if _generic_key_allowed(m.group(0)):
                     continue
             elif value in _PUBLISHED_EXAMPLES:
                 continue
