@@ -14,6 +14,7 @@ and semantic versioning for the documented API surface.
 - Frontend: knowledge-base reference links render only for `http(s)` URLs.
 - MFA enrolment is enforced for admins (`MFA_ENFORCE`, default on in production): until enrolled the account can only reach `/auth/*`; SSO users are exempt.
 - CORS allows `PUT` (collection targets, cloud webhook links) for split-origin deployments.
+- Supply chain: GitHub Actions pinned to commit SHAs, Docker base images pinned by digest; `pillow` 13.0.0 and `setuptools` 84.2.1 lock upgrades clear `pip-audit` findings.
 
 ### Removed
 

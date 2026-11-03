@@ -1,5 +1,5 @@
 # ---- builder: compilers live here only (hdbscan / scipy wheels); nothing from this stage but the virtualenv ships ----
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30 AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 UV_LINK_MODE=copy
 WORKDIR /srv/app
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
@@ -12,7 +12,7 @@ RUN pip install --upgrade pip uv \
     && uv sync --frozen --no-dev --no-install-project
 
 # ---- runtime: no compiler, no pip/uv, code and virtualenv owned by root (read-only for the service user) ----
-FROM python:3.12-slim AS runtime
+FROM python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d031ab30 AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /srv/app
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 curl \

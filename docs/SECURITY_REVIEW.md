@@ -79,7 +79,7 @@ Status: **fixed** (code + test), **accepted** (conscious trade-off, documented),
 | A-03 | Med | Login IP throttle, the expensive-endpoint limiter and the dashboard cache are per process; with N workers the ceiling is N x. nginx `limit_req` is per node | accepted; move to Redis/Postgres counters if you scale out |
 | A-04 | Med | No Postgres row-level security: tenant isolation is application-enforced (heavily tested, but one missing `org_id` predicate in new SQL would leak) | open (defence in depth) |
 | A-05 | Low | CSP keeps `style-src 'unsafe-inline'` (runtime-injected component styles); `script-src` is strictly `'self'` | accepted |
-| A-06 | Low | Base images and CI actions are pinned by tag, not by digest/commit SHA (digests cannot be resolved offline) | open - pin before first release (Dependabot/pinact) |
+| A-06 | Low | Base images and CI actions were pinned by tag, not by digest/commit SHA | fixed - GitHub Actions pinned to commit SHAs and Docker `FROM` lines to digests (keep current with Dependabot) |
 | A-07 | Low | Frontend renders reference URLs from the knowledge base as `href` without a scheme check (`FindingDetails`, `Remediation`); CSP blocks `javascript:` execution and the data is KB-sourced, not tenant-supplied | accepted |
 | A-08 | Med | JWTs are HS256 with one shared secret and live 60 min (server-side revocation exists); no refresh-token rotation, no SSO, MFA enrolment is now enforced for `MFA_REQUIRED_ROLES` (default ADMIN) in production (`MFA_ENFORCE`); no refresh-token rotation | partly fixed |
 | A-09 | Low | The shared CVE knowledge base is global: any tenant ADMIN can trigger a (bounded, NVD-only) sync that rewrites it for everyone | accepted; restrict to a platform operator when you have one |
@@ -111,7 +111,7 @@ Status: **fixed** (code + test), **accepted** (conscious trade-off, documented),
 2. **Application-only tenant isolation** (A-04) - the single most valuable remaining defence-in-depth item.
 3. **Per-process limiters** (A-03) behind multiple workers/replicas.
 4. **Untested edge config** (section 3) - treat the nginx/compose changes as reviewed, not verified.
-5. **Credential hygiene on the dev workstation** (A-10) and non-digest image/action pins (A-06).
+5. **Credential hygiene on the dev workstation** (A-10).
 
 ## 5. How to re-run
 
