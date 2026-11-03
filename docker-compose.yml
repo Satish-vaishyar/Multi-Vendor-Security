@@ -13,15 +13,30 @@ x-hardening: &hardening
   pids_limit: 512
   restart: unless-stopped
 
+# Python services: immutable root filesystem (code and virtualenv are root-owned already) and bounded resources.
+# The only writable paths are the /tmp tmpfs; HOME and the library caches are pointed there.
+x-python-runtime: &python-runtime
+  read_only: true
+  mem_limit: 3g
+  cpus: 2.0
+  tmpfs:
+    - /tmp:size=512m,nosuid,nodev
+  environment: &python-env
+    HOME: /tmp
+    XDG_CACHE_HOME: /tmp/.cache
+    HF_HOME: /tmp/.cache/huggingface
+    MPLCONFIGDIR: /tmp/.cache/matplotlib
+
 services:
   backend:
-    <<: *hardening
+    <<: [*hardening, *python-runtime]
     build:
       context: .
       dockerfile: backend/Dockerfile
     env_file:
       - ./backend/.env
     environment:
+      <<: *python-env
       ENV: production
       REQUIRE_AUTH: "true"
       ENABLE_DOCS: "false"
@@ -29,12 +44,10 @@ services:
     # Not published on the host: only the frontend proxy reaches the API.
     expose:
       - "8000"
-    tmpfs:
-      - /tmp
 
   # Background jobs (audits, reports, fleet batches). Same image; scale with: docker compose up --scale worker=3
   worker:
-    <<: *hardening
+    <<: [*hardening, *python-runtime]
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -42,12 +55,11 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      <<: *python-env
       ENV: production
       REQUIRE_AUTH: "true"
     healthcheck:
       disable: true                   # the image HEALTHCHECK probes the HTTP API, which the worker does not serve
-    tmpfs:
-      - /tmp
 
   frontend:
     <<: *hardening
@@ -60,6 +72,8 @@ services:
     ports:
       - "8080:8080"
     read_only: true
+    mem_limit: 256m
+    cpus: 0.5
     tmpfs:
       - /tmp
     depends_on:

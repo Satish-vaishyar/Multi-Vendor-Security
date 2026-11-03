@@ -76,7 +76,7 @@ Status: **fixed** (code + test), **accepted** (conscious trade-off, documented),
 |---|---|---|---|
 | A-01 | Low | Account lockout is observable (`429` vs `401`): an attacker who sends 5 bad guesses learns an e-mail exists, and can lock a known account for 15 minutes (lockout-DoS). Mitigated by the per-IP throttle and nginx `limit_req`; the alternative (never revealing the lock) hurts legitimate users | accepted |
 | A-02 | Low | E-mail addresses are one global namespace, so an ADMIN creating a user learns whether that address already exists in *another* tenant | accepted (inherent to e-mail-only login; fix = per-org login names) |
-| A-03 | Med | Login IP throttle, the expensive-endpoint limiter and the dashboard cache are per process; with N workers the ceiling is N x. nginx `limit_req` is per node | accepted; move to Redis/Postgres counters if you scale out |
+| A-03 | Med | The dashboard cache is per process, and nginx `limit_req` is per node. The login IP throttle and expensive-endpoint limiter now use shared Postgres token buckets | fixed (`migrate_019.sql`); per-process fallback if the DB errors |
 | A-04 | Med | No Postgres row-level security: tenant isolation is application-enforced (heavily tested, but one missing `org_id` predicate in new SQL would leak) | open (defence in depth) |
 | A-05 | Low | CSP keeps `style-src 'unsafe-inline'` (runtime-injected component styles); `script-src` is strictly `'self'` | accepted |
 | A-06 | Low | Base images and CI actions were pinned by tag, not by digest/commit SHA | fixed - GitHub Actions pinned to commit SHAs and Docker `FROM` lines to digests (keep current with Dependabot) |
@@ -93,7 +93,7 @@ Status: **fixed** (code + test), **accepted** (conscious trade-off, documented),
 * **Docker builds**: neither image was built here (no network pulls). The multi-stage backend build and the
   `nginx-unprivileged` + `read_only` frontend are the likeliest places for a first-build surprise.
 * **TLS, HSTS preload, real browser CSP enforcement, cookie behaviour behind a real HTTPS terminator**, and WebSocket/H2 specifics.
-* **Load / multi-process behaviour**: the limiters are per process; concurrency was tested only for the MFA race (8 threads).
+* **Load / multi-process behaviour**: the shared limiter is covered by a simulated-second-process test only; concurrency was tested only for the MFA race (8 threads).
 * **Supabase / pooler specifics, replication, backups, `DATA_ENCRYPTION_KEYS` rotation under load.**
 * **Frontend XSS by manual UI review** was limited to grep-level checks (`dangerouslySetInnerHTML`, `innerHTML`, `eval`: none;
   token storage; external links). No browser-driven pentest.
@@ -109,7 +109,7 @@ Status: **fixed** (code + test), **accepted** (conscious trade-off, documented),
    the API for `POST /audits`. Prefer `/jobs/audit` (worker) in production and give workers a CPU/time limit (container `cpus`,
    a watchdog around `run_audit`).
 2. **Application-only tenant isolation** (A-04) - the single most valuable remaining defence-in-depth item.
-3. **Per-process limiters** (A-03) behind multiple workers/replicas.
+3. **Shared limiter under load** (A-03): now Postgres-backed; not load-tested with many replicas.
 4. **Untested edge config** (section 3) - treat the nginx/compose changes as reviewed, not verified.
 5. **Credential hygiene on the dev workstation** (A-10).
 

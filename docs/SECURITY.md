@@ -129,7 +129,7 @@ cannot aim a credential at a machine they control); metadata / loopback / link-l
 ## 12. Known limitations (honest list)
 * SAML is not supported; OIDC is untested against a real identity provider (see section 8).
 * KMS providers are untested against a live Vault / AWS account (section 9); RLS needs a non-bypass DB role (section 10).
-* The login IP throttle is per process; the account lockout is database-wide.
+* The login IP throttle and the expensive-endpoint limiter share one Postgres budget (`rate_limit_buckets`, `RATE_LIMIT_SHARED`); if the database errors they fall back to per-process buckets. The account lockout is database-wide. The dashboard cache is still per process.
 * Bulk upload buffers files in memory (limit 20 x 5 MB).
 * Live collection is validated against an in-process SSH server, not real network devices (see `COLLECTION.md`).
 

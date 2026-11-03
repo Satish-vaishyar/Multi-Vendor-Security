@@ -64,16 +64,21 @@ services:
       REQUIRE_AUTH: "true"
       CLOUD_MODULE_ENABLED: "true"
       CLOUD_SCANNER_URL: "http://cloud-scanner:8100"
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
     pids_limit: 512
+    read_only: true
+    mem_limit: 1g
+    cpus: 1.0
     restart: unless-stopped
     healthcheck:
       disable: true                   # the image HEALTHCHECK probes the HTTP API, which this process does not serve
     tmpfs:
-      - /tmp
+      - /tmp:size=128m,nosuid,nodev
     networks:
       - default
       - cloud_scan

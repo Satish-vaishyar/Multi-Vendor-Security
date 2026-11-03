@@ -188,7 +188,15 @@ _ip_lock = threading.Lock()
 
 
 def _ip_throttled(ip: str) -> bool:
-    """Sliding 60 s window per client IP (per process; the account lockout is DB-wide)."""
+    """Per-client-IP login budget: a Postgres-shared token bucket (all processes / replicas count together) with a
+    per-process sliding window as the fallback when the database is unavailable. The account lockout is DB-wide."""
+    if cfg.RATE_LIMIT_SHARED and cfg.DATABASE_URL:
+        try:
+            from app.core import limits
+            n = float(cfg.LOGIN_IP_MAX_PER_MINUTE)
+            return limits.take_shared([f"ip:{ip}"], 1, n, n) > 0
+        except Exception as e:
+            log.warning("shared login throttle unavailable, using the per-process window: %s", e)
     now = time.monotonic()
     with _ip_lock:
         q = _ip_hits[ip]
@@ -203,6 +211,12 @@ def _ip_throttled(ip: str) -> bool:
 def reset_throttle() -> None:
     with _ip_lock:
         _ip_hits.clear()
+    if cfg.RATE_LIMIT_SHARED and cfg.DATABASE_URL:
+        try:
+            with dbmod.get_conn() as conn:
+                conn.cursor().execute("DELETE FROM rate_limit_buckets WHERE bucket_key LIKE 'ip:%'")  # type: ignore[attr-defined]
+        except Exception:  # pragma: no cover - table may not exist yet
+            pass
 
 
 _dummy_cache: Dict[int, str] = {}

@@ -1,11 +1,15 @@
 """Abuse limits: request-body size cap (enforced while streaming) and a per-org / per-user token bucket for the
 expensive endpoints (audits, reports, uploads, AI suggestions, CVE sync).
 
-Both are in-process: with several API workers the effective ceiling is multiplied by the worker count. They are a
-fairness / cost control, not a substitute for edge rate limiting (nginx ``limit_req``) or WAF rules.
+The token bucket is shared through Postgres (``rate_limit_buckets``) when a database is configured, so the ceiling does not
+grow with the number of API workers or replicas; without a database, or if it errors, it falls back to per-process
+buckets (fail-open for availability, never for correctness of the audit trail). It is a fairness / cost control, not a
+substitute for edge rate limiting (nginx ``limit_req``) or WAF rules.
 """
 from __future__ import annotations
 import json
+import logging
+import random
 import re
 import threading
 import time
@@ -14,7 +18,10 @@ from typing import Any, Dict, List, Optional, Pattern, Tuple
 from fastapi import Depends, HTTPException, Request
 
 from app.core import config as cfg
+from app.core import db as dbmod
 from app.core import security as sec
+
+log = logging.getLogger("sih26155.limits")
 
 
 # ------------------------------------------------------------------ request body cap
@@ -129,6 +136,41 @@ _MAX_KEYS = 20_000
 def reset() -> None:
     with _lock:
         _buckets.clear()
+    if _shared_enabled():
+        try:
+            with dbmod.get_conn() as conn:
+                conn.cursor().execute("DELETE FROM rate_limit_buckets")  # type: ignore[attr-defined]
+        except Exception:  # pragma: no cover - table may not exist yet
+            pass
+
+
+def _shared_enabled() -> bool:
+    return bool(cfg.RATE_LIMIT_SHARED and dbmod.is_configured())
+
+
+def take_shared(keys: List[str], cost: int, per_min: float, burst: float) -> float:
+    """Charge `cost` tokens on every key in ONE transaction using row locks (so concurrent processes serialise per
+    bucket). Returns 0.0 if allowed, else the seconds to wait; nothing is charged when any bucket is short."""
+    rate = per_min / 60.0
+    with dbmod.get_conn() as conn:
+        cur = conn.cursor()  # type: ignore[attr-defined]
+        wait = 0.0
+        rows = {}
+        for k in sorted(keys):                                  # fixed order: no lock-order deadlocks
+            cur.execute("INSERT INTO rate_limit_buckets (bucket_key, tokens) VALUES (%s, %s) ON CONFLICT DO NOTHING", (k, burst))
+            cur.execute("SELECT tokens, EXTRACT(EPOCH FROM (now() - updated_at)) FROM rate_limit_buckets "
+                        "WHERE bucket_key=%s FOR UPDATE", (k,))
+            tokens, idle = cur.fetchone()
+            tokens = min(float(burst), float(tokens) + max(0.0, float(idle)) * rate)
+            rows[k] = tokens
+            if tokens < cost:
+                wait = max(wait, (cost - tokens) / rate if rate > 0 else 60.0)
+        for k, tokens in rows.items():
+            cur.execute("UPDATE rate_limit_buckets SET tokens=%s, updated_at=now() WHERE bucket_key=%s",
+                        (tokens - (cost if wait == 0.0 else 0), k))
+        if random.random() < 0.01:          # ~1% of calls prune idle buckets (no scheduler needed)
+            cur.execute("DELETE FROM rate_limit_buckets WHERE updated_at < now() - interval '1 hour'")
+        return wait
 
 
 def cost_of(method: str, path: str) -> int:
@@ -162,6 +204,11 @@ def check(org: str, user_id: str, method: str, path: str, now: Optional[float] =
     if per_min <= 0 or cost <= 0:
         return 0.0
     burst = max(float(cfg.RATE_LIMIT_EXPENSIVE_BURST), float(cost))
+    if now is None and _shared_enabled():
+        try:
+            return take_shared([f"org:{org}", f"user:{user_id}"], cost, per_min, burst)
+        except Exception as e:
+            log.warning("shared rate limiter unavailable, using the per-process bucket: %s", e)
     t = time.monotonic() if now is None else now
     with _lock:
         wait = _take(f"org:{org}", cost, per_min, burst, t)

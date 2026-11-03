@@ -54,6 +54,8 @@ MAX_UPLOAD_BODY_BYTES = int(os.getenv("MAX_UPLOAD_BODY_BYTES", str(110 * 1024 * 
 # Per process: with N API workers the effective ceiling is N x this value. 0 disables the limiter.
 RATE_LIMIT_EXPENSIVE_PER_MIN = int(os.getenv("RATE_LIMIT_EXPENSIVE_PER_MIN", "120"))
 RATE_LIMIT_EXPENSIVE_BURST = int(os.getenv("RATE_LIMIT_EXPENSIVE_BURST", "30"))
+# Count rate limits in Postgres so all API processes / replicas share one budget (falls back to per-process if the DB errors).
+RATE_LIMIT_SHARED = os.getenv("RATE_LIMIT_SHARED", "true").strip().lower() in ("1", "true", "yes", "on")
 
 # Background jobs (Postgres queue; see app/core/jobs.py)
 MAX_BATCH_FILES = int(os.getenv("MAX_BATCH_FILES", "500"))           # files per async bulk-audit request

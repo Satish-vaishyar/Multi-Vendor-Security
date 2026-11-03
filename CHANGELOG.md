@@ -15,6 +15,8 @@ and semantic versioning for the documented API surface.
 - MFA enrolment is enforced for admins (`MFA_ENFORCE`, default on in production): until enrolled the account can only reach `/auth/*`; SSO users are exempt.
 - CORS allows `PUT` (collection targets, cloud webhook links) for split-origin deployments.
 - Supply chain: GitHub Actions pinned to commit SHAs, Docker base images pinned by digest; `pillow` 13.0.0 and `setuptools` 84.2.1 lock upgrades clear `pip-audit` findings.
+- Rate limiting: the login IP throttle and the expensive-endpoint limiter now share a Postgres token bucket (`rate_limit_buckets`, migration `migrate_019.sql`, `RATE_LIMIT_SHARED`), so the ceiling no longer multiplies with API workers/replicas; falls back to per-process buckets if the database errors.
+- Containers: backend, worker and cloud-scheduler run with a read-only root filesystem (writable `/tmp` tmpfs only) and CPU / memory limits; frontend gets limits too.
 
 ### Removed
 
